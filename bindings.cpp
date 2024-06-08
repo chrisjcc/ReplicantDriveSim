@@ -1,6 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include "traffic_simulation.cpp"
+#include "traffic_simulation.h"
 
 namespace py = pybind11;
 
