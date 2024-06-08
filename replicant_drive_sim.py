@@ -170,8 +170,11 @@ class HighwayEnv(MultiAgentEnv):
             pygame.draw.line(self.screen, (255, 255, 255), (i * 60, SCREEN_HEIGHT // 2), ((i * 60) + 30, SCREEN_HEIGHT // 2), 5)
 
         agent_positions = self.sim.get_agent_positions()
+
         for agent, pos in agent_positions.items():
-            pygame.draw.circle(self.screen, (255, 0, 0), (int(pos[0]), int(pos[1])), VEHICLE_WIDTH // 2)
+            x, y = int(pos[0]), int(pos[1])
+            color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
+            pygame.draw.rect(self.screen, color, (x - VEHICLE_WIDTH // 2, y - VEHICLE_HEIGHT // 2, VEHICLE_WIDTH, VEHICLE_HEIGHT))
 
         pygame.display.flip()
         self.clock.tick(30)
