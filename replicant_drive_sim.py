@@ -52,7 +52,16 @@ class HighwayEnv(MultiAgentEnv):
         self.episode_step_count = 0
         self.terminated = {"__all__": False}
         self.truncated = {"__all__": False}
+
         self.sim = traffic_simulation.TrafficSimulation(len(self.agents))  # Reset the simulation
+
+        # Get the initial agent positions and velocities from the simulation
+        self.agent_positions = {agent: np.array(pos) for agent, pos in self.sim.get_agent_positions().items()}
+        self.agent_velocities = {agent: np.array([pos[0], pos[1], 0.0]) for agent, pos in self.sim.get_agent_velocities().items()}
+        self.previous_positions = {agent: np.copy(self.agent_positions[agent]) for agent in self.agents}
+
+        self.collisions = {agent: False for agent in self.agents}  # Reset collisions
+
         observations = {agent: self._get_observation(agent) for agent in self.agents}
 
         return observations, {}
