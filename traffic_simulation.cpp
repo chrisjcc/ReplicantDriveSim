@@ -1,6 +1,7 @@
 #include "traffic_simulation.h"
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 400;
@@ -9,19 +10,36 @@ const int VEHICLE_HEIGHT = 55;
 const int LANE_WIDTH = 100;
 const int NUM_LANES = 3;
 
+
+// Function to generate a random float within a specified range
+float randFloat(float a, float b) {
+    static std::default_random_engine generator;
+    std::uniform_real_distribution<float> distribution(a, b);
+    return distribution(generator);
+}
+
+// Function to generate a random float from a normal distribution
+float randNormal(float mean, float stddev) {
+    static std::default_random_engine generator;
+    std::normal_distribution<float> distribution(mean, stddev);
+    return distribution(generator);
+}
+
+
 TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
 
-    for (auto& agent : agents) {
-        agent.x = randFloat(0, SCREEN_WIDTH - VEHICLE_WIDTH);
-        agent.y = randFloat(0, SCREEN_HEIGHT - VEHICLE_HEIGHT);
-        agent.vx = 0.0f;
-        agent.vy = 0.0f;
-        agent.steering = 0.0f;
+    for (int i = 0; i < num_agents; ++i) {
+        agents[i].x = randFloat(0, SCREEN_WIDTH - VEHICLE_WIDTH);
+        agents[i].y = randFloat(0, SCREEN_HEIGHT - VEHICLE_HEIGHT);
+        agents[i].vx = randNormal(50.0f, 1.0f);  // Randomly sample initial speed
+        agents[i].vy = 0.0f;                     // Initial vertical velocity
+        agents[i].steering = 0.0f;
+        agents[i].name = "agent_" + std::to_string(i);
 
         // Initialize previous positions with current positions
-        previous_positions = agents;
+        previous_positions[i] = agents[i];
     }
 }
 

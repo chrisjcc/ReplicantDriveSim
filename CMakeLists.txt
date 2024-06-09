@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.4...3.18)
 project(traffic_simulation)
 
 set(CMAKE_CXX_STANDARD 14)
+
+# Add this line before pybind11 to set the policy
+set(PYBIND11_FINDPYTHON ON)
 
 # Get the pybind11 directory dynamically
 execute_process(
