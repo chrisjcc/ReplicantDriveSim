@@ -5,6 +5,8 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(traffic_simulation, m) {
+    m.doc() = "Traffic simulation module"; // Optional module docstring
+
     py::class_<Vehicle>(m, "Vehicle")
         .def_readwrite("x", &Vehicle::x)
         .def_readwrite("y", &Vehicle::y)
