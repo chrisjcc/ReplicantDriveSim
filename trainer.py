@@ -9,8 +9,6 @@ from ray.tune.logger import pretty_print
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
-
-#from highway_simulation import HighwayEnv
 from simulacrum import HighwayEnv
 
 # Constants for the Pygame simulation
@@ -112,7 +110,7 @@ results=tune.run(
     checkpoint_freq=5,  # Set checkpoint frequency here
     num_samples=1,      # Number of times to repeat the experiment
     max_failures=1,     # Maximum number of failures before stopping the experiment
-    verbose=1,           # Verbosity level for logging
+    verbose=1,          # Verbosity level for logging
     stop={"env_runners/episode_reward_mean": 200}
 )
 
