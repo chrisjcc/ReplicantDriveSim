@@ -13,7 +13,7 @@ python -m build -v
 unzip -l dist/traffic_simulation-*.whl
 ```
 
-or build stand alone traffic library
+or configure and build a stand alone traffic library
 ```shell
 mkdir build
 cd build
