@@ -47,7 +47,7 @@ class HighwayEnv(MultiAgentEnv):
         })
 
         self.pygame_init = False
-        self.render_mode = configs.get("render_mode", None)
+        self.render_mode = configs.get("render_mode", "human")
         self.max_episode_steps = configs.get("max_episode_steps", 10000)
         self.episode_step_count = 0
         self.terminateds = {"__all__": False}

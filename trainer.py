@@ -39,15 +39,7 @@ def create_env(configs=None):
     Returns:
     - env: An instance of HighwayEnv.
     """
-    if configs is None:
-        configs = {}
-
-    configs.update({"max_episode_steps": 1000})
-
-    num_agents = configs.get("num_agents", 2)
-    render_mode = configs.get("render_mode", True)
-
-    return HighwayEnv(num_agents=num_agents, render_mode=render_mode, configs=configs)
+    return HighwayEnv(configs=configs)
 
 # Register the custom environment
 register_env("highway_traffic", create_env)
@@ -60,6 +52,15 @@ def policy_mapping_fn(agent_id, episode, worker, **kwargs):
     else:
         return "policy_2"
 
+# Configure parameters
+configs = {
+    "progress": True,
+    "collision": True,
+    "safety_distance": True,
+    "max_episode_steps": 1000,
+    "num_agents": 2,
+    "render_mode": "human"
+}
 
 # Define the configuration
 CONFIG = {
@@ -76,14 +77,14 @@ CONFIG = {
         "policies": {
             "policy_1": (
                 None, # This represents the policy class. By passing None, RLlib will use the default policy class for the specified algorithm (in this case, PPO).
-                create_env().observation_space, # This is the observation space of the environment. It specifies the shape and data type of the observations that the agent will receive from the environment.
-                create_env().action_space, # This is the action space of the environment. It specifies the shape and data type of the actions that the agent can take in the environment.
+                create_env(configs=configs).observation_space, # This is the observation space of the environment. It specifies the shape and data type of the observations that the agent will receive from the environment.
+                create_env(configs=configs).action_space, # This is the action space of the environment. It specifies the shape and data type of the actions that the agent can take in the environment.
                 {} # This represents the policy configuration dictionary. By passing None, you are not providing any additional configuration for the policy.
             ),
             "policy_2": (
                 None,
-                create_env().observation_space,
-                create_env().action_space,
+                create_env(configs=configs).observation_space,
+                create_env(configs=configs).action_space,
                 {}
             ),
 
