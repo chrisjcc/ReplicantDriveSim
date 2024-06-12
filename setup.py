@@ -55,7 +55,7 @@ class CMakeBuild(build_ext):
             os.makedirs(dest_path)
         
         # Correct destination filename
-        dest_file = self.get_ext_fullpath('traffic_simulation') # + '.so'  # Ensure correct file extension
+        dest_file = self.get_ext_fullpath('traffic_simulation')
         if os.path.exists(dest_file):
             os.remove(dest_file)  # Remove if it already exists to avoid permission issues
 
