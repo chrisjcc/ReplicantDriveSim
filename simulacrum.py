@@ -34,8 +34,8 @@ class HighwayEnv(MultiAgentEnv):
         self.agents = ["agent_" + str(i) for i in range(configs.get("num_agents", 2))]
         self.sim = traffic_simulation.TrafficSimulation(configs.get("num_agents", 2))
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
-        self.previous_positions = {agent: np.copy(self.agent_positions[agent]) for agent in self.agents}
-        self.collisions = {agent: False for agent in self.agents}
+        self.previous_positions = {agent: np.copy(self.agent_positions[agent]) for agent in self.agents} # Track previous positions
+        self.collisions = {agent: False for agent in self.agents} # Track collisions
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(8,), dtype=np.float32)
 
         # 0: keep lane, 1: change lane, 2: accelerate, 3: decelerate
