@@ -1,5 +1,5 @@
-import sys
-sys.path.append('/Users/christiancontrerascampana/Desktop/drive/ReplicantDriveSim/build/src')
+#import sys
+#sys.path.append('/Users/christiancontrerascampana/Desktop/drive/ReplicantDriveSim/build/src')
 
 import gymnasium as gym
 import numpy as np
@@ -19,7 +19,7 @@ FPS = 25
 
 
 class HighwayEnv(MultiAgentEnv):
-    def __init__(self, num_agents=2, render_mode=False, configs=None):
+    def __init__(self, num_agents=2, render_mode=None, configs=None):
         self.agents = ["agent_" + str(i) for i in range(num_agents)]
         self.sim = traffic_simulation.TrafficSimulation(num_agents)
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
