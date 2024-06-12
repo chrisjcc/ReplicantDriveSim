@@ -38,6 +38,7 @@ class HighwayEnv(MultiAgentEnv):
         self.collisions = {agent: False for agent in self.agents}
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(8,), dtype=np.float32)
 
+        # 0: keep lane, 1: change lane, 2: accelerate, 3: decelerate
         self.high_level_action_space = gym.spaces.Discrete(4)
         self.low_level_action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
         self.action_space = gym.spaces.Dict({
@@ -74,6 +75,7 @@ class HighwayEnv(MultiAgentEnv):
             Tuple[Dict[str, np.ndarray], Dict[str, Any]]: Initial observations and info.
         """
         self.episode_step_count = 0
+        # Setting the termination status of all agents to False at the start of each step.
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
         self.infos = {}
@@ -125,6 +127,9 @@ class HighwayEnv(MultiAgentEnv):
                 "total_reward": total_reward
             }
 
+        # After updating the termination statuses of individual agents (e.g., due to collisions),
+        # it is essential to check if all agents in the environment are terminated.
+        # If all agents are terminated, the episode should end for all agents.
         # Update terminateds for each agent
         self.terminateds = {agent: False for agent in self.agents}
         self.truncateds = {"__all__": False}
@@ -150,6 +155,7 @@ class HighwayEnv(MultiAgentEnv):
         Returns:
             np.ndarray: The observation array.
         """
+        # Observation space is similar to KinematicObservation in highway-env
         agent_positions = self.sim.get_agent_positions()
         agent_velocities = self.sim.get_agent_velocities()
 
@@ -219,7 +225,7 @@ class HighwayEnv(MultiAgentEnv):
             pygame.init()
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
             pygame.display.set_caption("Highway Simulation")
-            self.clock = pygame.time.Clock()
+            self.clock = pygame.time.Clock() # Initialize clock
             self.pygame_init = True
 
         self.screen.fill((255, 255, 255))
@@ -236,7 +242,7 @@ class HighwayEnv(MultiAgentEnv):
             pygame.draw.rect(self.screen, color, (x - VEHICLE_WIDTH // 2, y - VEHICLE_HEIGHT // 2, VEHICLE_WIDTH, VEHICLE_HEIGHT))
 
         pygame.display.flip()
-        self.clock.tick(30)
+        self.clock.tick(FPS) # Cap the frame rate
 
     def close(self) -> None:
         """
