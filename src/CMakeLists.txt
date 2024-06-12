@@ -6,9 +6,14 @@ project(traffic_simulation)
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 14)
 
-message(STATUS "pybind11_DIR is ${pybind11_DIR}")
+message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
 
-# Add this line before pybind11 to set the policy
+# Set the output directory for the library
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+message(STATUS "CMAKE_LIBRARY_OUTPUT_DIRECTORY is ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+
+# Set the policy to find Python automatically
 set(PYBIND11_FINDPYTHON ON)
 
 # Get the pybind11 directory dynamically
@@ -21,7 +26,15 @@ execute_process(
 # Set the pybind11_DIR variable
 set(pybind11_DIR ${pybind11_DIR})
 
+message(STATUS "pybind11_DIR is ${pybind11_DIR}")
+
+# Find pybind11
 find_package(pybind11 REQUIRED PATHS ${pybind11_DIR})
+
+# Check if pybind11 was found
+if (NOT pybind11_FOUND)
+    message(FATAL_ERROR "pybind11 not found")
+endif()
 
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR is ${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -33,29 +46,40 @@ set(SOURCE_FILES
 
 message(STATUS "SOURCE_FILES is ${SOURCE_FILES}")
 
-# Add library target
-add_library(traffic_simulation MODULE ${SOURCE_FILES})
-
-# Remove the "lib" prefix
-set_target_properties(traffic_simulation PROPERTIES PREFIX "")
-
-message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
+# Add the pybind11 module
+pybind11_add_module(traffic_simulation ${SOURCE_FILES})
 
 # Set the output directory for the library
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src)
+set_target_properties(traffic_simulation PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src
+    PREFIX ""
+)
 
 message(STATUS "Include directory is ${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
-# Include traffic_simulation hearders
+# Include traffic_simulation headers
 target_include_directories(traffic_simulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
-# Link pybind11 module
-target_link_libraries(traffic_simulation PRIVATE pybind11::module)
-
+# Add compile options
 target_compile_options(traffic_simulation PRIVATE -Wall -Wextra -Werror)
 
-message(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX}")
+# Explicitly specify where to place the generated shared object file
+set_target_properties(traffic_simulation PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+)
 
 # Install the library
 install(TARGETS traffic_simulation
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/traffic_simulation)
+
+# Install the headers
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../include/traffic_simulation.h
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+# Copy headers to the build/include directory (if needed for development)
+add_custom_command(TARGET traffic_simulation POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_BINARY_DIR}/include)
