@@ -1,11 +1,9 @@
-#import sys
-#sys.path.append('/Users/christiancontrerascampana/Desktop/drive/ReplicantDriveSim/build/src')
-
 import gymnasium as gym
 import numpy as np
 import pygame
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
+from typing import Optional, Dict, Any, Tuple, List
 import traffic_simulation  # Import the compiled C++ module
 
 # Constants for the Pygame simulation
@@ -17,13 +15,25 @@ VEHICLE_HEIGHT = 55
 NUM_LANES = 3
 FPS = 25
 
-
 class HighwayEnv(MultiAgentEnv):
-    def __init__(self, num_agents=2, render_mode=None, configs=None):
-        self.agents = ["agent_" + str(i) for i in range(num_agents)]
-        self.sim = traffic_simulation.TrafficSimulation(num_agents)
+    """
+    Custom multi-agent highway environment.
+
+    This environment simulates a highway with multiple agents. Each agent is
+    represented by a vehicle and can perform high-level and low-level actions.
+    The environment supports rendering using Pygame.
+    """
+
+    def __init__(self, configs: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Initialize the HighwayEnv.
+
+        Args:
+            configs (Optional[Dict[str, Any]]): Configuration dictionary containing environment settings.
+        """
+        self.agents = ["agent_" + str(i) for i in range(configs.get("num_agents", 2))]
+        self.sim = traffic_simulation.TrafficSimulation(configs.get("num_agents", 2))
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
-        # Initialize previous positions dictionary to track previous positions of agents
         self.previous_positions = {agent: np.copy(self.agent_positions[agent]) for agent in self.agents}
         self.collisions = {agent: False for agent in self.agents}
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(8,), dtype=np.float32)
@@ -36,7 +46,7 @@ class HighwayEnv(MultiAgentEnv):
         })
 
         self.pygame_init = False
-        self.render_mode = render_mode
+        self.render_mode = configs.get("render_mode", None)
         self.max_episode_steps = configs.get("max_episode_steps", 10000)
         self.episode_step_count = 0
         self.terminateds = {"__all__": False}
@@ -52,7 +62,17 @@ class HighwayEnv(MultiAgentEnv):
         if configs:
             self.configs.update(configs)
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
+        """
+        Reset the environment to the initial state.
+
+        Args:
+            seed (Optional[int]): Random seed.
+            options (Optional[Dict[str, Any]]): Additional reset options.
+
+        Returns:
+            Tuple[Dict[str, np.ndarray], Dict[str, Any]]: Initial observations and info.
+        """
         self.episode_step_count = 0
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
@@ -71,7 +91,17 @@ class HighwayEnv(MultiAgentEnv):
 
         return observations, self.infos
 
-    def step(self, action_dict: MultiAgentDict):
+    def step(self, action_dict: MultiAgentDict) -> Tuple[Dict[str, np.ndarray], Dict[str, float], Dict[str, bool], Dict[str, bool], Dict[str, Any]]:
+        """
+        Execute one step in the environment.
+
+        Args:
+            action_dict (MultiAgentDict): Dictionary of actions for each agent.
+
+        Returns:
+            Tuple[Dict[str, np.ndarray], Dict[str, float], Dict[str, bool], Dict[str, bool], Dict[str, Any]]:
+                Observations, rewards, terminations, truncations, and additional info.
+        """
         self.episode_step_count += 1
 
         observations = {}
@@ -110,7 +140,16 @@ class HighwayEnv(MultiAgentEnv):
 
         return observations, rewards, self.terminateds, self.truncateds, self.infos
 
-    def _get_observation(self, agent):
+    def _get_observation(self, agent: str) -> np.ndarray:
+        """
+        Generate an observation for the given agent.
+
+        Args:
+            agent (str): The agent ID.
+
+        Returns:
+            np.ndarray: The observation array.
+        """
         agent_positions = self.sim.get_agent_positions()
         agent_velocities = self.sim.get_agent_velocities()
 
@@ -121,21 +160,23 @@ class HighwayEnv(MultiAgentEnv):
         other_positions = [np.array(agent_positions[a]) for a in other_agents]
         other_velocities = [np.array(agent_velocities[a]) for a in other_agents]
 
-        if other_positions:
-            mean_other_positions = np.mean(other_positions, axis=0)
-        else:
-            mean_other_positions = np.zeros(2)
-
-        if other_velocities:
-            mean_other_velocities = np.mean(other_velocities, axis=0)
-        else:
-            mean_other_velocities = np.zeros(2)
+        mean_other_positions = np.mean(other_positions, axis=0) if other_positions else np.zeros(2)
+        mean_other_velocities = np.mean(other_velocities, axis=0) if other_velocities else np.zeros(2)
 
         observation = np.concatenate([ego_position, ego_velocity, mean_other_positions, mean_other_velocities])
 
         return observation
 
-    def _get_reward(self, agent):
+    def _get_reward(self, agent: str) -> Dict[str, float]:
+        """
+        Calculate the reward for the given agent.
+
+        Args:
+            agent (str): The agent ID.
+
+        Returns:
+            Dict[str, float]: Dictionary of reward components.
+        """
         reward_components = {
             "progress": 0.0,
             "collision": 0.0,
@@ -167,7 +208,10 @@ class HighwayEnv(MultiAgentEnv):
 
         return reward_components
 
-    def render(self, mode="human"):
+    def render(self) -> None:
+        """
+        Render the environment using Pygame.
+        """
         if not self.render_mode:
             return
 
@@ -194,30 +238,33 @@ class HighwayEnv(MultiAgentEnv):
         pygame.display.flip()
         self.clock.tick(30)
 
-    def close(self):
+    def close(self) -> None:
+        """
+        Close the Pygame window if initialized.
+        """
         if self.pygame_init:
             pygame.quit()
             self.pygame_init = False
 
-
 # Example of running the environment with random actions
 if __name__ == "__main__":
-
-    # Configure training parameters
+    # Configure parameters
     configs = {
         "progress": True,
         "collision": True,
         "safety_distance": True,
         "max_episode_steps": 1000,
+        "num_agents": 2,
+        "render_mode": "human"
     }
 
-    env = HighwayEnv(num_agents=2, render_mode=True, configs=configs)  # Set render_mode to True to enable rendering
+    env = HighwayEnv(configs=configs)  # Set render_mode to True to enable rendering
     num_episodes = 8  # Define the number of episodes
 
     for episode in range(num_episodes):
         print(f"Starting episode {episode + 1}")
 
-        observations = env.reset()
+        observations, infos = env.reset()
         done = False
 
         while not done:
