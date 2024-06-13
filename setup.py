@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import sysconfig
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -47,13 +48,15 @@ class CMakeBuild(build_ext):
             raise e
 
         # Move the built library to the proper location
-        lib_path = os.path.join(build_temp, 'lib', 'traffic_simulation.cpython-39-darwin.so')
-        
+        # Flexible for traffic_simulation.cpython-39-darwin.so or traffic_simulation.cpython-39-aarch64-linux-gnu.so
+        # Use glob in order to expand out the use of a wildcard "*" and extract the actual name of the file
+        lib_path = glob.glob(os.path.join(build_temp, 'lib', 'traffic_simulation*.so'))[0]
+
         # Ensure destination directory exists
         dest_path = os.path.dirname(self.get_ext_fullpath('traffic_simulation'))
         if not os.path.exists(dest_path):
             os.makedirs(dest_path)
-        
+
         # Correct destination filename
         dest_file = self.get_ext_fullpath('traffic_simulation')
         if os.path.exists(dest_file):
@@ -68,8 +71,8 @@ setup(
     author_email='your.email@example.com',
     description='Traffic simulation package with C++ backend',
     ext_modules=[CMakeExtension(
-        'traffic_simulation', 
-        sourcedir="/Users/christiancontrerascampana/Desktop/drive/ReplicantDriveSim"
+        'traffic_simulation',
+        sourcedir="/app/repo"
     )],
     cmdclass={'build_ext': CMakeBuild},
     zip_safe=False,
