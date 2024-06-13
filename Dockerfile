@@ -10,11 +10,14 @@ RUN apt-get update && apt-get install -y git openssh-client
 # Use the forwarded SSH key for git clone
 # Make sure your domain is accepted
 RUN mkdir -p /root/.ssh && \
-    ssh-keyscan github.com >> /root/.ssh/known_hosts
+    ssh-keyscan -H github.com >> /root/.ssh/known_hosts
+
+# Check container whether the right keys are loaded and SSH_AUTH_SOCK is accessible
+RUN echo $(ssh-add -l) && echo $SSH_AUTH_SOCK
 
 # Clone the repository using SSH agent forwarding
 # Use the --mount=type=ssh to forward the SSH key
-RUN --mount=type=ssh git clone -b feat/dockerize_sim git@github.com:chrisjcc/ReplicantDriveSim.git
+RUN --mount=type=ssh git clone git@github.com:chrisjcc/ReplicantDriveSim.git
 
 FROM ubuntu
 
