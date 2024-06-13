@@ -31,8 +31,9 @@ class HighwayEnv(MultiAgentEnv):
         Args:
             configs (Optional[Dict[str, Any]]): Configuration dictionary containing environment settings.
         """
-        self.agents = ["agent_" + str(i) for i in range(configs.get("num_agents", 2))]
-        self.sim = traffic_simulation.TrafficSimulation(configs.get("num_agents", 2))
+        self.configs = configs
+        self.agents = ["agent_" + str(i) for i in range(self.configs.get("num_agents", 2))]
+        self.sim = traffic_simulation.TrafficSimulation(self.configs.get("num_agents", 2))
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
         self.previous_positions = {agent: np.copy(self.agent_positions[agent]) for agent in self.agents} # Track previous positions
         self.collisions = {agent: False for agent in self.agents} # Track collisions
@@ -47,21 +48,12 @@ class HighwayEnv(MultiAgentEnv):
         })
 
         self.pygame_init = False
-        self.render_mode = configs.get("render_mode", "human")
-        self.max_episode_steps = configs.get("max_episode_steps", 10000)
+        self.render_mode = self.configs.get("render_mode", "human")
+        self.max_episode_steps = self.configs.get("max_episode_steps", 10000)
         self.episode_step_count = 0
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
         self.infos = {}
-
-        self.configs = {
-            "progress": True,
-            "collision": True,
-            "safety_distance": False
-        }
-
-        if configs:
-            self.configs.update(configs)
 
     def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
         """
@@ -192,18 +184,18 @@ class HighwayEnv(MultiAgentEnv):
         agent_positions = self.sim.get_agent_positions()
         agent_position = np.array(agent_positions[agent])
 
-        if self.configs["progress"]:
+        if self.configs.get("progress", False):
             if agent_position[0] > self.previous_positions[agent][0]:
                 reward_components["progress"] += 1.0
 
-        if self.configs["collision"]:
+        if self.configs.get("collision", False):
             for other_agent in [a for a in self.agents if a != agent]:
                 other_agent_position = agent_positions[other_agent]
                 distance = np.linalg.norm(agent_position - other_agent_position)
                 if distance < VEHICLE_WIDTH:
                     reward_components["collision"] -= 1.0
 
-        if self.configs["safety_distance"]:
+        if self.configs.get("safety_distance", False):
             for other_agent in [a for a in self.agents if a != agent]:
                 other_agent_position = agent_positions[other_agent]
                 distance = np.linalg.norm(agent_position - other_agent_position)
