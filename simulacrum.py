@@ -31,6 +31,7 @@ class HighwayEnv(MultiAgentEnv):
         Args:
             configs (Optional[Dict[str, Any]]): Configuration dictionary containing environment settings.
         """
+        super().__init__()
         self.configs = configs
         self.agents = ["agent_" + str(i) for i in range(self.configs.get("num_agents", 2))]
         self.sim = traffic_simulation.TrafficSimulation(self.configs.get("num_agents", 2))
