@@ -54,3 +54,18 @@ states = simulation.get_agent_positions()
 for agent, state in states.items():
     print(f"{agent} state: {state}")
 ```
+
+## Docker build
+```shell
+DOCKER_BUILDKIT=1 docker build --ssh default -t replicant_drive_sim .
+docker run -it replicant_drive_sim
+cd app/repo/
+```
+
+```python
+python simulacrum.py
+
+# Or
+
+python trainer.py
+```
