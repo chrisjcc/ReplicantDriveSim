@@ -97,8 +97,8 @@ CONFIG = {
 
 # Update stop criteria to include correct path for episode reward mean
 stop_criteria = {
-    "training_iteration": 50, 
-    "env_runners/episode_reward_mean": 100,
+    "training_iteration": 50,
+    "episode_reward_mean": 100,
     "episodes_total": 1000  # Stop after the specified number of episodes
 }
 
@@ -106,13 +106,13 @@ stop_criteria = {
 ray.init(ignore_reinit_error=True)
 
 results=tune.run(
-    "PPO", 
+    "PPO",
     config=CONFIG,
     checkpoint_freq=5,  # Set checkpoint frequency here
     num_samples=1,      # Number of times to repeat the experiment
     max_failures=1,     # Maximum number of failures before stopping the experiment
     verbose=1,          # Verbosity level for logging
-    stop={"env_runners/episode_reward_mean": 200}
+    stop={"episode_reward_mean": 200}
 )
 
 # Print the results dictionary of the training to inspect the structure
