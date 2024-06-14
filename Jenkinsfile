@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout code from Git repository using credentials
-                git credentialsId: '05078083-bc9f-4fc3-9aeb-ba55c3ff4be5', url: 'git@github.com:chrisjcc/agents.git', branch: 'main'
+                git credentialsId: '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', url: 'git@github.com:chrisjcc/agents.git', branch: 'main'
             }
         }
 
@@ -24,7 +24,7 @@ pipeline {
         stage('Run Python Script') {
             steps {
                 // Activate conda environment and run the python script
-                sh 'source activate drive && python simulacrum.py'
+                sh 'conda run -n drive python simulacrum.py'
             }
         }
     }
@@ -32,7 +32,13 @@ pipeline {
     post {
         always {
             // Clean up conda environment
-            sh 'conda env remove -n drive'
+            script {
+                try {
+                    sh 'conda env remove -n drive'
+                } catch (Exception e) {
+                    echo "Failed to remove conda environment: ${e.getMessage()}"
+                }
+            }
         }
     }
 }
