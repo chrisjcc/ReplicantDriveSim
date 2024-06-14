@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout code from Git repository using credentials
-                git credentialsId: '05078083-bc9f-4fc3-9aeb-ba55c3ff4be5', url: 'git@github.com:chrisjcc/agents.git', branch: 'main'
+                git credentialsId: '05078083-bc9f-4fc3-9aeb-ba55c3ff4be5', url: 'git@github.com:chrisjcc/ReplicantDriveSim.git', branch: 'main'
             }
         }
 
