@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout code from Git repository using credentials
-                git credentialsId: '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', url: 'git@github.com:chrisjcc/agents.git', branch: 'main'
+                git credentialsId: 'github-token', url: 'git@github.com:chrisjcc/agents.git', branch: 'main'
             }
         }
 
