@@ -1,5 +1,6 @@
 # ReplicantDriveSim
-Autonomous driving simulations development
+
+ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research. It leverages reinforcement learning, imitation learning, and computer vision to create realistic traffic scenarios and synthetic driving data. The simulation environment is built using Pygame for visualization and Miniforge for Python package management, ensuring a seamless development and deployment experience. This Docker image provides a fully configured environment with all necessary dependencies, enabling efficient experimentation and development of autonomous driving algorithms.
 
 # Environment setup
 ```shell
@@ -52,4 +53,19 @@ states = simulation.get_agent_positions()
 # Display the updated states of agents in the traffic environment
 for agent, state in states.items():
     print(f"{agent} state: {state}")
+```
+
+## Docker build
+```shell
+DOCKER_BUILDKIT=1 docker build --ssh default -t replicant_drive_sim .
+docker run -it replicant_drive_sim
+cd app/repo/
+```
+
+```python
+python simulacrum.py
+
+# Or
+
+python trainer.py
 ```
