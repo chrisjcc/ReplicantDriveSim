@@ -27,10 +27,12 @@ configs = {
     "collision": True,
     "safety_distance": True,
     "max_episode_steps": 1000,
+    "num_agents": 2, 
+    "render_mode": True,
 }   
 
 # Create the environment
-env = HighwayEnv(num_agents=2, render_mode=True, configs=configs)  # Set render_mode to True to enable rendering
+env = HighwayEnv(configs=configs)  # Set render_mode to True to enable rendering
 
 # Load the trained DQN policy
 base_directory = "/Users/christiancontrerascampana/ray_results"
@@ -94,14 +96,14 @@ for episode in range(num_episodes):
         actions = {agent: env.action_space.sample() for agent in env.agents}
 
         # Step the environment
-        observations, rewards, terminated, truncated, info = env.step(actions)
+        observations, rewards, terminateds, truncateds, infos = env.step(actions)
 
         for agent in env.agents:
             total_reward = rewards[agent]
             print(f"Rewards for {agent}: {total_reward}")
-            print(f"Reward components for {agent}: {info[agent]}")
+            print(f"Reward components for {agent}: {infos[agent]}")
 
-        done = terminated.get("__all__", False) or truncated.get("__all__", False)
+        done = terminateds.get("__all__", False) or truncateds.get("__all__", False)
 
     print(f"Episode {episode + 1} finished")
 
