@@ -77,6 +77,8 @@ docker system prune -a --volumes
 docker-compose ps -a
 docker-compose logs
 
+# Exec into the Running Container (app is name of service in docker-compose.yml)
+docker-compose exec app bash
 ```
 
 ```python
