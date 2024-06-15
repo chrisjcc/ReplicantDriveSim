@@ -76,5 +76,12 @@ RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda activate drive && \
     pip install --force-reinstall /app/repo/dist/traffic_simulation-*.whl"
 
+# Set up the working directory and copy the repository from the previous image
+WORKDIR /app/repo
+COPY --from=intermediate /ReplicantDriveSim /app/repo
+
+# Ensure the /app/repo/data directory exists
+RUN mkdir -p /app/repo/data
+
 # Set the default command to bash
 CMD ["bash"]

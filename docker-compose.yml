@@ -1,15 +1,17 @@
-version: '3'
+version: '3.9'
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      secrets:
-        - sshkey
+      ssh:
+        - default
     volumes:
-      - .:/app/repo
+      - ./data:/app/repo/data # Mount the host ./data directory to /app/repo/data in the container
     environment:
       - DISPLAY=${DISPLAY}
+    secrets:
+      - sshkey
 
 secrets:
   sshkey:
