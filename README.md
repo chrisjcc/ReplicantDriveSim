@@ -57,9 +57,22 @@ for agent, state in states.items():
 
 ## Docker build
 ```shell
-DOCKER_BUILDKIT=1 docker build --ssh default -t replicant_drive_sim .
-docker run -it replicant_drive_sim
-cd app/repo/
+# Build docker image
+export DOCKER_BUILDKIT=1 
+docker-compose up --build
+# Run docker image
+docker run -it --rm -v $(pwd)/data:/app/repo/data replicantdrivesim-app bash
+
+# Alternative build method
+DOCKER_BUILDKIT=1 docker build --ssh default -t replicantdrivesim-app .
+
+# Close docker container
+docker-compose down
+docker-compose down --volumes
+docker-compose down --volumes --remove-orphans
+
+docker system prune -a
+docker system prune -a --volumes
 ```
 
 ```python
