@@ -73,6 +73,10 @@ docker-compose down --volumes --remove-orphans
 
 docker system prune -a
 docker system prune -a --volumes
+
+docker-compose ps -a
+docker-compose logs
+
 ```
 
 ```python
