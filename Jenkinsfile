@@ -8,8 +8,8 @@ pipeline {
         MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
 
         // Define the installation file and directory for md5 Binary
-        MD5_BINARY_URL = 'https://github.com/dhobsd/md5/archive/v1.3.tar.gz'
-        MD5_BINARY_DIR = "${env.WORKSPACE}/md5"
+        MD5_BINARY_URL = 'https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/m/md5sha1sum.rb'
+        MD5_BINARY_PATH = "${env.WORKSPACE}/md5sum"
     }
     
     stages {
@@ -17,16 +17,10 @@ pipeline {
             steps {
                 script {
                     // Download md5 binary
-                    sh "curl -fsSL ${MD5_BINARY_URL} | tar -xz -C ${MD5_BINARY_DIR} --strip-components=1"
+                    sh "curl -fsSL ${MD5_BINARY_URL} -o ${MD5_BINARY_PATH}"
                     
-                    // Build and install md5
-                    dir("${MD5_BINARY_DIR}") {
-                        sh "make"
-                        sh "make install PREFIX=${MINICONDA_INSTALL_DIR}/bin"
-                    }
-                    
-                    // Verify md5 installation
-                    sh "${MINICONDA_INSTALL_DIR}/bin/md5 --version"
+                    // Make md5 binary executable
+                    sh "chmod +x ${MD5_BINARY_PATH}"
                 }
             }
         }
@@ -40,7 +34,6 @@ pipeline {
                 sh "echo 'Checkout ...'"
             }
         }
-        
         stage('Install Miniconda') {
             steps {
                 script {
@@ -64,7 +57,6 @@ pipeline {
                 }
             }
         }
-        
         stage('Build and Test') {
             steps {
                 // Example: Run your build and test commands here
