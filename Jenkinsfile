@@ -8,7 +8,7 @@ pipeline {
         MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
 
         // Define the installation file and directory for md5 Binary
-        MD5_BINARY_URL = 'https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/md5sha1sum.rb'
+        MD5_BINARY_URL = 'https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/m/md5sha1sum.rb'
         MD5_BINARY_PATH = "${env.WORKSPACE}/md5sum"
     }
     
