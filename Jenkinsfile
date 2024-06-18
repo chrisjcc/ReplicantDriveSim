@@ -8,8 +8,8 @@ pipeline {
         MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
 
         // Define the installation file and directory for md5 Binary
-        MD5_BINARY_URL = 'https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/m/md5sha1sum.rb'
-        MD5_BINARY_PATH = "${env.WORKSPACE}/md5sha1sum.rb"
+        MD5_BINARY_URL = 'https://github.com/JElchison/md5deep/releases/download/4.4/md5deep-4.4-macosx.zip'
+        MD5_BINARY_PATH = "${env.WORKSPACE}/md5deep-4.4-macosx/md5deep"
     }
     
     stages {
@@ -24,16 +24,17 @@ pipeline {
         stage('Install md5') {
             steps {
                 script {
-                    // Download md5sha1sum.rb script
-                    sh "curl -fsSL ${MD5_BINARY_URL} -o ${MD5_BINARY_PATH}"
-                    sh "chmod +x ${MD5_BINARY_PATH}" // Ensure executable permissions
-                }
-            }
-        }
-        stage('Verify md5 Installation') {
-            steps {
-                script {
-                    sh "${MD5_BINARY_PATH} --version" // Verify md5 command availability
+                    // Download md5 binary
+                    sh "curl -fsSL ${MD5_BINARY_URL} -o md5deep.zip"
+                    
+                    // Unzip md5 binary
+                    sh "unzip -o md5deep.zip -d ${env.WORKSPACE}"
+                    
+                    // Make md5 binary executable
+                    sh "chmod +x ${MD5_BINARY_PATH}"
+                    
+                    // Clean up downloaded zip file
+                    sh "rm md5deep.zip"
                 }
             }
         }
