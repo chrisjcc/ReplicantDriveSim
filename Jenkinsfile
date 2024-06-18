@@ -5,7 +5,7 @@ pipeline {
         // Define the URL for Miniconda installation script
         MINICONDA_URL = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh'
         // Define the installation directory for Miniconda
-        MINICONDA_INSTALL_DIR = '/Users/Shared/miniconda'
+        MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
     }
     
     stages {
