@@ -28,13 +28,13 @@ pipeline {
                         sh 'rm -rf ${CONDA_HOME}'
                         // Download Miniconda installer
                         def minicondaUrl = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh'
-                        sh 'curl -o miniconda.sh -L ${minicondaUrl}'
+                        sh "curl -o miniconda.sh -L ${minicondaUrl}"
                         // Install Miniconda
                         def installStatus = sh(script: 'bash miniconda.sh -b -p ${CONDA_HOME}', returnStatus: true)
                         if (installStatus != 0) {
                             echo "Installation failed. Retrying with a different installer..."
                             def altMinicondaUrl = 'https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh'
-                            sh 'curl -o miniconda.sh -L ${altMinicondaUrl}'
+                            sh "curl -o miniconda.sh -L ${altMinicondaUrl}"
                             sh 'bash miniconda.sh -b -p ${CONDA_HOME}'
                         }
                         // Clean up
