@@ -15,11 +15,11 @@ pipeline {
 
                     if (!condaInstalled) {
                         echo "Conda not found, installing Miniconda..."
+                        // Remove any existing partial installations
+                        sh 'rm -rf ${CONDA_HOME}'
                         // Download and install Miniconda using curl
                         sh 'curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh'
-                        sh 'bash miniconda.sh -b -p ${CONDA_HOME} || echo "Installation failed. Retrying with a different installer..."'
-                        // Alternative installer if the first fails
-                        sh 'if [ ! -d "${CONDA_HOME}" ]; then curl -o miniconda.sh https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh && bash miniconda.sh -b -p ${CONDA_HOME}; fi'
+                        sh 'bash miniconda.sh -b -p ${CONDA_HOME}'
                         sh 'rm miniconda.sh'
                         // Initialize Conda
                         sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda init"'
