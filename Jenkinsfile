@@ -15,15 +15,14 @@ pipeline {
 
                     if (!condaInstalled) {
                         echo "Conda not found, installing Miniconda..."
-                        // Download and install Miniconda
-                        sh 'wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh'
+                        // Download and install Miniconda using curl
+                        sh 'curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh'
                         sh 'bash miniconda.sh -b -p ${CONDA_HOME}'
                         sh 'rm miniconda.sh'
                         // Initialize Conda
-                        sh 'source ${CONDA_HOME}/etc/profile.d/conda.sh'
-                        sh 'conda init'
+                        sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda init"'
                         // Ensure changes take effect
-                        sh 'source ~/.bashrc'
+                        sh 'bash -c "source ~/.bashrc"'
                     } else {
                         echo "Conda is already installed."
                     }
@@ -40,8 +39,7 @@ pipeline {
         stage('Install Conda Environment') {
             steps {
                 script {
-                    sh 'source ${CONDA_HOME}/etc/profile.d/conda.sh'
-                    sh 'conda env create -f environment.yml'
+                    sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda env create -f environment.yml"'
                 }
             }
         }
@@ -49,8 +47,7 @@ pipeline {
         stage('Run Python Script') {
             steps {
                 script {
-                    sh 'source ${CONDA_HOME}/etc/profile.d/conda.sh'
-                    sh 'conda run -n drive python simulacrum.py'
+                    sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda run -n drive python simulacrum.py"'
                 }
             }
         }
@@ -60,8 +57,7 @@ pipeline {
         always {
             script {
                 try {
-                    sh 'source ${CONDA_HOME}/etc/profile.d/conda.sh'
-                    sh 'conda env remove -n drive'
+                    sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda env remove -n drive"'
                 } catch (Exception e) {
                     echo "Failed to remove conda environment: ${e.getMessage()}"
                 }
