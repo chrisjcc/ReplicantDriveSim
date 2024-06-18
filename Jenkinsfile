@@ -25,6 +25,7 @@ pipeline {
 
                     if (!condaInstalled) {
                         echo "Conda not found, installing Miniconda..."
+                        // Remove existing Miniconda directory if it exists
                         sh 'rm -rf ${CONDA_HOME}'
                         // Download Miniconda installer
                         def minicondaUrl = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh'
