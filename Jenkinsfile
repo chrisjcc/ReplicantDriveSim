@@ -26,9 +26,16 @@ pipeline {
                         // Make the installer executable
                         sh 'chmod +x miniconda.sh'
 
-                        // Install Miniconda, skipping the md5 check
-                        def installCommand = 'bash miniconda.sh -b -p ${CONDA_HOME} -f'
-                        def installStatus = sh(script: installCommand, returnStatus: true)
+                        // Verify the SHA-256 checksum of the downloaded installer
+                        def expectedSha256 = 'e37b7e4dfc4b6263c17234d0a4f9b7e924f1c6bbbf37ee56a714f5061f1e6b1b'
+                        def actualSha256 = sh(script: 'shasum -a 256 miniconda.sh | awk \'{print $1}\'', returnStdout: true).trim()
+                        
+                        if (actualSha256 != expectedSha256) {
+                            error("SHA-256 checksum mismatch: expected ${expectedSha256}, got ${actualSha256}")
+                        }
+
+                        // Install Miniconda
+                        def installStatus = sh(script: 'bash miniconda.sh -b -p ${CONDA_HOME}', returnStatus: true)
 
                         if (installStatus != 0) {
                             error("Miniconda installation failed.")
