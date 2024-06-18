@@ -2,28 +2,39 @@ pipeline {
     agent any
 
     environment {
-        CONDA_HOME = "${env.WORKSPACE}/miniconda"  // Install in the workspace directory
+        CONDA_HOME = "${env.WORKSPACE}/miniconda"
         PATH = "${CONDA_HOME}/bin:${env.PATH}"
     }
 
     stages {
+        stage('Check System Dependencies') {
+            steps {
+                script {
+                    def checkCurl = sh(script: 'which curl', returnStatus: true)
+                    if (checkCurl != 0) {
+                        error("curl is not installed. Please install curl and try again.")
+                    }
+                }
+            }
+        }
+
         stage('Check and Install Conda') {
             steps {
                 script {
-                    // Check if conda is installed
                     def condaInstalled = sh(script: 'which conda', returnStatus: true) == 0
 
                     if (!condaInstalled) {
                         echo "Conda not found, installing Miniconda..."
-                        // Remove any existing partial installations
                         sh 'rm -rf ${CONDA_HOME}'
-                        // Download and install Miniconda using curl
-                        sh 'curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh'
-                        sh 'bash miniconda.sh -b -p ${CONDA_HOME}'
+                        sh 'curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh'
+                        def installStatus = sh(script: 'bash miniconda.sh -b -p ${CONDA_HOME}', returnStatus: true)
+                        if (installStatus != 0) {
+                            echo "Installation failed. Retrying with a different installer..."
+                            sh 'curl -o miniconda.sh https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh'
+                            sh 'bash miniconda.sh -b -p ${CONDA_HOME}'
+                        }
                         sh 'rm miniconda.sh'
-                        // Initialize Conda
                         sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda init"'
-                        // Ensure changes take effect
                         sh 'bash -c "source ~/.bashrc"'
                     } else {
                         echo "Conda is already installed."
