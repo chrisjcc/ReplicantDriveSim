@@ -35,6 +35,9 @@ pipeline {
                     
                     // Clean up downloaded zip file
                     sh "rm md5deep.zip"
+
+                    // Verify md5 installation
+                    sh "${MD5_BINARY_PATH} --help" // Example verification command
                 }
             }
         }
