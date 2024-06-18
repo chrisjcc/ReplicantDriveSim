@@ -1,93 +1,61 @@
 pipeline {
-    agent {
-        docker {
-            image 'ubuntu:latest'  // Specify the Docker image
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
-
+    agent any
+    
     environment {
-        CONDA_HOME = "${env.WORKSPACE}/miniconda"
-        PATH = "${CONDA_HOME}/bin:${env.PATH}"
+        // Define the URL for Miniconda installation script
+        MINICONDA_URL = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh'
+        // Define the installation directory for Miniconda
+        MINICONDA_INSTALL_DIR = '/Users/Shared/miniconda'
     }
-
+    
     stages {
-        stage('Test Docker') {
+        stage('Checkout') {
+            steps {
+                // Checkout your repository if needed
+                // Example: git 'https://github.com/your/repo.git'
+                // dir('your-subdirectory') {
+                //     git 'https://github.com/your/repo.git'
+                // }
+            }
+        }
+        
+        stage('Install Miniconda') {
             steps {
                 script {
-                    // Example Docker command to verify Docker installation
-                    sh 'docker --version'
-                    // Add more Docker commands as needed
-                    sh 'docker pull ubuntu:latest'
+                    // Download Miniconda installer
+                    sh "curl -o miniconda.sh ${MINICONDA_URL}"
+                    
+                    // Install Miniconda silently
+                    sh "bash miniconda.sh -b -p ${MINICONDA_INSTALL_DIR}"
+                    
+                    // Activate Miniconda for current shell session
+                    sh "source ${MINICONDA_INSTALL_DIR}/bin/activate"
+                    
+                    // Add Miniconda binaries to PATH (optional)
+                    sh "export PATH=${MINICONDA_INSTALL_DIR}/bin:$PATH"
+                    
+                    // Verify Miniconda installation
+                    sh "conda --version"
+                    
+                    // Clean up downloaded installer
+                    sh "rm miniconda.sh"
                 }
             }
         }
         
-        stage('Download and Install Miniconda') {
+        stage('Build and Test') {
             steps {
-                script {
-                    echo "Checking if Conda is already installed..."
-                    def condaInstalled = sh(script: 'which conda', returnStatus: true) == 0
-
-                    if (!condaInstalled) {
-                        echo "Conda not found, installing Miniconda..."
-
-                        // Remove the existing Miniconda directory if it exists
-                        sh "rm -rf ${CONDA_HOME}"
-
-                        // Download Miniconda installer for Linux
-                        def minicondaUrl = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh'
-                        sh "curl -o miniconda.sh -L ${minicondaUrl}"
-
-                        // Make the installer executable
-                        sh 'chmod +x miniconda.sh'
-
-                        // Verify the SHA-256 checksum of the downloaded installer
-                        def expectedSha256 = 'insert-correct-sha256-here'  // Replace with the correct SHA-256 checksum
-                        def actualSha256 = sh(script: 'sha256sum miniconda.sh | awk \'{print $1}\'', returnStdout: true).trim()
-                        
-                        if (actualSha256 != expectedSha256) {
-                            error("SHA-256 checksum mismatch: expected ${expectedSha256}, got ${actualSha256}")
-                        }
-
-                        // Install Miniconda
-                        def installStatus = sh(script: 'bash miniconda.sh -b -p ${CONDA_HOME}', returnStatus: true)
-
-                        if (installStatus != 0) {
-                            error("Miniconda installation failed.")
-                        }
-
-                        // Clean up
-                        sh 'rm miniconda.sh'
-
-                        // Initialize Conda
-                        sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda init bash"'
-                        sh 'bash -c "source ~/.bashrc"'
-                    } else {
-                        echo "Conda is already installed."
-                    }
-                }
+                // Example: Run your build and test commands here
+                // sh 'python --version'
+                // sh 'pytest'
             }
         }
-
-        stage('Activate Base Environment') {
-            steps {
-                script {
-                    try {
-                        sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda activate base"'
-                    } catch (Exception e) {
-                        echo "Failed to activate conda environment: ${e.getMessage()}"
-                    }
-                }
-            }
-        }
-
-        stage('Verify Conda Installation') {
-            steps {
-                script {
-                    sh 'conda --version'
-                }
-            }
+    }
+    
+    post {
+        always {
+            // Clean up Miniconda environment (optional)
+            // sh "conda deactivate && rm -rf ${MINICONDA_INSTALL_DIR}"
         }
     }
 }
