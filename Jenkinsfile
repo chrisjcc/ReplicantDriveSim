@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            // Mount Docker socket to enable Docker commands within the container
+            image 'ubuntu:latest'  // Specify the Docker image
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
