@@ -13,8 +13,8 @@ pipeline {
         INSTALL_PREFIX = "${env.WORKSPACE}/hashdeep_install" // Optional: Customize installation directory
 
         // Define the URL and path for md5 binary
-        MD5_BINARY_URL = 'https://github.com/jessek/hashdeep/releases/download/v4.4/md5deep.zip'
-        MD5_BINARY_PATH = "${env.WORKSPACE}/md5deep/md5deep"
+        MD5_BINARY_URL = 'https://github.com/jessek/hashdeep/releases/download/v4.4/md5deep-4.4.zip'
+        MD5_BINARY_PATH = "${env.WORKSPACE}/md5deep-4.4/md5deep"
     }
     
     stages {
