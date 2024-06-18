@@ -6,34 +6,27 @@ pipeline {
         MINICONDA_URL = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh'
         // Define the installation directory for Miniconda
         MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
+
+        // Define the installation file and directory for md5 Binary
+        MD5_BINARY_URL = 'https://github.com/dhobsd/md5/archive/v1.3.tar.gz'
+        MD5_BINARY_DIR = "${env.WORKSPACE}/md5"
     }
     
     stages {
-        stage('Setup') {
+        stage('Install md5') {
             steps {
-                // Download Homebrew installer script
                 script {
-                    sh "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o install_homebrew.sh"
-                }
-                
-                // Make the script executable
-                script {
-                    sh "chmod +x install_homebrew.sh"
-                }
-                
-                // Install Homebrew locally in the workspace
-                script {
-                    sh "./install_homebrew.sh"
-                }
-                
-                // Clean up the installer script
-                script {
-                    sh "rm install_homebrew.sh"
-                }
-                
-                // Install md5 using Homebrew
-                script {
-                    sh 'brew install md5sha1sum'
+                    // Download md5 binary
+                    sh "curl -fsSL ${MD5_BINARY_URL} | tar -xz -C ${MD5_BINARY_DIR} --strip-components=1"
+                    
+                    // Build and install md5
+                    dir("${MD5_BINARY_DIR}") {
+                        sh "make"
+                        sh "make install PREFIX=${MINICONDA_INSTALL_DIR}/bin"
+                    }
+                    
+                    // Verify md5 installation
+                    sh "${MINICONDA_INSTALL_DIR}/bin/md5 --version"
                 }
             }
         }
