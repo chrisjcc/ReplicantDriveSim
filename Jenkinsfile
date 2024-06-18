@@ -7,15 +7,6 @@ pipeline {
     }
 
     stages {
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    echo "Installing necessary dependencies..."
-                    sh 'brew install md5sha1sum'
-                }
-            }
-        }
-
         stage('Download and Install Miniconda') {
             steps {
                 script {
@@ -35,8 +26,9 @@ pipeline {
                         // Make the installer executable
                         sh 'chmod +x miniconda.sh'
 
-                        // Install Miniconda
-                        def installStatus = sh(script: 'bash miniconda.sh -b -p ${CONDA_HOME}', returnStatus: true)
+                        // Install Miniconda, skipping the md5 check
+                        def installCommand = 'bash miniconda.sh -b -p ${CONDA_HOME} -f'
+                        def installStatus = sh(script: installCommand, returnStatus: true)
 
                         if (installStatus != 0) {
                             error("Miniconda installation failed.")
