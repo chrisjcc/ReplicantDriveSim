@@ -9,6 +9,18 @@ pipeline {
     }
     
     stages {
+        stage('Setup') {
+            steps {
+                // Install Homebrew (if not already installed)
+                script {
+                    sh '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+                }
+                // Install md5
+                script {
+                    sh 'brew install md5sha1sum'
+                }
+            }
+        }
         stage('Checkout') {
             steps {
                 // Checkout your repository if needed
