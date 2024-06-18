@@ -16,6 +16,7 @@ pipeline {
                 // dir('your-subdirectory') {
                 //     git 'https://github.com/your/repo.git'
                 // }
+                sh "echo 'Checkout ...'"
             }
         }
         
@@ -48,6 +49,7 @@ pipeline {
                 // Example: Run your build and test commands here
                 // sh 'python --version'
                 // sh 'pytest'
+                sh "echo 'Build and Test ...'"
             }
         }
     }
@@ -55,7 +57,7 @@ pipeline {
     post {
         always {
             // Clean up Miniconda environment (optional)
-            // sh "conda deactivate && rm -rf ${MINICONDA_INSTALL_DIR}"
+            sh "conda deactivate && rm -rf ${MINICONDA_INSTALL_DIR}"
         }
     }
 }
