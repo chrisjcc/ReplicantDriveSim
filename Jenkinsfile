@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        CONDA_HOME = '/opt/miniconda'  // Change this to the desired installation directory
+        CONDA_HOME = "${env.WORKSPACE}/miniconda"  // Install in the workspace directory
         PATH = "${CONDA_HOME}/bin:${env.PATH}"
     }
 
