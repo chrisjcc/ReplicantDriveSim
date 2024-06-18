@@ -18,7 +18,7 @@ pipeline {
             }
         }
 
-        stage('Check and Install Conda') {
+        stage('Download and Install Miniconda') {
             steps {
                 script {
                     def condaInstalled = sh(script: 'which conda', returnStatus: true) == 0
@@ -26,16 +26,22 @@ pipeline {
                     if (!condaInstalled) {
                         echo "Conda not found, installing Miniconda..."
                         sh 'rm -rf ${CONDA_HOME}'
-                        sh 'curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh'
+                        // Download Miniconda installer
+                        def minicondaUrl = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh'
+                        sh 'curl -o miniconda.sh -L ${minicondaUrl}'
+                        // Install Miniconda
                         def installStatus = sh(script: 'bash miniconda.sh -b -p ${CONDA_HOME}', returnStatus: true)
                         if (installStatus != 0) {
                             echo "Installation failed. Retrying with a different installer..."
-                            sh 'curl -o miniconda.sh https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh'
+                            def altMinicondaUrl = 'https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh'
+                            sh 'curl -o miniconda.sh -L ${altMinicondaUrl}'
                             sh 'bash miniconda.sh -b -p ${CONDA_HOME}'
                         }
+                        // Clean up
                         sh 'rm miniconda.sh'
+                        // Initialize Conda
                         sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda init"'
-                        sh 'bash -c "source ~/.bashrc"'
+                        sh 'bash -c "source ~/.bash_profile"'
                     } else {
                         echo "Conda is already installed."
                     }
