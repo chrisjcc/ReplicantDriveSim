@@ -7,6 +7,22 @@ pipeline {
     }
 
     stages {
+        stage('Install Homebrew') {
+            steps {
+                script {
+                    def brewInstalled = sh(script: 'which brew', returnStatus: true) == 0
+                    if (!brewInstalled) {
+                        echo "Homebrew not found, installing..."
+                        sh '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+                        sh 'echo \'eval "$(/opt/homebrew/bin/brew shellenv)"\' >> /Users/jenkins/.zprofile'
+                        sh 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+                    } else {
+                        echo "Homebrew is already installed."
+                    }
+                }
+            }
+        }
+        
         stage('Download and Install Miniconda') {
             steps {
                 script {
