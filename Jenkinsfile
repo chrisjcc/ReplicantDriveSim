@@ -9,7 +9,7 @@ pipeline {
 
         // Define the installation file and directory for md5 Binary
         MD5_BINARY_URL = 'https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/m/md5sha1sum.rb'
-        MD5_BINARY_PATH = "${env.WORKSPACE}/md5sum"
+        MD5_BINARY_PATH = "${env.WORKSPACE}/md5sha1sum.rb"
     }
     
     stages {
@@ -21,19 +21,25 @@ pipeline {
                 }
             }
         }
-        
         stage('Install md5') {
             steps {
                 script {
-                    // Download md5 binary
-                    sh "curl -fsSL ${MD5_BINARY_URL} -o ${MD5_BINARY_PATH}"
-                    
-                    // Make md5 binary executable
-                    sh "chmod +x ${MD5_BINARY_PATH}"
+                    // Download md5sha1sum.rb script
+                    sh "curl -fsSL ${MD5_SCRIPT_URL} -o ${MD5_SCRIPT_PATH}"
                 }
             }
         }
-        
+        stage('Verify md5 Installation') {
+            steps {
+                script {
+                    // Source the md5sha1sum.rb script to set up md5 command
+                    sh "source ${MD5_SCRIPT_PATH}"
+                    
+                    // Verify md5 command availability
+                    sh "md5 --version"
+                }
+            }
+        }
         stage('Install Miniconda') {
             steps {
                 script {
@@ -57,7 +63,6 @@ pipeline {
                 }
             }
         }
-        
         stage('Build and Test') {
             steps {
                 // Example: Run your build and test commands here
