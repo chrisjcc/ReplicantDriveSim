@@ -11,11 +11,27 @@ pipeline {
     stages {
         stage('Setup') {
             steps {
-                // Install Homebrew (if not already installed)
+                // Download Homebrew installer script
                 script {
-                    sh '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+                    sh "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o install_homebrew.sh"
                 }
-                // Install md5
+                
+                // Make the script executable
+                script {
+                    sh "chmod +x install_homebrew.sh"
+                }
+                
+                // Install Homebrew locally in the workspace
+                script {
+                    sh "./install_homebrew.sh"
+                }
+                
+                // Clean up the installer script
+                script {
+                    sh "rm install_homebrew.sh"
+                }
+                
+                // Install md5 using Homebrew
                 script {
                     sh 'brew install md5sha1sum'
                 }
