@@ -8,7 +8,7 @@ pipeline {
         MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
 
         // Define the installation file and directory for md5 Binary
-        MD5_BINARY_URL = 'https://github.com/JElchison/md5deep/releases/download/4.4/md5deep-4.4-macosx.zip'
+        MD5_BINARY_URL = 'https://github.com/jessek/hashdeep/archive/refs/tags/release-4.4.zip'
         MD5_BINARY_PATH = "${env.WORKSPACE}/md5deep-4.4-macosx/md5deep"
     }
     
