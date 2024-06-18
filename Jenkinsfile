@@ -18,12 +18,13 @@ pipeline {
         sh 'conda run -n drive python simulacrum.py'
       }
     }
-
   }
+  
   environment {
     CONDA_HOME = '/opt/miniconda'
     PATH = "${CONDA_HOME}/bin:${env.PATH}"
   }
+
   post {
     always {
       script {
@@ -33,8 +34,6 @@ pipeline {
           echo "Failed to remove conda environment: ${e.getMessage()}"
         }
       }
-
     }
-
   }
 }
