@@ -7,9 +7,10 @@ pipeline {
         // Define the installation directory for Miniconda
         MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
 
-        // Define the installation file and directory for md5 Binary
-        MD5_BINARY_URL = 'https://github.com/jessek/hashdeep/archive/refs/tags/release-4.4.zip'
-        MD5_BINARY_PATH = "${env.WORKSPACE}/hashdeep-release-4.4"
+        // Define the URL for cloning hashdeep repository
+        HASHDEEP_REPO_URL = 'https://github.com/jessek/hashdeep.git'
+        HASHDEEP_DIR = "${env.WORKSPACE}/hashdeep"
+        INSTALL_PREFIX = "${env.WORKSPACE}/hashdeep_install" // Optional: Customize installation directory
     }
     
     stages {
@@ -18,26 +19,31 @@ pipeline {
                 script {
                     // Clean up Miniconda installation directory if it exists
                     sh "rm -rf ${MINICONDA_INSTALL_DIR}"
+                    // Clean up hashdeep directory if it exists
+                    sh "rm -rf ${HASHDEEP_DIR}"
+                    // Clean up hashdeep installation directory if it exists
+                    sh "rm -rf ${INSTALL_PREFIX}"
                 }
             }
         }
-        stage('Install md5') {
+        stage('Clone and Install Hashdeep') {
             steps {
                 script {
-                    // Download md5 binary
-                    sh "curl -fsSL ${MD5_BINARY_URL} -o md5deep.zip"
+                    // Clone hashdeep repository
+                    sh "git clone ${HASHDEEP_REPO_URL} ${HASHDEEP_DIR}"
                     
-                    // Unzip md5 binary
-                    sh "unzip -o md5deep.zip -d ${env.WORKSPACE}"
-                    
-                    // Make md5 binary executable
-                    sh "chmod +x ${MD5_BINARY_PATH}"
-                    
-                    // Clean up downloaded zip file
-                    sh "rm md5deep.zip"
-
-                    // Verify md5 installation
-                    sh "${MD5_BINARY_PATH} --help" // Example verification command
+                    // Navigate to hashdeep directory
+                    dir("${HASHDEEP_DIR}") {
+                        // Run bootstrap script (if needed)
+                        sh "./bootstrap.sh"
+                        
+                        // Configure hashdeep installation
+                        sh "./configure --prefix=${INSTALL_PREFIX}"
+                        
+                        // Build and install hashdeep
+                        sh "make"
+                        sh "make install"
+                    }
                 }
             }
         }
@@ -78,6 +84,8 @@ pipeline {
                // Clean up Miniconda environment (optional)
                 sh "conda deactivate" // Deactivate Miniconda environment
                 sh "rm -rf ${MINICONDA_INSTALL_DIR}" // Clean up Miniconda installation
+                sh "rm -rf ${HASHDEEP_DIR}" // Clean up hashdeep repository
+                sh "rm -rf ${INSTALL_PREFIX}" // Clean up hashdeep installation
             }
         }
     }
