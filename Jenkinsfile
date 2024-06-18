@@ -15,8 +15,8 @@ pipeline {
     stages {
         stage('Cleanup Workspace') {
             steps {
-                // Clean up Miniconda installation directory if it exists
                 script {
+                    // Clean up Miniconda installation directory if it exists
                     sh "rm -rf ${MINICONDA_INSTALL_DIR}"
                 }
             }
@@ -25,7 +25,7 @@ pipeline {
             steps {
                 script {
                     // Download md5sha1sum.rb script
-                    sh "curl -fsSL ${MD5_SCRIPT_URL} -o ${MD5_SCRIPT_PATH}"
+                    sh "curl -fsSL ${MD5_BINARY_URL} -o ${MD5_BINARY_PATH}"
                 }
             }
         }
@@ -33,10 +33,10 @@ pipeline {
             steps {
                 script {
                     // Source the md5sha1sum.rb script to set up md5 command
-                    sh "source ${MD5_SCRIPT_PATH}"
-                    
+                    sh "chmod +x ${MD5_BINARY_PATH}"
                     // Verify md5 command availability
-                    sh "md5 --version"
+                    sh "ls -l ${MD5_BINARY_PATH}" // Optionally verify file permissions and existence
+                    //sh "md5 --version"
                 }
             }
         }
@@ -56,27 +56,34 @@ pipeline {
                     sh "export PATH=${MINICONDA_INSTALL_DIR}/bin:$PATH"
                     
                     // Verify Miniconda installation
-                    sh "conda --version"
+                    sh "${MINICONDA_INSTALL_DIR}/bin/conda --version"
                     
                     // Clean up downloaded installer
                     sh "rm miniconda.sh"
+
+                    env.PATH = "${MINICONDA_INSTALL_DIR}/bin:${env.PATH}"
                 }
             }
         }
         stage('Build and Test') {
             steps {
-                // Example: Run your build and test commands here
-                // sh 'python --version'
-                // sh 'pytest'
-                sh "echo 'Build and Test ...'"
+                script {
+                    sh "echo 'Build and Test ...'"
+                    sh "python --version" // Example command
+                    sh "pytest" // Example command
+                }
             }
         }
     }
     
     post {
         always {
-            // Clean up Miniconda environment (optional)
-            sh "conda deactivate && rm -rf ${MINICONDA_INSTALL_DIR}"
+            script {
+               // Clean up Miniconda environment (optional)
+                sh "conda deactivate" // Deactivate Miniconda environment
+                sh "rm -rf ${MINICONDA_INSTALL_DIR}" // Clean up Miniconda installation
+            }
         }
     }
 }
+
