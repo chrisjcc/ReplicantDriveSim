@@ -26,17 +26,14 @@ pipeline {
                 script {
                     // Download md5sha1sum.rb script
                     sh "curl -fsSL ${MD5_BINARY_URL} -o ${MD5_BINARY_PATH}"
+                    sh "chmod +x ${MD5_BINARY_PATH}" // Ensure executable permissions
                 }
             }
         }
         stage('Verify md5 Installation') {
             steps {
                 script {
-                    // Source the md5sha1sum.rb script to set up md5 command
-                    sh "chmod +x ${MD5_BINARY_PATH}"
-                    // Verify md5 command availability
-                    sh "ls -l ${MD5_BINARY_PATH}" // Optionally verify file permissions and existence
-                    //sh "md5 --version"
+                    sh "${MD5_BINARY_PATH} --version" // Verify md5 command availability
                 }
             }
         }
@@ -49,18 +46,13 @@ pipeline {
                     // Install Miniconda silently
                     sh "bash miniconda.sh -b -p ${MINICONDA_INSTALL_DIR}"
                     
-                    // Activate Miniconda for current shell session
-                    sh "source ${MINICONDA_INSTALL_DIR}/bin/activate"
-                    
-                    // Add Miniconda binaries to PATH (optional)
-                    sh "export PATH=${MINICONDA_INSTALL_DIR}/bin:$PATH"
-                    
-                    // Verify Miniconda installation
-                    sh "${MINICONDA_INSTALL_DIR}/bin/conda --version"
+                    // Activate Miniconda for the current shell session
+                    sh "${MINICONDA_INSTALL_DIR}/bin/conda --version" // Verify conda command availability
                     
                     // Clean up downloaded installer
                     sh "rm miniconda.sh"
 
+                    // Update PATH to include Miniconda binaries
                     env.PATH = "${MINICONDA_INSTALL_DIR}/bin:${env.PATH}"
                 }
             }
@@ -86,4 +78,3 @@ pipeline {
         }
     }
 }
-
