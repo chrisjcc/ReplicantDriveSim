@@ -32,27 +32,28 @@ pipeline {
                             def altMinicondaUrl = 'https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh'
                             sh "curl -o miniconda.sh -L ${altMinicondaUrl}"
                             sh 'bash miniconda.sh -u -b -p ${CONDA_HOME}'
-                            
-                            // Clean up
-                            sh 'rm miniconda.sh'
-
-                            // Initialize Conda
-                            sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda init"'
-                            sh 'bash -c "source ~/.bash_profile"'
-
-                        } else {
-                            echo "Conda is already installed."
                         }
+
+                        // Clean up
+                        sh 'rm miniconda.sh'
+
+                        // Initialize Conda
+                        sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda init"'
+                        sh 'bash -c "source ~/.bash_profile"'
+                    } else {
+                        echo "Conda is already installed."
                     }
                 }
-        }                        
+            }
+        } 
+
         stage('Activate Base Environment') {
             steps {
                 script {
                     try {
                         sh 'bash -c "source ${CONDA_HOME}/etc/profile.d/conda.sh && conda activate base"'
                     } catch (Exception e) {
-                        echo "Failed to remove conda environment: ${e.getMessage()}"
+                        echo "Failed to activate conda environment: ${e.getMessage()}"
                     }
                 }
             }
