@@ -29,8 +29,6 @@ pipeline {
           echo "Failed to remove conda environment: ${e.getMessage()}"
         }
       }
-
     }
-
   }
 }
