@@ -26,6 +26,31 @@ pipeline {
                 }
             }
         }
+        stage('Install md5 and Build Tools') {
+            steps {
+                script {
+                    // Download and unzip md5 binary (md5deep)
+                    sh "curl -fsSL ${MD5_BINARY_URL} -o md5deep.zip"
+                    sh "unzip -o md5deep.zip -d ${env.WORKSPACE}"
+                    sh "chmod +x ${MD5_BINARY_PATH}"
+                    sh "rm md5deep.zip"
+                    
+                    // Install necessary build tools (GNU Autotools)
+                    // Manually download and install autoconf, automake, libtool if needed
+                    // Example commands:
+                    sh "curl -fsSL http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz -o autoconf.tar.gz"
+                    sh "tar -xzvf autoconf.tar.gz"
+                    dir("autoconf-latest") {
+                        sh "./configure --prefix=${INSTALL_PREFIX}"
+                        sh "make"
+                        sh "make install"
+                    }
+                    sh "rm -rf autoconf-latest autoconf.tar.gz"
+                    
+                    // Repeat similar steps for automake and libtool if necessary
+                }
+            }
+        }
         stage('Clone and Install Hashdeep') {
             steps {
                 script {
