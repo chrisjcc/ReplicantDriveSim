@@ -19,19 +19,18 @@ pipeline {
                         // Remove the existing Miniconda directory if it exists
                         sh 'rm -rf ${CONDA_HOME}'
 
-                        // Download Miniconda installer for macOS
-                        def minicondaUrl = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh'
+                        // Download Miniconda installer for macOS ARM architecture
+                        def minicondaUrl = 'https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh'
                         sh "curl -o miniconda.sh -L ${minicondaUrl}"
 
+                        // Make the installer executable
+                        sh 'chmod +x miniconda.sh'
+
                         // Install Miniconda
-                        def installStatus = sh(script: 'bash miniconda.sh -u -b -p ${CONDA_HOME}', returnStatus: true)
+                        def installStatus = sh(script: 'bash miniconda.sh -b -p ${CONDA_HOME}', returnStatus: true)
 
                         if (installStatus != 0) {
-                            echo "Installation failed. Retrying with a different installer..."
-                            
-                            def altMinicondaUrl = 'https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh'
-                            sh "curl -o miniconda.sh -L ${altMinicondaUrl}"
-                            sh 'bash miniconda.sh -u -b -p ${CONDA_HOME}'
+                            error("Miniconda installation failed.")
                         }
 
                         // Clean up
@@ -45,7 +44,7 @@ pipeline {
                     }
                 }
             }
-        } 
+        }
 
         stage('Activate Base Environment') {
             steps {
@@ -55,6 +54,14 @@ pipeline {
                     } catch (Exception e) {
                         echo "Failed to activate conda environment: ${e.getMessage()}"
                     }
+                }
+            }
+        }
+
+        stage('Verify Conda Installation') {
+            steps {
+                script {
+                    sh 'conda --version'
                 }
             }
         }
