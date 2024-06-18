@@ -7,6 +7,15 @@ pipeline {
     }
 
     stages {
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    echo "Installing necessary dependencies..."
+                    sh 'brew install md5sha1sum'
+                }
+            }
+        }
+
         stage('Download and Install Miniconda') {
             steps {
                 script {
