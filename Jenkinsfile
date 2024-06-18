@@ -44,7 +44,9 @@ pipeline {
                     // Example commands:
                     sh "curl -fsSL http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz -o autoconf.tar.gz"
                     sh "tar -xzvf autoconf.tar.gz"
-                    dir("autoconf-$(basename $(ls -d autoconf-* | head -1))") {
+                    // Using $$ to escape $ for shell command substitution
+                    def autoconfDir = sh(script: "basename \$(ls -d autoconf-*)", returnStdout: true).trim()
+                    dir(autoconfDir) {
                         sh "./configure --prefix=${INSTALL_PREFIX}"
                         sh "make"
                         sh "make install"
