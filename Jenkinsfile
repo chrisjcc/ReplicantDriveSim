@@ -1,8 +1,6 @@
 pipeline {
     agent {
         docker {
-            // Use an Ubuntu Docker image
-            image 'ubuntu:latest'
             // Mount Docker socket to enable Docker commands within the container
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
@@ -14,16 +12,17 @@ pipeline {
     }
 
     stages {
-        stage('Docker Command') {
+        stage('Test Docker') {
             steps {
                 script {
                     // Example Docker command to verify Docker installation
                     sh 'docker --version'
                     // Add more Docker commands as needed
+                    sh 'docker pull ubuntu:latest'
                 }
             }
         }
-
+        
         stage('Download and Install Miniconda') {
             steps {
                 script {
