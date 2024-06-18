@@ -8,11 +8,20 @@ pipeline {
         MINICONDA_INSTALL_DIR = "${env.WORKSPACE}/miniconda"
 
         // Define the installation file and directory for md5 Binary
-        MD5_BINARY_URL = 'https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/m/md5sha1sum.rb'
+        MD5_BINARY_URL = 'https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/md5sha1sum.rb'
         MD5_BINARY_PATH = "${env.WORKSPACE}/md5sum"
     }
     
     stages {
+        stage('Cleanup Workspace') {
+            steps {
+                // Clean up Miniconda installation directory if it exists
+                script {
+                    sh "rm -rf ${MINICONDA_INSTALL_DIR}"
+                }
+            }
+        }
+        
         stage('Install md5') {
             steps {
                 script {
@@ -24,16 +33,7 @@ pipeline {
                 }
             }
         }
-        stage('Checkout') {
-            steps {
-                // Checkout your repository if needed
-                // Example: git 'https://github.com/your/repo.git'
-                // dir('your-subdirectory') {
-                //     git 'https://github.com/your/repo.git'
-                // }
-                sh "echo 'Checkout ...'"
-            }
-        }
+        
         stage('Install Miniconda') {
             steps {
                 script {
@@ -57,6 +57,7 @@ pipeline {
                 }
             }
         }
+        
         stage('Build and Test') {
             steps {
                 // Example: Run your build and test commands here
