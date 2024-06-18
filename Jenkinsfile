@@ -106,8 +106,8 @@ pipeline {
     post {
         always {
             script {
-               // Clean up Miniconda environment (optional)
-                sh "conda deactivate" // Deactivate Miniconda environment
+                // Clean up Miniconda environment (optional)
+                //sh "conda deactivate" // Deactivate Miniconda environment
                 sh "rm -rf ${MINICONDA_INSTALL_DIR}" // Clean up Miniconda installation
                 sh "rm -rf ${HASHDEEP_DIR}" // Clean up hashdeep repository
                 sh "rm -rf ${INSTALL_PREFIX}" // Clean up hashdeep installation
