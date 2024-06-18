@@ -11,6 +11,10 @@ pipeline {
         HASHDEEP_REPO_URL = 'https://github.com/jessek/hashdeep.git'
         HASHDEEP_DIR = "${env.WORKSPACE}/hashdeep"
         INSTALL_PREFIX = "${env.WORKSPACE}/hashdeep_install" // Optional: Customize installation directory
+
+        // Define the URL and path for md5 binary
+        MD5_BINARY_URL = 'https://github.com/jessek/hashdeep/releases/download/v4.4/md5deep.zip'
+        MD5_BINARY_PATH = "${env.WORKSPACE}/md5deep/md5deep"
     }
     
     stages {
@@ -40,12 +44,12 @@ pipeline {
                     // Example commands:
                     sh "curl -fsSL http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz -o autoconf.tar.gz"
                     sh "tar -xzvf autoconf.tar.gz"
-                    dir("autoconf-latest") {
+                    dir("autoconf-$(basename $(ls -d autoconf-* | head -1))") {
                         sh "./configure --prefix=${INSTALL_PREFIX}"
                         sh "make"
                         sh "make install"
                     }
-                    sh "rm -rf autoconf-latest autoconf.tar.gz"
+                    sh "rm -rf autoconf-* autoconf.tar.gz"
                     
                     // Repeat similar steps for automake and libtool if necessary
                 }
