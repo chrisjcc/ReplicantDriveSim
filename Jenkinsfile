@@ -27,7 +27,7 @@ pipeline {
                         sh 'chmod +x miniconda.sh'
 
                         // Verify the SHA-256 checksum of the downloaded installer
-                        def expectedSha256 = 'e37b7e4dfc4b6263c17234d0a4f9b7e924f1c6bbbf37ee56a714f5061f1e6b1b'
+                        def expectedSha256 = 'f4925c0150d232d95de798a64c696f4b2df2745bb997b793506bdfd27bf91e11'
                         def actualSha256 = sh(script: 'shasum -a 256 miniconda.sh | awk \'{print $1}\'', returnStdout: true).trim()
                         
                         if (actualSha256 != expectedSha256) {
