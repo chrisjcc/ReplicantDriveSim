@@ -37,7 +37,7 @@ pipeline {
                     sh """
                         if ! command -v clang &> /dev/null; then
                             echo "Installing Xcode Command Line Tools"
-                            sudo xcode-select --switch /Library/Developer/CommandLineTools  // Set the correct path if needed
+                            xcode-select --switch /Library/Developer/CommandLineTools  // Set the correct path if needed
                         else
                             echo "Xcode Command Line Tools already installed"
                         fi
