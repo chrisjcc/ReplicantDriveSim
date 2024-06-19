@@ -1,6 +1,10 @@
 pipeline {
-    agent any
-
+    agent {
+        docker {
+            image 'continuumio/miniconda3'
+            args '-v /var/run/docker.sock:/var/run/docker.sock' // Bind Docker socket for Docker-in-Docker setup
+        }
+    }
     stages {
         stage('Print Docker Version') {
             steps {
@@ -10,13 +14,9 @@ pipeline {
                 }
             }
         }
-
         stage('Install Miniconda and Print Conda Version') {
             steps {
                 script {
-                    // Pull the Miniconda Docker image
-                    sh 'docker pull continuumio/miniconda3'
-
                     // Run the Miniconda container and execute the commands inside it
                     sh '''
                     docker run --rm continuumio/miniconda3 bash -c "
