@@ -1,6 +1,11 @@
 pipeline {
     agent {
-        docker { image 'continuumio/miniconda3' }
+
+        docker {
+            image 'continuumio/miniconda3'
+            registryUrl 'https://index.docker.io/v1/'
+            credentialsId 'docker-id'
+        }
     }
 
     stages {
