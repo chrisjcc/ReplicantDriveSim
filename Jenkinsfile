@@ -11,13 +11,6 @@ pipeline {
         HASHDEEP_REPO_URL = 'https://github.com/jessek/hashdeep.git'
         HASHDEEP_DIR = "${env.WORKSPACE}/hashdeep"
         INSTALL_PREFIX = "${env.WORKSPACE}/hashdeep_install" // Optional: Customize installation directory
-
-        // Define the URL and path for md5 binary
-        MD5_BINARY_URL = 'https://github.com/jessek/hashdeep/releases/download/v4.4/md5deep-4.4.zip'
-        MD5_BINARY_PATH = "${env.WORKSPACE}/md5deep-4.4/md5deep64.exe"
-
-        // Define the URL and path for m4 binary
-        M4_URL = 'http://ftp.gnu.org/gnu/m4/m4-latest.tar.gz'
     }
     
     stages {
@@ -30,62 +23,6 @@ pipeline {
                     sh "rm -rf ${HASHDEEP_DIR}"
                     // Clean up hashdeep installation directory if it exists
                     sh "rm -rf ${INSTALL_PREFIX}"
-                }
-            }
-        }
-        stage('Install md5 and Build Tools') {
-            steps {
-                script {
-                    // Download and unzip md5 binary (md5deep)
-                    sh "curl -fsSL ${MD5_BINARY_URL} -o md5deep.zip"
-                    sh "unzip -o md5deep.zip -d ${env.WORKSPACE}"
-                    sh "chmod +x ${MD5_BINARY_PATH}"
-                    sh "rm md5deep.zip"
-
-                    // Install necessary build tools (m4, autoconf)
-                    // Install m4 from source
-                    sh """
-                        if ! command -v m4 &> /dev/null; then
-                            echo "m4 not found, installing from source..."
-                            curl -fsSL ${M4_URL} -o m4-latest.tar.gz
-                            tar -xzvf m4-latest.tar.gz
-                            cd m4-*
-                            ./configure --prefix=${INSTALL_PREFIX}
-                            make
-                            make install
-                            cd ..
-                            rm -rf m4-* m4-latest.tar.gz
-                        fi
-                    """
-                    
-                    // Add INSTALL_PREFIX/bin to PATH to use installed m4
-                    env.PATH = "${INSTALL_PREFIX}/bin:${env.PATH}"
-
-                    // Verify m4 installation
-                    sh """
-                        if command -v m4 &> /dev/null; then
-                            echo "m4 installed successfully"
-                        else
-                            echo "Failed to install m4"
-                            exit 1
-                        fi
-                    """
-                    
-                    // Install necessary build tools (GNU Autotools)
-                    // Manually download and install autoconf, automake, libtool if needed
-                    // Download and install autoconf
-                    sh "curl -fsSL http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz -o autoconf.tar.gz"
-                    sh "tar -xzvf autoconf.tar.gz"
-                    // Using $$ to escape $ for shell command substitution
-                    def autoconfDir = sh(script: "basename \$(ls -d autoconf-*)", returnStdout: true).trim()
-                    dir(autoconfDir) {
-                        sh "./configure --prefix=${INSTALL_PREFIX}"
-                        sh "make"
-                        sh "make install"
-                    }
-                    sh "rm -rf autoconf-* autoconf.tar.gz"
-                    
-                    // Repeat similar steps for automake and libtool if necessary
                 }
             }
         }
