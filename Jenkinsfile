@@ -73,12 +73,23 @@ pipeline {
                     }
                     sh "rm -rf libtool-* libtool.tar.gz"
                     
+                    // Install gcc
+                    sh "curl -fsSL https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz -o gcc.tar.gz"
+                    sh "tar -xzvf gcc.tar.gz"
+                    def gccDir = sh(script: "basename \$(ls -d gcc-*)", returnStdout: true).trim()
+                    dir(gccDir) {
+                        sh "./configure --prefix=${INSTALL_PREFIX} --disable-multilib"
+                        sh "make"
+                        sh "make install"
+                    }
+                    sh "rm -rf gcc-* gcc.tar.gz"
+                    
                     // Add INSTALL_PREFIX/bin to PATH to use installed tools
                     env.PATH = "${INSTALL_PREFIX}/bin:${env.PATH}"
 
                     // Verify installations
                     sh """
-                        if command -v autoheader &> /dev/null && command -v aclocal &> /dev/null && command -v autoconf &> /dev/null && command -v automake &> /dev/null && command -v m4 &> /dev/null; then
+                        if command -v autoheader &> /dev/null && command -v aclocal &> /dev/null && command -v autoconf &> /dev/null && command -v automake &> /dev/null && command -v m4 &> /dev/null && command -v gcc &> /dev/null; then
                             echo "Build tools installed successfully"
                         else
                             echo "Failed to install build tools"
