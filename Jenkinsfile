@@ -1,20 +1,22 @@
 pipeline {
     agent {
         docker {
-            image 'continuumio/miniconda3'
+            image 'jenkinsci/jnlp-slave:alpine' // Using a base Jenkins agent image
             args '-v /var/run/docker.sock:/var/run/docker.sock' // Bind Docker socket for Docker-in-Docker setup
         }
     }
+
     stages {
-        stage('Print Docker Version') {
+        stage('Setup') {
             steps {
                 script {
-                    def dockerVersion = sh(script: 'docker --version', returnStdout: true).trim()
-                    echo "Docker version: ${dockerVersion}"
+                    // Pull the Miniconda Docker image
+                    sh 'docker pull continuumio/miniconda3'
                 }
             }
         }
-        stage('Install Miniconda and Print Conda Version') {
+
+        stage('Run Miniconda Container') {
             steps {
                 script {
                     // Run the Miniconda container and execute the commands inside it
@@ -25,6 +27,15 @@ pipeline {
                     conda --version
                     "
                     '''
+                }
+            }
+        }
+
+        stage('Print Docker Version') {
+            steps {
+                script {
+                    def dockerVersion = sh(script: 'docker --version', returnStdout: true).trim()
+                    echo "Docker version: ${dockerVersion}"
                 }
             }
         }
