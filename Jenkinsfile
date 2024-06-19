@@ -26,6 +26,58 @@ pipeline {
                 }
             }
         }
+        stage('Install Build Tools') {
+            steps {
+                script {
+                    // Install necessary build tools (GNU Autotools)
+                    // Install autoconf
+                    sh "curl -fsSL http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz -o autoconf.tar.gz"
+                    sh "tar -xzvf autoconf.tar.gz"
+                    def autoconfDir = sh(script: "basename \$(ls -d autoconf-*)", returnStdout: true).trim()
+                    dir(autoconfDir) {
+                        sh "./configure --prefix=${INSTALL_PREFIX}"
+                        sh "make"
+                        sh "make install"
+                    }
+                    sh "rm -rf autoconf-* autoconf.tar.gz"
+                    
+                    // Install automake
+                    sh "curl -fsSL http://ftp.gnu.org/gnu/automake/automake-latest.tar.gz -o automake.tar.gz"
+                    sh "tar -xzvf automake.tar.gz"
+                    def automakeDir = sh(script: "basename \$(ls -d automake-*)", returnStdout: true).trim()
+                    dir(automakeDir) {
+                        sh "./configure --prefix=${INSTALL_PREFIX}"
+                        sh "make"
+                        sh "make install"
+                    }
+                    sh "rm -rf automake-* automake.tar.gz"
+                    
+                    // Install libtool
+                    sh "curl -fsSL http://ftp.gnu.org/gnu/libtool/libtool-latest.tar.gz -o libtool.tar.gz"
+                    sh "tar -xzvf libtool.tar.gz"
+                    def libtoolDir = sh(script: "basename \$(ls -d libtool-*)", returnStdout: true).trim()
+                    dir(libtoolDir) {
+                        sh "./configure --prefix=${INSTALL_PREFIX}"
+                        sh "make"
+                        sh "make install"
+                    }
+                    sh "rm -rf libtool-* libtool.tar.gz"
+                    
+                    // Add INSTALL_PREFIX/bin to PATH to use installed tools
+                    env.PATH = "${INSTALL_PREFIX}/bin:${env.PATH}"
+
+                    // Verify installations
+                    sh """
+                        if command -v autoheader &> /dev/null && command -v aclocal &> /dev/null && command -v autoconf &> /dev/null && command -v automake &> /dev/null; then
+                            echo "Build tools installed successfully"
+                        else
+                            echo "Failed to install build tools"
+                            exit 1
+                        fi
+                    """
+                }
+            }
+        }
         stage('Clone and Install Hashdeep') {
             steps {
                 script {
@@ -34,7 +86,7 @@ pipeline {
                     
                     // Navigate to hashdeep directory
                     dir("${HASHDEEP_DIR}") {
-                        // Run bootstrap script (if needed)
+                        // Run bootstrap script
                         sh "./bootstrap.sh"
                         
                         // Configure hashdeep installation
