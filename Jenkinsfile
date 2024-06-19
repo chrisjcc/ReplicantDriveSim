@@ -33,7 +33,7 @@ pipeline {
                     def installPackage = { packageName, url ->
                         sh "curl -fsSL ${url} -o ${packageName}.tar.gz"
                         sh "tar -xzvf ${packageName}.tar.gz"
-                        def packageDir = sh(script: "ls -d ${packageName}-*", returnStdout: true).trim()
+                        def packageDir = sh(script: "ls -d ${packageName}-*", returnStdout: true).trim().split()[0]
                         dir(packageDir) {
                             sh "./configure --prefix=${INSTALL_PREFIX}"
                             sh "make"
