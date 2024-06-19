@@ -1,6 +1,5 @@
 pipeline {
-    agent {
-        docker any
+    agent any
 
     stages {
         stage('Print Docker Version') {
@@ -26,9 +25,6 @@ pipeline {
                     conda --version
                     "
                     '''
-                    
-                    //def condaVersion = sh(script: 'conda --version', returnStdout: true).trim()
-                    //echo "Conda version: ${condaVersion}"
                 }
             }
         }
