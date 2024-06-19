@@ -29,6 +29,20 @@ pipeline {
         stage('Install Build Tools') {
             steps {
                 script {
+                    // Install clang (default compiler for macOS)
+
+                    sh "xcode-select --install || true"  // Attempt to install Xcode Command Line Tools
+                    
+                    // Verify clang installation and available
+                    sh """
+                        if ! command -v clang &> /dev/null; then
+                            echo "Installing Xcode Command Line Tools"
+                            sudo xcode-select --switch /Library/Developer/CommandLineTools  // Set the correct path if needed
+                        else
+                            echo "Xcode Command Line Tools already installed"
+                        fi
+                    """
+                    
                     // Function to extract and install a package
                     def installPackage = { packageName, url ->
                         sh "curl -fsSL ${url} -o ${packageName}.tar.gz"
@@ -54,15 +68,12 @@ pipeline {
                     // Install libtool
                     installPackage('libtool', 'http://ftp.gnu.org/gnu/libtool/libtool-latest.tar.gz')
                     
-                    // Install gcc
-                    installPackage('gcc', 'https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz')
-                    
                     // Add INSTALL_PREFIX/bin to PATH to use installed tools
                     env.PATH = "${INSTALL_PREFIX}/bin:${env.PATH}"
 
                     // Verify installations
                     sh """
-                        if command -v autoheader &> /dev/null && command -v aclocal &> /dev/null && command -v autoconf &> /dev/null && command -v automake &> /dev/null && command -v m4 &> /dev/null && command -v gcc &> /dev/null; then
+                        if command -v autoheader &> /dev/null && command -v aclocal &> /dev/null && command -v autoconf &> /dev/null && command -v automake &> /dev/null && command -v m4 &> /dev/null && command -v clang &> /dev/null; then
                             echo "Build tools installed successfully"
                         else
                             echo "Failed to install build tools"
