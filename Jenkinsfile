@@ -29,60 +29,33 @@ pipeline {
         stage('Install Build Tools') {
             steps {
                 script {
-                    // Install m4
-                    sh "curl -fsSL http://ftp.gnu.org/gnu/m4/m4-latest.tar.gz -o m4.tar.gz"
-                    sh "tar -xzvf m4.tar.gz"
-                    def m4Dir = sh(script: "basename \$(ls -d m4-*)", returnStdout: true).trim()
-                    dir(m4Dir) {
-                        sh "./configure --prefix=${INSTALL_PREFIX}"
-                        sh "make"
-                        sh "make install"
+                    // Function to extract and install a package
+                    def installPackage = { packageName, url ->
+                        sh "curl -fsSL ${url} -o ${packageName}.tar.gz"
+                        sh "tar -xzvf ${packageName}.tar.gz"
+                        def packageDir = sh(script: "ls -d ${packageName}-*", returnStdout: true).trim()
+                        dir(packageDir) {
+                            sh "./configure --prefix=${INSTALL_PREFIX}"
+                            sh "make"
+                            sh "make install"
+                        }
+                        sh "rm -rf ${packageName}-* ${packageName}.tar.gz"
                     }
-                    sh "rm -rf m4-* m4.tar.gz"
 
+                    // Install m4
+                    installPackage('m4', 'http://ftp.gnu.org/gnu/m4/m4-latest.tar.gz')
+                    
                     // Install autoconf
-                    sh "curl -fsSL http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz -o autoconf.tar.gz"
-                    sh "tar -xzvf autoconf.tar.gz"
-                    def autoconfDir = sh(script: "basename \$(ls -d autoconf-*)", returnStdout: true).trim()
-                    dir(autoconfDir) {
-                        sh "./configure --prefix=${INSTALL_PREFIX}"
-                        sh "make"
-                        sh "make install"
-                    }
-                    sh "rm -rf autoconf-* autoconf.tar.gz"
+                    installPackage('autoconf', 'http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz')
                     
                     // Install automake
-                    sh "curl -fsSL http://ftp.gnu.org/gnu/automake/automake-latest.tar.gz -o automake.tar.gz"
-                    sh "tar -xzvf automake.tar.gz"
-                    def automakeDir = sh(script: "basename \$(ls -d automake-*)", returnStdout: true).trim()
-                    dir(automakeDir) {
-                        sh "./configure --prefix=${INSTALL_PREFIX}"
-                        sh "make"
-                        sh "make install"
-                    }
-                    sh "rm -rf automake-* automake.tar.gz"
+                    installPackage('automake', 'http://ftp.gnu.org/gnu/automake/automake-latest.tar.gz')
                     
                     // Install libtool
-                    sh "curl -fsSL http://ftp.gnu.org/gnu/libtool/libtool-latest.tar.gz -o libtool.tar.gz"
-                    sh "tar -xzvf libtool.tar.gz"
-                    def libtoolDir = sh(script: "basename \$(ls -d libtool-*)", returnStdout: true).trim()
-                    dir(libtoolDir) {
-                        sh "./configure --prefix=${INSTALL_PREFIX}"
-                        sh "make"
-                        sh "make install"
-                    }
-                    sh "rm -rf libtool-* libtool.tar.gz"
+                    installPackage('libtool', 'http://ftp.gnu.org/gnu/libtool/libtool-latest.tar.gz')
                     
                     // Install gcc
-                    sh "curl -fsSL https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz -o gcc.tar.gz"
-                    sh "tar -xzvf gcc.tar.gz"
-                    def gccDir = sh(script: "basename \$(ls -d gcc-*)", returnStdout: true).trim()
-                    dir(gccDir) {
-                        sh "./configure --prefix=${INSTALL_PREFIX} --disable-multilib"
-                        sh "make"
-                        sh "make install"
-                    }
-                    sh "rm -rf gcc-* gcc.tar.gz"
+                    installPackage('gcc', 'https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz')
                     
                     // Add INSTALL_PREFIX/bin to PATH to use installed tools
                     env.PATH = "${INSTALL_PREFIX}/bin:${env.PATH}"
