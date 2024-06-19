@@ -29,7 +29,17 @@ pipeline {
         stage('Install Build Tools') {
             steps {
                 script {
-                    // Install necessary build tools (GNU Autotools)
+                    // Install m4
+                    sh "curl -fsSL http://ftp.gnu.org/gnu/m4/m4-latest.tar.gz -o m4.tar.gz"
+                    sh "tar -xzvf m4.tar.gz"
+                    def m4Dir = sh(script: "basename \$(ls -d m4-*)", returnStdout: true).trim()
+                    dir(m4Dir) {
+                        sh "./configure --prefix=${INSTALL_PREFIX}"
+                        sh "make"
+                        sh "make install"
+                    }
+                    sh "rm -rf m4-* m4.tar.gz"
+
                     // Install autoconf
                     sh "curl -fsSL http://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz -o autoconf.tar.gz"
                     sh "tar -xzvf autoconf.tar.gz"
@@ -68,7 +78,7 @@ pipeline {
 
                     // Verify installations
                     sh """
-                        if command -v autoheader &> /dev/null && command -v aclocal &> /dev/null && command -v autoconf &> /dev/null && command -v automake &> /dev/null; then
+                        if command -v autoheader &> /dev/null && command -v aclocal &> /dev/null && command -v autoconf &> /dev/null && command -v automake &> /dev/null && command -v m4 &> /dev/null; then
                             echo "Build tools installed successfully"
                         else
                             echo "Failed to install build tools"
