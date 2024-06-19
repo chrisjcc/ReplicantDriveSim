@@ -1,7 +1,6 @@
 pipeline {
     agent {
-        docker { image 'continuumio/miniconda3' }
-    }
+        docker any
 
     stages {
         stage('Print Docker Version') {
@@ -16,10 +15,20 @@ pipeline {
         stage('Install Miniconda and Print Conda Version') {
             steps {
                 script {
-                    sh 'conda init bash'
-                    sh 'source ~/.bashrc'
-                    def condaVersion = sh(script: 'conda --version', returnStdout: true).trim()
-                    echo "Conda version: ${condaVersion}"
+                    // Pull the Miniconda Docker image
+                    sh 'docker pull continuumio/miniconda3'
+
+                    // Run the Miniconda container and execute the commands inside it
+                    sh '''
+                    docker run --rm continuumio/miniconda3 bash -c "
+                    conda init bash &&
+                    source ~/.bashrc &&
+                    conda --version
+                    "
+                    '''
+                    
+                    //def condaVersion = sh(script: 'conda --version', returnStdout: true).trim()
+                    //echo "Conda version: ${condaVersion}"
                 }
             }
         }
