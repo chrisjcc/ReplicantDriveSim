@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        docker { image 'continuumio/miniconda3:latest' }
+        docker { image 'continuumio/miniconda3' }
     }
 
     stages {
