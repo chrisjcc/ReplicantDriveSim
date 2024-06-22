@@ -1,10 +1,9 @@
 import os
 import sys
 import glob
-import sysconfig
+import subprocess
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-import subprocess
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -64,6 +63,8 @@ class CMakeBuild(build_ext):
 
         self.move_file(lib_path, dest_file)
 
+sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo')
+
 setup(
     name='traffic_simulation',
     version='0.1.0',
@@ -72,7 +73,7 @@ setup(
     description='Traffic simulation package with C++ backend',
     ext_modules=[CMakeExtension(
         'traffic_simulation',
-        sourcedir="/app/repo"
+        sourcedir=sourcedir
     )],
     cmdclass={'build_ext': CMakeBuild},
     zip_safe=False,
