@@ -94,6 +94,8 @@ class HighwayEnv(MultiAgentEnv):
         self.pygame_init = False
         self.render_mode = self.configs.get("render_mode", "human")
         self.max_episode_steps = self.configs.get("max_episode_steps", 10000)
+        self.step_count = 0
+        self.episode_count = 0
         self.episode_step_count = 0
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
@@ -168,8 +170,6 @@ class HighwayEnv(MultiAgentEnv):
             Tuple[Dict[str, np.ndarray], Dict[str, float], Dict[str, bool], Dict[str, bool], Dict[str, Any]]:
                 Observations, rewards, terminations, truncations, and additional info.
         """
-        self.episode_step_count += 1
-
         observations = {}
         rewards = {}
         reward_components = {}
@@ -194,7 +194,7 @@ class HighwayEnv(MultiAgentEnv):
             total_reward = sum(reward_components.values())
 
             # Log individual rewards for each agent
-            mlflow.log_metric(f"{agent}_reward", total_reward)
+            mlflow.log_metric(f"{agent}_reward", total_reward, step=self.step_count)
 
             rewards[agent] = total_reward
 
@@ -203,9 +203,9 @@ class HighwayEnv(MultiAgentEnv):
                 "total_reward": total_reward,
             }
 
-        # Log cumulative rewards averaged over episode steps
-        mean_reward = np.mean(list(rewards.values()))
-        mlflow.log_metric("mean_reward", mean_reward)
+            # Log cumulative rewards averaged over episode steps
+            mean_reward = np.mean(list(rewards.values()))
+            mlflow.log_metric(f"{agent}_mean_reward", mean_reward, step=self.episode_count)
 
         # After updating the termination statuses of individual agents (e.g., due to collisions),
         # it is essential to check if all agents in the environment are terminated.
@@ -218,8 +218,13 @@ class HighwayEnv(MultiAgentEnv):
         if self.episode_step_count > self.max_episode_steps:
             self.truncateds = {"__all__": True}
             self.terminateds["__all__"] = True
+            self.episode_count += 1
         else:
             self.terminateds["__all__"] = all(self.terminateds.values())
+
+
+        self.episode_step_count += 1
+        self.step_count += 1
 
         observations = {agent: self._get_observation(agent) for agent in self.agents}
 
