@@ -124,11 +124,11 @@ class HighwayEnv(MultiAgentEnv):
         Returns:
             Tuple[Dict[str, np.ndarray], Dict[str, Any]]: Initial observations and info.
         """
-        self.episode_step_count = 0
         # Setting the termination status of all agents to False at the start of each step.
+        self.episode_step_count = 0
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
-        self.infos = {}
+        self.infos = {agent: {"cumulative_reward": 0.0} for agent in self.agents}  # Initialize cumulative rewards
 
         self.sim = traffic_simulation.TrafficSimulation(
             len(self.agents)
@@ -191,21 +191,19 @@ class HighwayEnv(MultiAgentEnv):
 
         for agent, action in action_dict.items():
             reward_components = self._get_reward(agent)
-            total_reward = sum(reward_components.values())
+            rewards[agent] = sum(reward_components.values()) # Total step reward
 
             # Log individual rewards for each agent
-            mlflow.log_metric(f"{agent}_reward", total_reward, step=self.step_count)
+            mlflow.log_metric(f"{agent}_total_reward", rewards[agent], step=self.step_count)
 
-            rewards[agent] = total_reward
+            # Update cumulative_reward
+            self.infos[agent]["cumulative_reward"] += rewards[agent]
 
-            self.infos[agent] = {
+            # Update other info fields without overwriting existing data
+            self.infos[agent].update({
                 "reward_components": reward_components,
-                "total_reward": total_reward,
-            }
-
-            # Log cumulative rewards averaged over episode steps
-            mean_reward = np.mean(list(rewards.values()))
-            mlflow.log_metric(f"{agent}_mean_reward", mean_reward, step=self.episode_count)
+                "total_reward": rewards[agent],
+            })
 
         # After updating the termination statuses of individual agents (e.g., due to collisions),
         # it is essential to check if all agents in the environment are terminated.
@@ -219,9 +217,9 @@ class HighwayEnv(MultiAgentEnv):
             self.truncateds = {"__all__": True}
             self.terminateds["__all__"] = True
             self.episode_count += 1
+            mlflow.log_metric(f"{agent}_mean_reward", self.infos[agent]["cumulative_reward"] / self.episode_step_count, step=self.episode_count)
         else:
             self.terminateds["__all__"] = all(self.terminateds.values())
-
 
         self.episode_step_count += 1
         self.step_count += 1
