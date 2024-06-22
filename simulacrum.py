@@ -1,10 +1,13 @@
+import os
+from typing import Any, Dict, Optional, Tuple
+
 import gymnasium as gym
+import mlflow
 import numpy as np
 import pygame
+import traffic_simulation  # Import the compiled C++ module
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
-from typing import Optional, Dict, Any, Tuple, List
-import traffic_simulation  # Import the compiled C++ module
 
 # Constants for the Pygame simulation
 SCREEN_WIDTH = 900
@@ -14,6 +17,34 @@ VEHICLE_WIDTH = 130
 VEHICLE_HEIGHT = 55
 NUM_LANES = 3
 FPS = 25
+
+# Set MLflow tracking URI
+#os.environ["MLFLOW_TRACKING_URI"] = os.getcwd()
+
+# Define your experiment name
+experiment_name = "MyExperiment"
+
+# Create the experiment (if it doesn't exist, it will be created; otherwise, it will retrieve existing)
+# Attempt to create the experiment if it doesn't exist (this check avoids errors if it already exists)
+try:
+    mlflow.create_experiment(experiment_name)
+except mlflow.exceptions.MlflowException as e:
+    print(f"Experiment '{experiment_name}' already exists.")
+
+# Set the default experiment (replace "MyExperiment" with your desired experiment name)
+mlflow.set_experiment(experiment_name)
+
+# Get the experiment ID by name
+experiment = mlflow.get_experiment_by_name(experiment_name)
+
+if experiment:
+    experiment_id = experiment.experiment_id
+else:
+    raise ValueError(f"Experiment '{experiment_name}' does not exist.")
+
+# Start MLflow tracking with explicit experiment ID
+mlflow.start_run(run_name="HighwayEnv", experiment_id=experiment_id, nested=False)
+
 
 class HighwayEnv(MultiAgentEnv):
     """
@@ -33,20 +64,32 @@ class HighwayEnv(MultiAgentEnv):
         """
         super().__init__()
         self.configs = configs
-        self.agents = ["agent_" + str(i) for i in range(self.configs.get("num_agents", 2))]
-        self.sim = traffic_simulation.TrafficSimulation(self.configs.get("num_agents", 2))
+        self.agents = [
+            "agent_" + str(i) for i in range(self.configs.get("num_agents", 2))
+        ]
+        self.sim = traffic_simulation.TrafficSimulation(
+            self.configs.get("num_agents", 2)
+        )
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
-        self.previous_positions = {agent: np.copy(self.agent_positions[agent]) for agent in self.agents} # Track previous positions
-        self.collisions = {agent: False for agent in self.agents} # Track collisions
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(8,), dtype=np.float32)
+        self.previous_positions = {
+            agent: np.copy(self.agent_positions[agent]) for agent in self.agents
+        }  # Track previous positions
+        self.collisions = {agent: False for agent in self.agents}  # Track collisions
+        self.observation_space = gym.spaces.Box(
+            low=-np.inf, high=np.inf, shape=(8,), dtype=np.float32
+        )
 
         # 0: keep lane, 1: change lane, 2: accelerate, 3: decelerate
         self.high_level_action_space = gym.spaces.Discrete(4)
-        self.low_level_action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
-        self.action_space = gym.spaces.Dict({
-            "discrete": self.high_level_action_space,
-            "continuous": self.low_level_action_space
-        })
+        self.low_level_action_space = gym.spaces.Box(
+            low=-1.0, high=1.0, shape=(3,), dtype=np.float32
+        )
+        self.action_space = gym.spaces.Dict(
+            {
+                "discrete": self.high_level_action_space,
+                "continuous": self.low_level_action_space,
+            }
+        )
 
         self.pygame_init = False
         self.render_mode = self.configs.get("render_mode", "human")
@@ -56,7 +99,19 @@ class HighwayEnv(MultiAgentEnv):
         self.truncateds = {"__all__": False}
         self.infos = {}
 
-    def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
+        mlflow.log_params(
+            {
+                "num_agents": self.configs.get("num_agents", 2),
+                "max_episode_steps": self.configs.get("max_episode_steps", 10000),
+                "progress_reward": self.configs.get("progress", False),
+                "collision_reward": self.configs.get("collision", False),
+                "safety_distance_reward": self.configs.get("safety_distance", False),
+            }
+        )
+
+    def reset(
+        self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
         """
         Reset the environment to the initial state.
 
@@ -73,12 +128,22 @@ class HighwayEnv(MultiAgentEnv):
         self.truncateds = {"__all__": False}
         self.infos = {}
 
-        self.sim = traffic_simulation.TrafficSimulation(len(self.agents))  # Reset the simulation
+        self.sim = traffic_simulation.TrafficSimulation(
+            len(self.agents)
+        )  # Reset the simulation
 
         # Get the initial agent positions and velocities from the simulation
-        self.agent_positions = {agent: np.array(pos) for agent, pos in self.sim.get_agent_positions().items()}
-        self.agent_velocities = {agent: np.array([pos[0], pos[1], 0.0]) for agent, pos in self.sim.get_agent_velocities().items()}
-        self.previous_positions = {agent: np.copy(self.agent_positions[agent]) for agent in self.agents}
+        self.agent_positions = {
+            agent: np.array(pos)
+            for agent, pos in self.sim.get_agent_positions().items()
+        }
+        self.agent_velocities = {
+            agent: np.array([pos[0], pos[1], 0.0])
+            for agent, pos in self.sim.get_agent_velocities().items()
+        }
+        self.previous_positions = {
+            agent: np.copy(self.agent_positions[agent]) for agent in self.agents
+        }
 
         self.collisions = {agent: False for agent in self.agents}  # Reset collisions
 
@@ -86,7 +151,13 @@ class HighwayEnv(MultiAgentEnv):
 
         return observations, self.infos
 
-    def step(self, action_dict: MultiAgentDict) -> Tuple[Dict[str, np.ndarray], Dict[str, float], Dict[str, bool], Dict[str, bool], Dict[str, Any]]:
+    def step(self, action_dict: MultiAgentDict) -> Tuple[
+        Dict[str, np.ndarray],
+        Dict[str, float],
+        Dict[str, bool],
+        Dict[str, bool],
+        Dict[str, Any],
+    ]:
         """
         Execute one step in the environment.
 
@@ -104,21 +175,37 @@ class HighwayEnv(MultiAgentEnv):
         reward_components = {}
 
         high_level_actions = [action_dict[agent]["discrete"] for agent in self.agents]
-        low_level_actions = [action_dict[agent]["continuous"].tolist() for agent in self.agents]
+        low_level_actions = [
+            action_dict[agent]["continuous"].tolist() for agent in self.agents
+        ]
         self.sim.step(high_level_actions, low_level_actions)
 
-        self.agent_positions = {agent: np.array(pos) for agent, pos in self.sim.get_agent_positions().items()}
-        self.previous_positions = {agent: np.array(pos) for agent, pos in self.sim.get_previous_positions().items()}
+        self.agent_positions = {
+            agent: np.array(pos)
+            for agent, pos in self.sim.get_agent_positions().items()
+        }
+        self.previous_positions = {
+            agent: np.array(pos)
+            for agent, pos in self.sim.get_previous_positions().items()
+        }
 
         for agent, action in action_dict.items():
             reward_components = self._get_reward(agent)
             total_reward = sum(reward_components.values())
+
+            # Log individual rewards for each agent
+            mlflow.log_metric(f"{agent}_reward", total_reward)
+
             rewards[agent] = total_reward
 
             self.infos[agent] = {
                 "reward_components": reward_components,
-                "total_reward": total_reward
+                "total_reward": total_reward,
             }
+
+        # Log cumulative rewards averaged over episode steps
+        mean_reward = np.mean(list(rewards.values()))
+        mlflow.log_metric("mean_reward", mean_reward)
 
         # After updating the termination statuses of individual agents (e.g., due to collisions),
         # it is essential to check if all agents in the environment are terminated.
@@ -159,10 +246,16 @@ class HighwayEnv(MultiAgentEnv):
         other_positions = [np.array(agent_positions[a]) for a in other_agents]
         other_velocities = [np.array(agent_velocities[a]) for a in other_agents]
 
-        mean_other_positions = np.mean(other_positions, axis=0) if other_positions else np.zeros(2)
-        mean_other_velocities = np.mean(other_velocities, axis=0) if other_velocities else np.zeros(2)
+        mean_other_positions = (
+            np.mean(other_positions, axis=0) if other_positions else np.zeros(2)
+        )
+        mean_other_velocities = (
+            np.mean(other_velocities, axis=0) if other_velocities else np.zeros(2)
+        )
 
-        observation = np.concatenate([ego_position, ego_velocity, mean_other_positions, mean_other_velocities])
+        observation = np.concatenate(
+            [ego_position, ego_velocity, mean_other_positions, mean_other_velocities]
+        )
 
         return observation
 
@@ -176,11 +269,7 @@ class HighwayEnv(MultiAgentEnv):
         Returns:
             Dict[str, float]: Dictionary of reward components.
         """
-        reward_components = {
-            "progress": 0.0,
-            "collision": 0.0,
-            "safety_distance": 0.0
-        }
+        reward_components = {"progress": 0.0, "collision": 0.0, "safety_distance": 0.0}
 
         agent_positions = self.sim.get_agent_positions()
         agent_position = np.array(agent_positions[agent])
@@ -202,7 +291,10 @@ class HighwayEnv(MultiAgentEnv):
                 distance = np.linalg.norm(agent_position - other_agent_position)
                 if distance < 2 * VEHICLE_WIDTH:
                     reward_components["safety_distance"] -= 1.0
-            if agent_position[1] < LANE_WIDTH or agent_position[1] >= SCREEN_HEIGHT - LANE_WIDTH:
+            if (
+                agent_position[1] < LANE_WIDTH
+                or agent_position[1] >= SCREEN_HEIGHT - LANE_WIDTH
+            ):
                 reward_components["safety_distance"] -= 1.0
 
         return reward_components
@@ -218,24 +310,43 @@ class HighwayEnv(MultiAgentEnv):
             pygame.init()
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
             pygame.display.set_caption("Highway Simulation")
-            self.clock = pygame.time.Clock() # Initialize clock
+            self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
 
         self.screen.fill((255, 255, 255))
-        pygame.draw.rect(self.screen, (0, 0, 0), (0, LANE_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT - 2 * LANE_WIDTH))
+        pygame.draw.rect(
+            self.screen,
+            (0, 0, 0),
+            (0, LANE_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT - 2 * LANE_WIDTH),
+        )
 
         for i in range(15):
-            pygame.draw.line(self.screen, (255, 255, 255), (i * 60, SCREEN_HEIGHT // 2), ((i * 60) + 30, SCREEN_HEIGHT // 2), 5)
+            pygame.draw.line(
+                self.screen,
+                (255, 255, 255),
+                (i * 60, SCREEN_HEIGHT // 2),
+                ((i * 60) + 30, SCREEN_HEIGHT // 2),
+                5,
+            )
 
         agent_positions = self.sim.get_agent_positions()
 
         for agent, pos in agent_positions.items():
             x, y = int(pos[0]), int(pos[1])
             color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
-            pygame.draw.rect(self.screen, color, (x - VEHICLE_WIDTH // 2, y - VEHICLE_HEIGHT // 2, VEHICLE_WIDTH, VEHICLE_HEIGHT))
+            pygame.draw.rect(
+                self.screen,
+                color,
+                (
+                    x - VEHICLE_WIDTH // 2,
+                    y - VEHICLE_HEIGHT // 2,
+                    VEHICLE_WIDTH,
+                    VEHICLE_HEIGHT,
+                ),
+            )
 
         pygame.display.flip()
-        self.clock.tick(FPS) # Cap the frame rate
+        self.clock.tick(FPS)  # Cap the frame rate
 
     def close(self) -> None:
         """
@@ -245,8 +356,13 @@ class HighwayEnv(MultiAgentEnv):
             pygame.quit()
             self.pygame_init = False
 
+        # End mlflow run
+        mlflow.end_run()
+
+
 # Example of running the environment with random actions
 if __name__ == "__main__":
+
     # Configure parameters
     configs = {
         "progress": True,
@@ -254,8 +370,11 @@ if __name__ == "__main__":
         "safety_distance": True,
         "max_episode_steps": 1000,
         "num_agents": 2,
-        "render_mode": "human"
+        "render_mode": "human",
     }
+
+    # Log params for main run
+    mlflow.log_params(configs)
 
     env = HighwayEnv(configs=configs)  # Set render_mode to True to enable rendering
     num_episodes = 8  # Define the number of episodes
@@ -269,7 +388,13 @@ if __name__ == "__main__":
         while not done:
             env.render()
 
-            actions = {agent: {"discrete": env.high_level_action_space.sample(), "continuous": env.low_level_action_space.sample()} for agent in env.agents}
+            actions = {
+                agent: {
+                    "discrete": env.high_level_action_space.sample(),
+                    "continuous": env.low_level_action_space.sample(),
+                }
+                for agent in env.agents
+            }
 
             observations, rewards, terminateds, truncateds, infos = env.step(actions)
 
@@ -278,8 +403,11 @@ if __name__ == "__main__":
                 print(f"Rewards for {agent}: {total_reward}")
                 print(f"Reward components for {agent}: {infos[agent]}")
 
-            done = terminateds.get("__all__", False) or terminateds.get("__all__", False)
+            done = terminateds.get("__all__", False) or terminateds.get(
+                "__all__", False
+            )
 
         print(f"Episode {episode + 1} finished")
 
     env.close()
+    mlflow.end_run()
