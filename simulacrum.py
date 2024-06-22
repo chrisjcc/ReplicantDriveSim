@@ -18,8 +18,10 @@ VEHICLE_HEIGHT = 55
 NUM_LANES = 3
 FPS = 25
 
+
 # Set MLflow tracking URI
-#os.environ["MLFLOW_TRACKING_URI"] = os.getcwd()
+mlflow_tracking_uri = os.path.abspath(os.path.join(os.getcwd(), "mlruns"))
+os.environ["MLFLOW_TRACKING_URI"] = f"file://{mlflow_tracking_uri}"
 
 # Define your experiment name
 experiment_name = "MyExperiment"
@@ -217,7 +219,10 @@ class HighwayEnv(MultiAgentEnv):
             self.truncateds = {"__all__": True}
             self.terminateds["__all__"] = True
             self.episode_count += 1
-            mlflow.log_metric(f"{agent}_mean_reward", self.infos[agent]["cumulative_reward"] / self.episode_step_count, step=self.episode_count)
+
+            for agent in self.agents:
+                # Log mean reward metric to MLflow
+                mlflow.log_metric(f"{agent}_mean_reward", self.infos[agent]["cumulative_reward"] / self.episode_step_count, step=self.episode_count)
         else:
             self.terminateds["__all__"] = all(self.terminateds.values())
 
