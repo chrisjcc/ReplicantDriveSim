@@ -88,3 +88,8 @@ python simulacrum.py
 
 python trainer.py
 ```
+
+# Monitor simulation session
+```shell
+mlflow ui --backend-store-uri file:mlruns
+```
