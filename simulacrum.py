@@ -83,15 +83,17 @@ class HighwayEnv(MultiAgentEnv):
 
         # 0: keep lane, 1: change lane, 2: accelerate, 3: decelerate
         self.high_level_action_space = gym.spaces.Discrete(4)
+        # Control action correspond to steering angle (rad), acceleration (m/s^2), and braking (m/s^2)
         self.low_level_action_space = gym.spaces.Box(
-            low=-1.0, high=1.0, shape=(3,), dtype=np.float32
+            low=np.array([-0.610865, 0.0, -8.0], dtype=np.float32),
+            high=np.array([0.610865, 4.5, 0.0], dtype=np.float32),
+            shape=(3,),
+            dtype=np.float32
         )
-        self.action_space = gym.spaces.Dict(
-            {
-                "discrete": self.high_level_action_space,
-                "continuous": self.low_level_action_space,
-            }
-        )
+        self.action_space = gym.spaces.Dict({
+            "discrete": self.high_level_action_space,
+            "continuous": self.low_level_action_space
+        })
 
         self.pygame_init = False
         self.render_mode = self.configs.get("render_mode", "human")
