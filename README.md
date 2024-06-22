@@ -10,7 +10,7 @@ conda activate drive
 
 # Build and check setup
 ```shell
-python -m build -v
+TRAFFIC_SIM_SOURCEDIR=$PWD python -m build -v
 unzip -l dist/traffic_simulation-*.whl
 ```
 
