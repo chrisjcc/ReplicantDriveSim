@@ -11,6 +11,13 @@ const int VEHICLE_HEIGHT = 55;
 const int LANE_WIDTH = 100;
 const int NUM_LANES = 3;
 
+
+// Custom clamp function for C++11
+template <typename T>
+T clamp(T value, T min_val, T max_val) {
+    return std::max(min_val, std::min(value, max_val));
+}
+
 // Function to generate a random float within a specified range
 float randFloat(float a, float b) {
     static std::default_random_engine generator;
@@ -87,27 +94,34 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_previ
 void TrafficSimulation::applyAction(int agent_idx, int high_level_action, const std::vector<float>& low_level_action) {
     auto& agent = agents[agent_idx];
 
+    // Apply steering
+    agent.steering += low_level_action[0];
+    agent.steering = clamp(agent.steering, -0.610865f, 0.610865f);
+    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // acceleration
+    float braking = clamp(low_level_action[2], -8.0f, 0.0f); // braking
+
     switch (high_level_action) {
         case 0: // Keep lane
             break;
-        case 1: // Change lane
+        case 1: // Left lane change
+            agent.y -= LANE_WIDTH;
+            agent.y = std::fmin(std::fmax(agent.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
+            break;
+        case 2: // Right lane change
             agent.y += LANE_WIDTH;
             agent.y = std::fmin(std::fmax(agent.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
             break;
-        case 2: // Accelerate
-            agent.vy += low_level_action[1];
+        case 3: // Accelerate
+            agent.vx += acceleration;
             break;
-        case 3: // Decelerate
-            agent.vy -= low_level_action[2];
+        case 4: // Decelerate
+            agent.vx -= braking;
             break;
     }
 
-    // Apply steering
-    agent.steering += low_level_action[0];
-
     // Clamp velocities
     const float max_velocity = 10.0f;
-    agent.vx = std::fmin(std::fmax(agent.vx, -max_velocity), max_velocity);
+    agent.vx = std::fmin(std::fmax(agent.vx, 0.0f), max_velocity);
     agent.vy = std::fmin(std::fmax(agent.vy, -max_velocity), max_velocity);
 }
 
