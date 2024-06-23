@@ -41,27 +41,35 @@ message(STATUS "CMAKE_CURRENT_SOURCE_DIR is ${CMAKE_CURRENT_SOURCE_DIR}")
 # Define source files
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/traffic_simulation.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/perception_module.cpp
 )
 
 message(STATUS "SOURCE_FILES is ${SOURCE_FILES}")
 
-# Add the pybind11 module
-pybind11_add_module(traffic_simulation ${SOURCE_FILES})
+# Create a static or shared library
+add_library(perception_module OBJECT perception_module.cpp)  # Object library if used by multiple targets
+add_library(traffic_simulation_lib STATIC ${SOURCE_FILES})
+
+message(STATUS "Include directory is ${CMAKE_CURRENT_SOURCE_DIR}/../include")
+
+# Include traffic_simulation headers
+target_include_directories(traffic_simulation_lib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+
+# Add compile options
+target_compile_options(traffic_simulation_lib PRIVATE -Wall -Wextra -Werror)
+
+# Add the pybind11 module (Python bindings)
+set(PYBIND_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp)
+pybind11_add_module(traffic_simulation ${PYBIND_SOURCE_FILES})
+
+# Link the core library to the pybind11 module
+target_link_libraries(traffic_simulation PRIVATE traffic_simulation_lib)
 
 # Set the output directory for the library
 set_target_properties(traffic_simulation PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src
     PREFIX ""
 )
-
-message(STATUS "Include directory is ${CMAKE_CURRENT_SOURCE_DIR}/../include")
-
-# Include traffic_simulation headers
-target_include_directories(traffic_simulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-
-# Add compile options
-target_compile_options(traffic_simulation PRIVATE -Wall -Wextra -Werror)
 
 # Explicitly specify where to place the generated shared object file
 set_target_properties(traffic_simulation PROPERTIES
@@ -79,7 +87,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../include/traffic_simulation.h
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
 # Copy headers to the build/include directory (if needed for development)
-add_custom_command(TARGET traffic_simulation POST_BUILD
+add_custom_command(TARGET traffic_simulation_lib POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_BINARY_DIR}/include)

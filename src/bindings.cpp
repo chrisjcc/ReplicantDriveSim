@@ -10,8 +10,10 @@ PYBIND11_MODULE(traffic_simulation, m) {
     py::class_<Vehicle>(m, "Vehicle")
         .def_readwrite("x", &Vehicle::x)
         .def_readwrite("y", &Vehicle::y)
+        .def_readwrite("z", &Vehicle::y)
         .def_readwrite("vx", &Vehicle::vx)
         .def_readwrite("vy", &Vehicle::vy)
+        .def_readwrite("vz", &Vehicle::vz)
         .def_readwrite("steering", &Vehicle::steering);
 
     py::class_<TrafficSimulation>(m, "TrafficSimulation")

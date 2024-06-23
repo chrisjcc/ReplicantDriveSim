@@ -1,4 +1,5 @@
 #include "traffic_simulation.h"
+#include "perception_module.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -9,7 +10,6 @@ const int VEHICLE_WIDTH = 130;
 const int VEHICLE_HEIGHT = 55;
 const int LANE_WIDTH = 100;
 const int NUM_LANES = 3;
-
 
 // Function to generate a random float within a specified range
 float randFloat(float a, float b) {
@@ -25,10 +25,10 @@ float randNormal(float mean, float stddev) {
     return distribution(generator);
 }
 
+TrafficSimulation::TrafficSimulation(int num_agents)
+    : num_agents(num_agents), agents(num_agents), previous_positions(num_agents){
 
-TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
-    agents.resize(num_agents);
-    previous_positions.resize(num_agents);
+    perceptionModule = new PerceptionModule(*this); // Initialize the pointer
 
     for (int i = 0; i < num_agents; ++i) {
         agents[i].x = randFloat(0, SCREEN_WIDTH - VEHICLE_WIDTH);
@@ -43,11 +43,20 @@ TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
     }
 }
 
+TrafficSimulation::~TrafficSimulation() {
+    delete perceptionModule; // Clean up the pointer in the destructor
+}
+
 void TrafficSimulation::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
     for (int i = 0; i < num_agents; ++i) {
         applyAction(i, high_level_actions[i], low_level_actions[i]);
     }
+
+    // Update perceptions
+    perceptionModule->updatePerceptions();
+
     updatePositions();
+    // Check for collisions between agents
     checkCollisions();
 }
 
@@ -113,6 +122,20 @@ void TrafficSimulation::updatePositions() {
 
         // Constrain vertically within the road
         agent.y = std::fmin(std::fmax(agent.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
+    }
+}
+
+Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
+    auto it = std::find_if(agents.begin(), agents.end(),
+                           [&name](const Vehicle& agent) {
+                               return agent.name == name;
+                           });
+
+    if (it != agents.end()) {
+        return *it;
+    } else {
+        // Handle the case where the agent is not found
+        throw std::runtime_error("Agent with name " + name + " not found.");
     }
 }
 

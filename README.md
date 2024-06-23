@@ -93,3 +93,31 @@ python trainer.py
 ```shell
 mlflow ui --backend-store-uri file:mlruns
 ```
+
+# Install Google Test
+```shell
+# Clone Google Test Repository
+git clone https://github.com/google/googletest.git
+
+# Create a build directory and navigate into it
+cd googletest
+mkdir build
+cd build
+
+# Use CMake to build Google Test
+cmake ..
+make
+```
+
+This will build the Google Test library (libgtest.a and libgtest_main.a).
+
+Copy libgtest.a and libgtest_main.a (from the googletest/build directory) to a convenient location in your project, e.g., lib/gtest.
+
+Alternatively, you can reference the Google Test installation path directly in your CMake configuration.
+
+Google Test provides robust features for writing and organizing unit tests in C++. Customize your test structure (TEST_F, TEST, etc.) as per your project requirements.
+
+Run unit tests
+```shell
+./build/tests/perception_module_test
+```
