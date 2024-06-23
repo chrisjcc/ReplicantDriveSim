@@ -81,8 +81,8 @@ class HighwayEnv(MultiAgentEnv):
             low=-np.inf, high=np.inf, shape=(8,), dtype=np.float32
         )
 
-        # 0: keep lane, 1: change lane, 2: accelerate, 3: decelerate
-        self.high_level_action_space = gym.spaces.Discrete(4)
+        # 0: keep lane, 1: left change lane, 2: right lane change,  3: accelerate, 4: decelerate
+        self.high_level_action_space = gym.spaces.Discrete(5)
         # Control action correspond to steering angle (rad), acceleration (m/s^2), and braking (m/s^2)
         self.low_level_action_space = gym.spaces.Box(
             low=np.array([-0.610865, 0.0, -8.0], dtype=np.float32),
@@ -182,6 +182,8 @@ class HighwayEnv(MultiAgentEnv):
         low_level_actions = [
             action_dict[agent]["continuous"].tolist() for agent in self.agents
         ]
+
+        # Apply the actions directly to the simulation
         self.sim.step(high_level_actions, low_level_actions)
 
         self.agent_positions = {
@@ -306,6 +308,22 @@ class HighwayEnv(MultiAgentEnv):
                 or agent_position[1] >= SCREEN_HEIGHT - LANE_WIDTH
             ):
                 reward_components["safety_distance"] -= 1.0
+
+        # Reward for lane change
+        if self.configs.get("left_lane_change", False):
+            if agent_position[1] != self.previous_positions[agent][1]:
+                reward_components["left_lane_change"] += 1.0
+
+        # Reward for lane change
+        if self.configs.get("right_lane_change", False):
+            if agent_position[1] != self.previous_positions[agent][1]:
+                reward_components["right_lane_change"] += 1.0
+
+        # Reward for speed control
+        if self.configs.get("speed_control", False):
+            velocity = self.sim.get_agent_velocities()[agent][0]
+            if velocity > 0:
+                reward_components["speed_control"] += 0.1
 
         return reward_components
 
