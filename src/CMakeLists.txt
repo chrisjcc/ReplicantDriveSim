@@ -70,6 +70,9 @@ set_target_properties(traffic_simulation PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
 
+# Link with libOpenDRIVE
+target_link_libraries(traffic_simulation PRIVATE OpenDrive)
+
 # Install the library
 install(TARGETS traffic_simulation
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/traffic_simulation)
