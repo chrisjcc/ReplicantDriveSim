@@ -59,9 +59,15 @@ message(STATUS "Include directory is ${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
 # Include traffic_simulation headers
 target_include_directories(traffic_simulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_include_directories(traffic_simulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../external/libOpenDRIVE/include)
 
 # Add compile options
-target_compile_options(traffic_simulation PRIVATE -Wall -Wextra -Werror)
+target_compile_options(traffic_simulation PRIVATE
+    -Wall
+    -Wextra
+    -Werror
+    -Wno-unused-parameter
+)
 
 # Explicitly specify where to place the generated shared object file
 set_target_properties(traffic_simulation PROPERTIES
@@ -69,6 +75,8 @@ set_target_properties(traffic_simulation PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
+
+add_dependencies(traffic_simulation OpenDrive)
 
 # Link with libOpenDRIVE
 target_link_libraries(traffic_simulation PRIVATE OpenDrive)
