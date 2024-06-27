@@ -20,11 +20,14 @@ T clamp(T value, T min_val, T max_val) {
  * @param num_agents Number of agents in the simulation.
  * @param map_file Path to the OpenDRIVE map file.
  * @param cell_size Size of each cell in the spatial hash grid.
+ * @param seed Seed value for the random number generator.
  */
-TrafficSimulation::TrafficSimulation(int num_agents, const std::string& map_file, float cell_size)
+TrafficSimulation::TrafficSimulation(int num_agents, const std::string& map_file, float cell_size, unsigned int seed)
     : spatialHash(cell_size),
       odr_map(std::make_shared<odr::OpenDriveMap>(map_file)),
       road_network_mesh(odr_map->get_road_network_mesh(0.1)),
+      seed(seed),
+      gen(seed),  // Initialize the generator with the seed
       num_agents(num_agents)
 {
     agents.resize(num_agents);
@@ -185,13 +188,14 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_previ
  * @param low_level_action Low-level actions for the vehicle.
  */
 void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, const std::vector<float>& low_level_action) {
+    // Bound kinematics to physical constraints
     vehicle.setSteering(clamp(low_level_action[0], -0.610865f, 0.610865f));
     float acceleration = clamp(low_level_action[1], 0.0f, 4.5f);
     float braking = clamp(low_level_action[2], -8.0f, 0.0f);
 
     vehicle.setVx(vehicle.getVx() + (acceleration - braking));
     vehicle.setVy(0.0f);
-    const float max_velocity = 10.0f;
+    const float max_velocity = 60.0f;
     vehicle.setVx(clamp(vehicle.getVx(), 0.0f, max_velocity));
 
     vehicle.setX(vehicle.getX() + vehicle.getVx() * std::cos(vehicle.getSteering()));
@@ -210,28 +214,16 @@ void TrafficSimulation::checkCollisions(const std::vector<std::pair<Vehicle*, st
         for (const auto* other : potentialCollisions) {
             if (vehicle != other && std::hypot(vehicle->getX() - other->getX(), vehicle->getY() - other->getY()) < vehicle->getWidth()) {
                 // Handle collision - currently, do nothing as specified (ghost-like behavior)
+                /*
                 vehicle->setVx(0.0f);
                 vehicle->setVy(0.0f);
                 const_cast<Vehicle*>(other)->setVx(0.0f);
                 const_cast<Vehicle*>(other)->setVy(0.0f);
-
+                */
                 std::cout << "COLLISION DETECTED between " << vehicle->getName() << " and " << other->getName() << std::endl;
             }
         }
     }
-}
-
-/**
- * @brief Generates a random float between a and b.
- * @param a Lower bound.
- * @param b Upper bound.
- * @return Random float between a and b.
- */
-float TrafficSimulation::randFloat(float a, float b) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(a, b);
-    return dis(gen);
 }
 
 /**
@@ -314,8 +306,25 @@ void TrafficSimulation::set_odr_map(const std::shared_ptr<odr::OpenDriveMap>& ma
  * @return Random float sampled from the normal distribution.
  */
 float TrafficSimulation::randNormal(float mean, float stddev) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
     std::normal_distribution<> dis(mean, stddev);
     return dis(gen);
+}
+
+/**
+ * @brief Generates a random float between a and b.
+ * @param a Lower bound.
+ * @param b Upper bound.
+ * @return Random float between a and b.
+ */
+float TrafficSimulation::randFloat(float a, float b) {
+    std::uniform_real_distribution<> dis(a, b);
+    return dis(gen);
+}
+
+/**
+ * @brief Gets the seed value for the random number generator.
+ * @return The seed value.
+ */
+unsigned int TrafficSimulation::getSeed() const {
+    return seed;
 }

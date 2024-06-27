@@ -51,7 +51,7 @@ PYBIND11_MODULE(traffic_simulation, m) {
 
     // Bind TrafficSimulation class with methods and properties
     py::class_<TrafficSimulation>(m, "TrafficSimulation")
-        .def(py::init<int, const std::string&, float>())
+        .def(py::init<int, const std::string&, float, float>())
         .def("get_agents", &TrafficSimulation::get_agents)
         .def("step", &TrafficSimulation::step)
         .def("get_agent_positions", &TrafficSimulation::get_agent_positions)

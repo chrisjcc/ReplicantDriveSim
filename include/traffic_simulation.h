@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <string>
 #include <memory> // Added for std::shared_ptr
+#include <random>
 
 // Include order: standard headers, then local headers
 #include "Lane.h"
@@ -35,8 +36,9 @@ public:
      * @param num_agents Number of agents in the simulation.
      * @param map_file Path to the OpenDrive map file.
      * @param cell_size Cell size for the spatial hash.
+     * @param seed Seed value for the random number generator.
      */
-    TrafficSimulation(int num_agents, const std::string& map_file, float cell_size);
+    TrafficSimulation(int num_agents, const std::string& map_file, float cell_size, unsigned int seed = std::random_device{}());
 
     /**
      * @brief Advances the simulation by one step.
@@ -101,6 +103,12 @@ public:
 
     std::vector<std::vector<Point>> drivable_areas; ///< Drivable areas in the simulation.
 
+    /**
+     * @brief Gets the seed value for the random number generator.
+     * @return The seed value.
+     */
+    unsigned int getSeed() const;
+
 private:
     /**
      * @brief Initializes the position of a specific agent.
@@ -146,9 +154,10 @@ private:
     float randFloat(float a, float b);
 
     // Private members
+    unsigned int seed;
+    std::mt19937 gen;
     int num_agents; ///< Number of agents in the simulation.
     std::vector<Vehicle> agents; ///< List of agents in the simulation.
     std::vector<Vehicle> previous_positions; ///< Previous positions of the agents.
 };
-
 #endif // TRAFFIC_SIMULATION_H

@@ -13,10 +13,10 @@ from ray.rllib.utils.typing import MultiAgentDict
 SCREEN_WIDTH = 2*900
 SCREEN_HEIGHT = 2*400
 LANE_WIDTH = 100
-VEHICLE_WIDTH = 50 #5
-VEHICLE_HEIGHT = 20 #2
+VEHICLE_WIDTH = 10 #5
+VEHICLE_HEIGHT = 4 #2
 NUM_LANES = 3
-FPS = 25
+FPS = 1 #25
 
 
 # Set MLflow tracking URI
@@ -73,11 +73,13 @@ class HighwayEnv(MultiAgentEnv):
         self.num_agents = self.configs.get("num_agents", 2)
         self.map_file_path = self.configs.get("map_file_path", "NONE")
         self.cell_size = self.configs.get("cell_size", 5)
+        self.seed = self.configs.get("seed", 42)
 
         self.sim = traffic_simulation.TrafficSimulation(
             self.num_agents,
             self.map_file_path,
-            self.cell_size
+            self.cell_size,
+            self.seed
         )
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
         self.previous_positions = {
@@ -379,7 +381,7 @@ class HighwayEnv(MultiAgentEnv):
             print(f"TODO: agent: {agent}, ({x}, {y})")
 
             # Red color for vehicles otherwise blue in the event of a collision
-            color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
+            color = (255, 0, 0) #if self.collisions[agent] else (0, 0, 255)
             pygame.draw.rect(
                 self.screen,
                 color,
@@ -442,7 +444,8 @@ if __name__ == "__main__":
         "max_episode_steps": 1000,
         "num_agents": 2,
         "render_mode": "human",
-        "map_file_path": "data/maps/data.xodr"
+        "map_file_path": "data/maps/data.xodr",
+        "seed": 314 #42
     }
 
     # Log params for main run
