@@ -42,6 +42,8 @@ message(STATUS "CMAKE_CURRENT_SOURCE_DIR is ${CMAKE_CURRENT_SOURCE_DIR}")
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/traffic_simulation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/collision_detection.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/vehicle.cpp
 )
 
 message(STATUS "SOURCE_FILES is ${SOURCE_FILES}")
