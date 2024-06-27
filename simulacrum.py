@@ -10,11 +10,11 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
 
 # Constants for the Pygame simulation
-SCREEN_WIDTH = 900
-SCREEN_HEIGHT = 400
+SCREEN_WIDTH = 2*900
+SCREEN_HEIGHT = 2*400
 LANE_WIDTH = 100
-VEHICLE_WIDTH = 130
-VEHICLE_HEIGHT = 55
+VEHICLE_WIDTH = 5
+VEHICLE_HEIGHT = 2
 NUM_LANES = 3
 FPS = 25
 
@@ -69,8 +69,15 @@ class HighwayEnv(MultiAgentEnv):
         self.agents = [
             "agent_" + str(i) for i in range(self.configs.get("num_agents", 2))
         ]
+
+        self.num_agents = self.configs.get("num_agents", 2)
+        self.map_file_path = self.configs.get("map_file_path", "NONE")
+        self.cell_size = self.configs.get("cell_size", 5)
+
         self.sim = traffic_simulation.TrafficSimulation(
-            self.configs.get("num_agents", 2)
+            self.num_agents,
+            self.map_file_path,
+            self.cell_size
         )
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
         self.previous_positions = {
@@ -105,6 +112,10 @@ class HighwayEnv(MultiAgentEnv):
         self.truncateds = {"__all__": False}
         self.infos = {}
 
+        self.odr_map = self.sim.odr_map
+        self.road_network_mesh = self.odr_map.get_road_network_mesh(0.1)  # eps = 0.1
+        self.scale_factor = 1.5 #10  # Adjust this to scale the map to fit the screen
+
         mlflow.log_params(
             {
                 "num_agents": self.configs.get("num_agents", 2),
@@ -134,19 +145,17 @@ class HighwayEnv(MultiAgentEnv):
         self.truncateds = {"__all__": False}
         self.infos = {agent: {"cumulative_reward": 0.0} for agent in self.agents}  # Initialize cumulative rewards
 
-        self.sim = traffic_simulation.TrafficSimulation(
-            len(self.agents)
-        )  # Reset the simulation
-
         # Get the initial agent positions and velocities from the simulation
         self.agent_positions = {
             agent: np.array(pos)
             for agent, pos in self.sim.get_agent_positions().items()
         }
+
         self.agent_velocities = {
             agent: np.array([pos[0], pos[1], 0.0])
             for agent, pos in self.sim.get_agent_velocities().items()
         }
+
         self.previous_positions = {
             agent: np.copy(self.agent_positions[agent]) for agent in self.agents
         }
@@ -328,40 +337,45 @@ class HighwayEnv(MultiAgentEnv):
         return reward_components
 
     def render(self) -> None:
-        """
-        Render the environment using Pygame.
-        """
         if not self.render_mode:
             return
 
         if not self.pygame_init:
             pygame.init()
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-            pygame.display.set_caption("Highway Simulation")
-            self.clock = pygame.time.Clock()  # Initialize clock
+            pygame.display.set_caption("OpenDRIVE Traffic Simulation")
+            self.clock = pygame.time.Clock()
             self.pygame_init = True
 
-        self.screen.fill((255, 255, 255))
-        pygame.draw.rect(
-            self.screen,
-            (0, 0, 0),
-            (0, LANE_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT - 2 * LANE_WIDTH),
-        )
+        self.screen.fill((255, 255, 255))  # White background
 
-        for i in range(15):
-            pygame.draw.line(
-                self.screen,
-                (255, 255, 255),
-                (i * 60, SCREEN_HEIGHT // 2),
-                ((i * 60) + 30, SCREEN_HEIGHT // 2),
-                5,
-            )
+        # Calculate the center offset
+        center_offset_x = SCREEN_WIDTH // 2
+        center_offset_y = SCREEN_HEIGHT // 2
 
+        # Render the road network
+        for road in self.odr_map.get_roads():
+            # Process each road, for example:
+            #print(f"Road ID: {road.id}")  # Assuming Road has an 'id' attribute
+
+            for s in range(int(road.length)):
+                for t in [-3., 0., 3.]:  # Adjust these values based on lane widths
+                    start_point = road.get_xyz(float(s), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+                    end_point = road.get_xyz(float(s + 1), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+                    pygame.draw.line(
+                        self.screen,
+                        (100, 100, 100),  # Gray color for roads
+                        (int(start_point[0] * self.scale_factor) + center_offset_x, int(start_point[1] * self.scale_factor) + center_offset_y),
+                        (int(end_point[0] * self.scale_factor) + center_offset_x, int(end_point[1] * self.scale_factor) + center_offset_y),
+                        2
+                    )
+
+        # Render vehicles
         agent_positions = self.sim.get_agent_positions()
-
         for agent, pos in agent_positions.items():
-            x, y = int(pos[0]), int(pos[1])
-            color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
+            x, y = int(pos[0] * self.scale_factor) + center_offset_x, int(pos[1] * self.scale_factor) + center_offset_y
+            #color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
+            color = (255, 0, 0)  # Red color for vehicles
             pygame.draw.rect(
                 self.screen,
                 color,
@@ -374,7 +388,32 @@ class HighwayEnv(MultiAgentEnv):
             )
 
         pygame.display.flip()
-        self.clock.tick(FPS)  # Cap the frame rate
+        self.clock.tick(FPS)
+
+    def get_nearest_road_point(self, x, y):
+        min_distance = float('inf')
+        nearest_point = None
+        nearest_road = None
+
+        for road in self.odr_map.get_roads():
+            for s in range(int(road.length)):
+                road_point = road.get_xyz(float(s), float(0.0), float(0.0))
+                distance = ((x - road_point[0])**2 + (y - road_point[1])**2)**0.5
+                if distance < min_distance:
+                    min_distance = distance
+                    nearest_point = road_point
+                    nearest_road = road
+
+        return nearest_road, nearest_point
+
+    def update_agent_positions(self):
+        for agent in self.sim.agents:
+            road, point = self.get_nearest_road_point(agent.x, agent.y)
+            if road:
+                # Project the agent onto the nearest road
+                s, t = road.xy_to_st(point[0], point[1])
+                new_pos = road.get_xyz(s + agent.vx * self.sim.dt, t, 0.0)
+                agent.x, agent.y = new_pos[0], new_pos[1]
 
     def close(self) -> None:
         """
@@ -399,13 +438,14 @@ if __name__ == "__main__":
         "max_episode_steps": 1000,
         "num_agents": 2,
         "render_mode": "human",
+        "map_file_path": "data/maps/data.xodr"
     }
 
     # Log params for main run
     mlflow.log_params(configs)
 
     env = HighwayEnv(configs=configs)  # Set render_mode to True to enable rendering
-    num_episodes = 8  # Define the number of episodes
+    num_episodes = 3  # Define the number of episodes
 
     for episode in range(num_episodes):
         print(f"Starting episode {episode + 1}")
