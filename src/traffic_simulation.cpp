@@ -35,52 +35,65 @@ TrafficSimulation::TrafficSimulation(int num_agents, const std::string& map_file
 
     // Initialize agent positions
     for (int i = 0; i < num_agents; ++i) {
-        // Randomly select a road
-        odr::Road& road = roads[rand() % roads.size()];
-
-        // Randomly select a lane section
-        std::vector<odr::LaneSection> lane_sections = road.get_lanesections();
-        size_t lane_section_index = rand() % lane_sections.size();
-        auto& lane_section = lane_sections[lane_section_index];
-
-        // Determine the end position of the lane section
-        float s0 = lane_section.s0;
-        float s1 = (lane_section_index == lane_sections.size() - 1) ? road.length : lane_sections[lane_section_index + 1].s0;
-
-        // Get drivable lanes (excluding sidewalks, etc.)
-        std::vector<odr::Lane*> drivable_lanes;
-        for (auto& lane_pair : lane_section.id_to_lane) {
-            odr::Lane* lane = &lane_pair.second;
-            if (lane->type == "driving" || lane->type == "exit" || lane->type == "entry") {
-                drivable_lanes.push_back(lane);
-            }
-        }
-
-        // Randomly select a drivable lane
-        odr::Lane* lane = drivable_lanes[rand() % drivable_lanes.size()];
-
-        // Sample a position along the lane
-        float s = randFloat(s0, s1);
-        float lane_width = 3.5 + 0.01 * (s - 0.01) + 0.001 * std::pow(s - 0.01, 2) + 0.001 * std::pow(s - 0.01, 3);
-        float t = randFloat(0, lane_width / 2);
-        if (lane->id < 0) t = -t;
-
-        // Convert lane coordinates to world coordinates
-        odr::Vec3D position = road.get_xyz(s, t, 0.0);
-
-        agents[i].setX(position[0]);
-        agents[i].setY(position[1]);
-        agents[i].setVx(randNormal(50.0f, 1.0f));
-        agents[i].setVy(0.0f);
-        agents[i].setSteering(0.0f);
-        agents[i].setName("agent_" + std::to_string(i));
-        agents[i].setWidth(2.0f);
-        agents[i].setLength(5.0f);
-        agents[i].setId(i);
-
-        previous_positions[i] = agents[i];
+        initializeAgentPosition(i);
     }
 }
+
+/**
+ * @brief Initializes the position of a specific agent.
+ * @param agent_index Index of the agent to be initialized.
+ */
+void TrafficSimulation::initializeAgentPosition(int agent_index) {
+    std::vector<odr::Road> roads = odr_map->get_roads();
+
+    // Randomly select a road
+    odr::Road& road = roads[rand() % roads.size()];
+
+    // Randomly select a lane section
+    std::vector<odr::LaneSection> lane_sections = road.get_lanesections();
+    size_t lane_section_index = rand() % lane_sections.size();
+    auto& lane_section = lane_sections[lane_section_index];
+
+    // Determine the end position of the lane section
+    float s0 = lane_section.s0;
+    float s1 = (lane_section_index == lane_sections.size() - 1) ? road.length : lane_sections[lane_section_index + 1].s0;
+
+    // Get drivable lanes (excluding sidewalks, etc.)
+    std::vector<odr::Lane*> drivable_lanes;
+    for (auto& lane_pair : lane_section.id_to_lane) {
+        odr::Lane* lane = &lane_pair.second;
+        if (lane->type == "driving" || lane->type == "exit" || lane->type == "entry") {
+            drivable_lanes.push_back(lane);
+        }
+    }
+
+    // Randomly select a drivable lane
+    odr::Lane* lane = drivable_lanes[rand() % drivable_lanes.size()];
+
+    // Sample a position along the lane
+    float s = randFloat(s0, s1);
+    float lane_width = 3.5 + 0.01 * (s - 0.01) + 0.001 * std::pow(s - 0.01, 2) + 0.001 * std::pow(s - 0.01, 3);
+    float t = randFloat(0, lane_width / 2);
+
+    if (lane->id < 0) t = -t;
+
+    // Convert lane coordinates to world coordinates
+    odr::Vec3D position = road.get_xyz(s, t, 0.0);
+
+    // Set agent attributes
+    agents[agent_index].setX(position[0]);
+    agents[agent_index].setY(position[1]);
+    agents[agent_index].setVx(randNormal(50.0f, 1.0f));
+    agents[agent_index].setVy(randNormal(0.0f, 0.01f));
+    agents[agent_index].setSteering(randNormal(0.0f, 0.3054325f));
+    agents[agent_index].setId(agent_index);
+    agents[agent_index].setName("agent_" + std::to_string(agent_index));
+    agents[agent_index].setWidth(2.0f);
+    agents[agent_index].setLength(5.0f);
+
+    previous_positions[agent_index] = agents[agent_index];
+}
+
 
 /**
  * @brief Updates the simulation by one time step.
@@ -89,6 +102,8 @@ TrafficSimulation::TrafficSimulation(int num_agents, const std::string& map_file
  */
 void TrafficSimulation::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
     spatialHash.clear();
+    //quadtree->clear(); // Clear the quadtree
+
     std::vector<std::pair<Vehicle*, std::vector<Vehicle*>>> allPotentialCollisions;
 
     for (auto& agent : agents) {
@@ -101,12 +116,18 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
         }
 
         spatialHash.insert(&agent);
+        //quadtree->insert(&agent); // Insert agents into the quadtree
+
         auto potentialCollisions = spatialHash.getPotentialCollisions(&agent);
+        // Query the quadtree for potential collisions
+        //auto possibleCollisions = quadtree->queryRange(agent.position, agent.width, agent.height);
+
         allPotentialCollisions.push_back({&agent, potentialCollisions});
     }
 
     checkCollisions(allPotentialCollisions);
 }
+
 
 /**
  * @brief Gets the agents in the simulation.
@@ -188,6 +209,7 @@ void TrafficSimulation::checkCollisions(const std::vector<std::pair<Vehicle*, st
 
         for (const auto* other : potentialCollisions) {
             if (vehicle != other && std::hypot(vehicle->getX() - other->getX(), vehicle->getY() - other->getY()) < vehicle->getWidth()) {
+                // Handle collision - currently, do nothing as specified (ghost-like behavior)
                 vehicle->setVx(0.0f);
                 vehicle->setVy(0.0f);
                 const_cast<Vehicle*>(other)->setVx(0.0f);

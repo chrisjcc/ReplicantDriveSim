@@ -103,6 +103,12 @@ public:
 
 private:
     /**
+     * @brief Initializes the position of a specific agent.
+     * @param agent_index Index of the agent to be initialized.
+     */
+    void initializeAgentPosition(int agent_index);
+
+    /**
      * @brief Updates the position of a vehicle.
      * @param vehicle The vehicle to update.
      * @param high_level_action The high-level action to apply.

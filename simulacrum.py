@@ -147,13 +147,13 @@ class HighwayEnv(MultiAgentEnv):
 
         # Get the initial agent positions and velocities from the simulation
         self.agent_positions = {
-            agent: np.array(pos)
+            agent: np.array([pos[0], pos[1], 0.0], dtype=np.float32)
             for agent, pos in self.sim.get_agent_positions().items()
         }
 
         self.agent_velocities = {
-            agent: np.array([pos[0], pos[1], 0.0])
-            for agent, pos in self.sim.get_agent_velocities().items()
+            agent: np.array([vel[0], vel[1], 0.0], dtype=np.float32)
+            for agent, vel in self.sim.get_agent_velocities().items()
         }
 
         self.previous_positions = {
@@ -197,11 +197,11 @@ class HighwayEnv(MultiAgentEnv):
         print("TODO: x: ", self.sim.get_agents())
 
         self.agent_positions = {
-            agent: np.array(pos)
+            agent: np.array([pos[0], pos[1], 0.0], dtype=np.float32)
             for agent, pos in self.sim.get_agent_positions().items()
         }
         self.previous_positions = {
-            agent: np.array(pos)
+            agent: np.array([pos[0], pos[1], 0.0], dtype=np.float32)
             for agent, pos in self.sim.get_previous_positions().items()
         }
 
