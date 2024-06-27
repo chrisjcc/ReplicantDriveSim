@@ -13,8 +13,8 @@ from ray.rllib.utils.typing import MultiAgentDict
 SCREEN_WIDTH = 2*900
 SCREEN_HEIGHT = 2*400
 LANE_WIDTH = 100
-VEHICLE_WIDTH = 5
-VEHICLE_HEIGHT = 2
+VEHICLE_WIDTH = 50 #5
+VEHICLE_HEIGHT = 20 #2
 NUM_LANES = 3
 FPS = 25
 
@@ -194,6 +194,7 @@ class HighwayEnv(MultiAgentEnv):
 
         # Apply the actions directly to the simulation
         self.sim.step(high_level_actions, low_level_actions)
+        print("TODO: x: ", self.sim.get_agents())
 
         self.agent_positions = {
             agent: np.array(pos)
@@ -372,10 +373,13 @@ class HighwayEnv(MultiAgentEnv):
 
         # Render vehicles
         agent_positions = self.sim.get_agent_positions()
-        for agent, pos in agent_positions.items():
+
+        for agent, pos in agent_positions.items(): # self.sim.get_agents():
             x, y = int(pos[0] * self.scale_factor) + center_offset_x, int(pos[1] * self.scale_factor) + center_offset_y
-            #color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
-            color = (255, 0, 0)  # Red color for vehicles
+            print(f"TODO: agent: {agent}, ({x}, {y})")
+
+            # Red color for vehicles otherwise blue in the event of a collision
+            color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
             pygame.draw.rect(
                 self.screen,
                 color,

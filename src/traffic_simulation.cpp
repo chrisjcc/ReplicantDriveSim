@@ -1,5 +1,7 @@
 #include "traffic_simulation.h"
 #include <iostream>
+#include <vector>
+#include <tuple>
 #include <algorithm>
 #include <cmath>
 #include <climits>
@@ -93,6 +95,7 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
         updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
 
         odr::Vec3D position{agent.getX(), agent.getY(), 0.0};
+
         if (!isPositionDrivable(position)) {
             moveNearestDrivablePoint(agent);
         }
@@ -103,6 +106,19 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
     }
 
     checkCollisions(allPotentialCollisions);
+}
+
+/**
+ * @brief Gets the agents in the simulation.
+ * @return A vector of tuples containing agent ID and position.
+ */
+std::vector<std::tuple<std::string, std::vector<float>>> TrafficSimulation::get_agents() const {
+    std::vector<std::tuple<std::string, std::vector<float>>> agent_data;
+    for (const auto& agent : agents) {
+        std::vector<float> position = {agent.getX(), agent.getY(), agent.getZ()};
+        agent_data.push_back(std::make_tuple(agent.getName(), position));
+    }
+    return agent_data;
 }
 
 /**

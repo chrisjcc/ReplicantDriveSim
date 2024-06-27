@@ -46,6 +46,12 @@ public:
     void step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions);
 
     /**
+     * @brief Gets the agents in the simulation.
+     * @return A vector of tuples containing agent ID and position.
+     */
+    std::vector<std::tuple<std::string, std::vector<float>>> get_agents() const;
+
+    /**
      * @brief Gets the current positions of all agents.
      * @return A map from agent IDs to their positions.
      */
