@@ -117,3 +117,12 @@ float Vehicle::getVz() const {
 void Vehicle::setVz(float vz) {
     this->vz = vz;
 }
+
+// Getter and Setter for acceleration
+float Vehicle::getAcceleration() const {
+    return acceleration;
+}
+
+void Vehicle::setAcceleration(float acceleration) {
+    this->acceleration = acceleration;
+}

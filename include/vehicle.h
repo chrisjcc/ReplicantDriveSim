@@ -61,6 +61,9 @@ public:
     float getVz() const;
     void setVz(float vz);
 
+    float getAcceleration() const;
+    void setAcceleration(float acceleration);
+
     // Other public members and methods
 
 private:
@@ -72,6 +75,7 @@ private:
     float steering; ///< Steering angle of the vehicle.
     float x, y, z; ///< Position of the vehicle.
     float vx, vy, vz; ///< Velocity of the vehicle.
+    float acceleration; //< Acceleration of the vehicle.
     // Other private members and methods
 };
 
