@@ -9,3 +9,6 @@ set(CMAKE_CXX_STANDARD 14)
 # Include subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)
+
+# Add the libOpenDRIVE subdirectory
+add_subdirectory(external/libOpenDRIVE)
