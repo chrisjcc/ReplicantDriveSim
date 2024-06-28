@@ -4,6 +4,24 @@ ReplicantDriveSim is an advanced traffic simulation project designed for autonom
 
 ![Image Alt text](/images/NISSAN-GTR_ReplicantDriveSim.png "Optional title")
 
+# Initialize the submodule
+
+```shell
+git submodule init
+```
+
+# Update the submodule
+This will clone the submodule repository and check out the appropriate commit specified in the parent repository.
+```shell
+git submodule update
+```
+
+# Verify the submodule status
+Ensure that the submodule is now populated correctly.
+```shell
+git submodule status
+```
+
 # Environment setup
 ```shell
 conda env create -f environment.yml
