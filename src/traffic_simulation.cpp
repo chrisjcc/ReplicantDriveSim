@@ -83,12 +83,18 @@ void TrafficSimulation::initializeAgentPosition(int agent_index) {
     // Convert lane coordinates to world coordinates
     odr::Vec3D position = road.get_xyz(s, t, 0.0);
 
+    // Get the heading direction at position s on the lane
+    float heading = get_heading(road, s, t, 0.0);
+
+    // Adjust the agent's steering angle to be relative to the lane's heading direction
+    float steering_angle = randNormal(heading, 1.0f);
+
     // Set agent attributes
     agents[agent_index].setX(position[0]);
     agents[agent_index].setY(position[1]);
     agents[agent_index].setVx(randNormal(50.0f, 1.0f));
-    agents[agent_index].setVy(randNormal(0.0f, 0.01f));
-    agents[agent_index].setSteering(randNormal(0.0f, 0.3054325f));
+    agents[agent_index].setVy(randNormal(0.0f, 1.0f));
+    agents[agent_index].setSteering(steering_angle);
     agents[agent_index].setId(agent_index);
     agents[agent_index].setName("agent_" + std::to_string(agent_index));
     agents[agent_index].setWidth(2.0f);
@@ -112,7 +118,7 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
     for (auto& agent : agents) {
         updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
 
-        odr::Vec3D position{agent.getX(), agent.getY(), 0.0};
+        odr::Vec3D position{agent.getX(), agent.getY(), agent.getZ()};
 
         if (!isPositionDrivable(position)) {
             moveNearestDrivablePoint(agent);
@@ -134,21 +140,26 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
 
 /**
  * @brief Gets the agents in the simulation.
- * @return A vector of tuples containing agent ID and position.
+ * @return A vector of vehicles containing agent ID, position, orientation, size, etc.
  */
-std::vector<std::tuple<std::string, std::vector<float>>> TrafficSimulation::get_agents() const {
-    std::vector<std::tuple<std::string, std::vector<float>>> agent_data;
-    for (const auto& agent : agents) {
-        std::vector<float> position = {agent.getX(), agent.getY(), agent.getZ()};
-        agent_data.push_back(std::make_tuple(agent.getName(), position));
-    }
-    return agent_data;
+std::vector<Vehicle> TrafficSimulation::get_agents() const {
+    return agents;
 }
 
 /**
  * @brief Gets the positions of all agents.
  * @return A map of agent names to their positions.
  */
+/*
+std::vector<std::tuple<std::string, std::vector<float>>> TrafficSimulation::get_agents() const {
+     std::vector<std::tuple<std::string, std::vector<float>>> agent_data;
+     for (const auto& agent : agents) {
+        std::vector<float> position = {agent.getX(), agent.getY(), agent.getZ()};
+        agent_data.push_back(std::make_tuple(agent.getName(), position));
+    }
+     return agent_data;
+}
+*/
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_positions() const {
     std::unordered_map<std::string, std::vector<float>> positions;
     for (int i = 0; i < num_agents; ++i) {
@@ -189,17 +200,53 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_previ
  */
 void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, const std::vector<float>& low_level_action) {
     // Bound kinematics to physical constraints
-    vehicle.setSteering(clamp(low_level_action[0], -0.610865f, 0.610865f));
-    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f);
-    float braking = clamp(low_level_action[2], -8.0f, 0.0f);
+    float steering = clamp(low_level_action[0], -0.610865f, 0.610865f); // Clamp steering between -35 and 35 degrees in radians
+    vehicle.setSteering(steering);
 
-    vehicle.setVx(vehicle.getVx() + (acceleration - braking));
-    vehicle.setVy(0.0f);
-    const float max_velocity = 60.0f;
-    vehicle.setVx(clamp(vehicle.getVx(), 0.0f, max_velocity));
+    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // Acceleration (m/s^2)
+    float braking = clamp(low_level_action[2], -8.0f, 0.0f); // Braking deceleration (m/s^2)
 
-    vehicle.setX(vehicle.getX() + vehicle.getVx() * std::cos(vehicle.getSteering()));
-    vehicle.setY(vehicle.getY() + vehicle.getVx() * std::sin(vehicle.getSteering()));
+    float net_acceleration = acceleration + braking; // Net acceleration considering both acceleration and braking
+
+    // Time step (assuming a fixed time step, adjust as necessary)
+    float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
+
+    const float max_velocity = 60.0f; // Maximum velocity (m/s)
+
+    // Calculate the new velocities in x and y directions
+    float initial_velocity_x = vehicle.getVx();
+    float initial_velocity_y = vehicle.getVy();
+
+    // Calculate the components of the net acceleration in the x and y directions
+    float acceleration_x = net_acceleration * std::cos(steering);
+    float acceleration_y = net_acceleration * std::sin(steering);
+
+    // Update the velocities
+    float new_velocity_x = clamp(initial_velocity_x + acceleration_x * time_step, 0.0f, max_velocity);
+    float new_velocity_y = clamp(initial_velocity_y + acceleration_y * time_step, 0.0f, max_velocity);
+
+    vehicle.setVx(new_velocity_x);
+    vehicle.setVy(new_velocity_y);
+
+    // Update the position using the kinematic equations
+    float delta_x = initial_velocity_x * time_step + 0.5f * acceleration_x * time_step * time_step;
+    float delta_y = initial_velocity_y * time_step + 0.5f * acceleration_y * time_step * time_step;
+
+    float new_x = vehicle.getX() + delta_x;
+    float new_y = vehicle.getY() + delta_y;
+
+    // Check if the new position is drivable
+    //odr::Vec3D new_position{new_x, new_y, 0.0};
+
+    //if (isPositionDrivable(new_position)) {
+        // Apply the new position if it is drivable
+        vehicle.setX(new_x);
+        vehicle.setY(new_y);
+    //} else {
+        // Optionally, handle the case where the new position is not drivable
+        // For example, you could move the vehicle to the nearest drivable point
+    //    moveNearestDrivablePoint(vehicle);
+    //}
 }
 
 /**
@@ -327,4 +374,22 @@ float TrafficSimulation::randFloat(float a, float b) {
  */
 unsigned int TrafficSimulation::getSeed() const {
     return seed;
+}
+
+/**
+ * @brief Calculates the heading of the road at a given s coordinate.
+ * @param road The road object.
+ * @param s The s coordinate along the road.
+ * @return The heading in radians.
+ */
+float TrafficSimulation::get_heading(const odr::Road& road, const float s, const float t, const float h) {
+    // Assuming the road geometry is defined by parametric curves, we'll calculate the heading
+    float delta_s = 0.01;  // Small step to approximate the derivative
+    odr::Vec3D pos1 = road.get_xyz(s, t, h);
+    odr::Vec3D pos2 = road.get_xyz(s + delta_s, t, h);
+
+    float dx = pos2[0] - pos1[0];
+    float dy = pos2[1] - pos1[1];
+
+    return std::atan2(dy, dx);  // Heading in radians
 }

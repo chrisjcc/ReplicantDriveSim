@@ -5,6 +5,7 @@ import gymnasium as gym
 import mlflow
 import numpy as np
 import pygame
+import math
 import traffic_simulation  # Import the compiled C++ module
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
@@ -16,7 +17,7 @@ LANE_WIDTH = 100
 VEHICLE_WIDTH = 10 #5
 VEHICLE_HEIGHT = 4 #2
 NUM_LANES = 3
-FPS = 1 #25
+FPS = 25 #25
 
 
 # Set MLflow tracking URI
@@ -375,23 +376,37 @@ class HighwayEnv(MultiAgentEnv):
 
         # Render vehicles
         agent_positions = self.sim.get_agent_positions()
+        agent_steerings = {agent: self.sim.get_agents()[i].getSteering() for i, (agent, _) in enumerate(agent_positions.items())}
 
-        for agent, pos in agent_positions.items(): # self.sim.get_agents():
+        for agent, pos in agent_positions.items():
             x, y = int(pos[0] * self.scale_factor) + center_offset_x, int(pos[1] * self.scale_factor) + center_offset_y
             print(f"TODO: agent: {agent}, ({x}, {y})")
+            steering_angle = agent_steerings[agent]
 
             # Red color for vehicles otherwise blue in the event of a collision
             color = (255, 0, 0) #if self.collisions[agent] else (0, 0, 255)
-            pygame.draw.rect(
-                self.screen,
-                color,
-                (
-                    x - VEHICLE_WIDTH // 2,
-                    y - VEHICLE_HEIGHT // 2,
-                    VEHICLE_WIDTH,
-                    VEHICLE_HEIGHT,
-                ),
-            )
+
+            # Draw the vehicle as a rotated rectangle
+            rect = pygame.Surface((VEHICLE_WIDTH, VEHICLE_HEIGHT))
+            rect.fill(color)
+            rotated_rect = pygame.transform.rotate(rect, math.degrees(-steering_angle))  # Negative to correct the rotation direction
+
+            # Calculate the position to blit the rotated rectangle
+            rect_x = x - rotated_rect.get_width() // 2
+            rect_y = y - rotated_rect.get_height() // 2
+
+            self.screen.blit(rotated_rect, (rect_x, rect_y))
+
+            #pygame.draw.rect(
+            #    self.screen,
+            #    color,
+            #    (
+            #        x - VEHICLE_WIDTH // 2,
+            #        y - VEHICLE_HEIGHT // 2,
+            #        VEHICLE_WIDTH,
+            #        VEHICLE_HEIGHT,
+            #    ),
+            #)
 
         pygame.display.flip()
         self.clock.tick(FPS)
@@ -442,7 +457,7 @@ if __name__ == "__main__":
         "collision": True,
         "safety_distance": True,
         "max_episode_steps": 1000,
-        "num_agents": 2,
+        "num_agents": 5, #2,
         "render_mode": "human",
         "map_file_path": "data/maps/data.xodr",
         "seed": 314 #42
@@ -473,14 +488,14 @@ if __name__ == "__main__":
 
             observations, rewards, terminateds, truncateds, infos = env.step(actions)
 
-            for agent in env.agents:
-                total_reward = rewards[agent]
-                print(f"Rewards for {agent}: {total_reward}")
-                print(f"Reward components for {agent}: {infos[agent]}")
+            #for agent in env.agents:
+            #    total_reward = rewards[agent]
+            #    print(f"Rewards for {agent}: {total_reward}")
+            #    print(f"Reward components for {agent}: {infos[agent]}")
 
-            done = terminateds.get("__all__", False) or terminateds.get(
-                "__all__", False
-            )
+            #done = terminateds.get("__all__", False) or terminateds.get(
+            #    "__all__", False
+            #)
 
         print(f"Episode {episode + 1} finished")
 

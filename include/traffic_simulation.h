@@ -51,7 +51,7 @@ public:
      * @brief Gets the agents in the simulation.
      * @return A vector of tuples containing agent ID and position.
      */
-    std::vector<std::tuple<std::string, std::vector<float>>> get_agents() const;
+    std::vector<Vehicle> get_agents() const;
 
     /**
      * @brief Gets the current positions of all agents.
@@ -108,6 +108,14 @@ public:
      * @return The seed value.
      */
     unsigned int getSeed() const;
+
+    /**
+     * @brief Calculates the heading of the road at a given s coordinate.
+     * @param road The road object.
+     * @param s The s coordinate along the road.
+     * @return The heading in radians.
+     */
+    float get_heading(const odr::Road& road, const float s, const float t, const float h);
 
 private:
     /**
