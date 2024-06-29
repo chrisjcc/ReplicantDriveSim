@@ -56,6 +56,20 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
     checkCollisions();
 }
 
+Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
+    auto it = std::find_if(agents.begin(), agents.end(),
+                           [&name](const Vehicle& agent) {
+                               return agent.name == name;
+                           });
+
+    if (it != agents.end()) {
+        return *it;
+    } else {
+        // Handle the case where the agent is not found
+        throw std::runtime_error("Agent with name " + name + " not found.");
+    }
+}
+
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_positions() const {
     std::unordered_map<std::string, std::vector<float>> positions;
     for (int i = 0; i < num_agents; ++i) {

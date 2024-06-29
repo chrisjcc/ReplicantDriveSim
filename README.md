@@ -2,6 +2,12 @@
 
 ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research. It leverages reinforcement learning, imitation learning, and computer vision to create realistic traffic scenarios and synthetic driving data. The simulation environment is built using Pygame for visualization and Miniforge for Python package management, ensuring a seamless development and deployment experience. This Docker image provides a fully configured environment with all necessary dependencies, enabling efficient experimentation and development of autonomous driving algorithms.
 
+# Initialize Submodules
+Use the following command to initialize and clone any submodules defined in the repository.
+```shell
+git submodule update --init --recursive
+ ```
+
 # Environment setup
 ```shell
 conda env create -f environment.yml
@@ -22,6 +28,7 @@ cmake ..
 make
 cd ..
 ```
+This will build the Google Test library (libgtest.a and libgtest_main.a).
 
 # Install Traffic Simulation
 ```python
@@ -93,3 +100,9 @@ python trainer.py
 ```shell
 mlflow ui --backend-store-uri file:mlruns
 ```
+
+# Run unit tests
+```shell
+./build/tests/traffic_simulation_test
+```
+Google Test provides robust features for writing and organizing unit tests in C++. Customize your test structure (TEST_F, TEST, etc.) as per your project requirements.
