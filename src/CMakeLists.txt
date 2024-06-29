@@ -54,7 +54,7 @@ pybind11_add_module(traffic_simulation ${SOURCE_FILES})
 
 # Set the output directory for the pybind11 module
 set_target_properties(traffic_simulation PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     PREFIX ""
 )
 
