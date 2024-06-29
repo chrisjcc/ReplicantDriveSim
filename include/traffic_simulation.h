@@ -19,6 +19,7 @@ class TrafficSimulation {
 public:
     TrafficSimulation(int num_agents);
     void step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions);
+    Vehicle& get_agent_by_name(const std::string& name);
     std::unordered_map<std::string, std::vector<float>> get_agent_positions() const;
     std::unordered_map<std::string, std::vector<float>> get_agent_velocities() const;
     std::unordered_map<std::string, std::vector<float>> get_previous_positions() const;
