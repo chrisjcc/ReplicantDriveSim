@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include "traffic_simulation.h"
 
 namespace py = pybind11;
@@ -8,18 +9,19 @@ PYBIND11_MODULE(traffic_simulation, m) {
     m.doc() = "Traffic simulation module"; // Optional module docstring
 
     py::class_<Vehicle>(m, "Vehicle")
-        .def_readwrite("x", &Vehicle::x)
-        .def_readwrite("y", &Vehicle::y)
-        .def_readwrite("z", &Vehicle::z)
-        .def_readwrite("vx", &Vehicle::vx)
-        .def_readwrite("vy", &Vehicle::vy)
-        .def_readwrite("vz", &Vehicle::vz)
-        .def_readwrite("name", &Vehicle::name)
-        .def_readwrite("id", &Vehicle::id)
-        .def_readwrite("width", &Vehicle::width)
-        .def_readwrite("length", &Vehicle::length)
-        .def_readwrite("sensor_range", &Vehicle::sensor_range)
-        .def_readwrite("steering", &Vehicle::steering);
+        .def("getId", &Vehicle::getId)
+        .def("getName", &Vehicle::getName)
+        .def("getLaneId", &Vehicle::getLaneId)
+        .def("getgetWidth", &Vehicle::getWidth)
+        .def("getgetLength", &Vehicle::getLength)
+        .def("getX", &Vehicle::getX)
+        .def("getY", &Vehicle::getY)
+        .def("getZ", &Vehicle::getZ)
+        .def("getVx", &Vehicle::getVx)
+        .def("getVy", &Vehicle::getVy)
+        .def("getVz", &Vehicle::getVz)
+        .def("getSteering", &Vehicle::getSteering)
+        .def("getSensorRange", &Vehicle::getSensorRange);
 
     py::class_<TrafficSimulation>(m, "TrafficSimulation")
         .def(py::init<int>())

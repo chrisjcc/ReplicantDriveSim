@@ -18,7 +18,7 @@ void PerceptionModule::updatePerceptions() {
     for (auto& agent : simulation.get_agents()) {
         std::vector<float> observations;
         for (int i = 0; i < numRays; ++i) {
-            float rayAngle = agent.steering + i * rayAngleIncrement;
+            float rayAngle = agent.getSteering() + i * rayAngleIncrement;
             float distance = calculateDistanceToObstacle(agent, rayAngle);
             observations.push_back(distance);
         }
@@ -31,9 +31,9 @@ std::vector<std::shared_ptr<Vehicle>> PerceptionModule::detectNearbyVehicles(con
     std::vector<std::shared_ptr<Vehicle>> nearby_vehicles;
 
     for (const auto& vehicle : simulation.get_agents()) {
-        if (vehicle.name != ego_vehicle.name) {
-            float distance = std::hypot(vehicle.x - ego_vehicle.x, vehicle.y - ego_vehicle.y);
-            if (distance <= vehicle.sensor_range) {
+        if (vehicle.getName() != ego_vehicle.getName()) {
+            float distance = std::hypot(vehicle.getX() - ego_vehicle.getX(), vehicle.getY() - ego_vehicle.getY());
+            if (distance <= vehicle.getSensorRange()) {
                 nearby_vehicles.push_back(std::make_shared<Vehicle>(vehicle));
             }
         }
@@ -52,7 +52,7 @@ std::vector<float> PerceptionModule::getAgentObservation(const std::string& agen
     const Vehicle* agent = nullptr;
 
     for (const auto& veh : simulation.get_agents()) {
-        if (veh.name == agent_name) {
+        if (veh.getName() == agent_name) {
             agent = &veh;
             break;
         }
@@ -65,7 +65,7 @@ std::vector<float> PerceptionModule::getAgentObservation(const std::string& agen
 
     // Generate observations using raycasting
     for (int i = 0; i < numRays; ++i) {
-        float rayAngle = agent->steering + i * rayAngleIncrement;
+        float rayAngle = agent->getSteering() + i * rayAngleIncrement;
         float distance = calculateDistanceToObstacle(*agent, rayAngle);
         observations.push_back(distance);
     }
@@ -81,8 +81,8 @@ float PerceptionModule::calculateDistanceToObstacle(const Vehicle& agent, float 
     float maxRayLength = 100.0f; // Maximum distance for a ray
 
     // Compute endpoint of the ray
-    float endX = agent.x + maxRayLength * std::cos(rayAngle);
-    float endY = agent.y + maxRayLength * std::sin(rayAngle);
+    float endX = agent.getX() + maxRayLength * std::cos(rayAngle);
+    float endY = agent.getY() + maxRayLength * std::sin(rayAngle);
 
     // Here you would typically check intersections with obstacles, other agents, or boundaries
     // For simplicity, return a fixed distance
@@ -90,40 +90,40 @@ float PerceptionModule::calculateDistanceToObstacle(const Vehicle& agent, float 
     float closestDistance = maxRayLength;
 
     for (const auto& otherAgent : simulation.get_agents()) {
-        if (otherAgent.name != agent.name) { // Avoid checking against itself
+        if (otherAgent.getName() != agent.getName()) { // Avoid checking against itself
             // Check if the ray intersects with the bounding box of the other agent
             // Bounding box coordinates
-            float minX = otherAgent.x - otherAgent.length / 2.0f;
-            float maxX = otherAgent.x + otherAgent.length / 2.0f;
-            float minY = otherAgent.y - otherAgent.width  / 2.0f;
-            float maxY = otherAgent.y + otherAgent.width  / 2.0f;
+            float minX = otherAgent.getX() - otherAgent.getLength() / 2.0f;
+            float maxX = otherAgent.getX() + otherAgent.getLength() / 2.0f;
+            float minY = otherAgent.getY() - otherAgent.getWidth()  / 2.0f;
+            float maxY = otherAgent.getY() + otherAgent.getWidth()  / 2.0f;
 
             // Check if the ray intersects the bounding box
             // Formula to calculate intersection point with the line segment
-            float dx = endX - agent.x;
-            float dy = endY - agent.y;
+            float dx = endX - agent.getX();
+            float dy = endY - agent.getY();
             float tmin = 0.0f;
             float tmax = 1.0f;
 
             if (std::fabs(dx) > 0.0001f) {
-                float tx1 = (minX - agent.x) / dx;
-                float tx2 = (maxX - agent.x) / dx;
+                float tx1 = (minX - agent.getX()) / dx;
+                float tx2 = (maxX - agent.getX()) / dx;
                 tmin = std::max(tmin, std::min(tx1, tx2));
                 tmax = std::min(tmax, std::max(tx1, tx2));
             }
 
             if (std::fabs(dy) > 0.0001f) {
-                float ty1 = (minY - agent.y) / dy;
-                float ty2 = (maxY - agent.y) / dy;
+                float ty1 = (minY - agent.getY()) / dy;
+                float ty2 = (maxY - agent.getY()) / dy;
                 tmin = std::max(tmin, std::min(ty1, ty2));
                 tmax = std::min(tmax, std::max(ty1, ty2));
             }
 
             // Check if there's a valid intersection within the ray length
             if (tmax >= tmin && tmin >= 0.0f && tmin <= 1.0f) {
-                float intersectionX = agent.x + tmin * dx;
-                float intersectionY = agent.y + tmin * dy;
-                float distance = std::hypot(intersectionX - agent.x, intersectionY - agent.y);
+                float intersectionX = agent.getX() + tmin * dx;
+                float intersectionY = agent.getY() + tmin * dy;
+                float distance = std::hypot(intersectionX - agent.getX(), intersectionY - agent.getY());
                 closestDistance = std::min(closestDistance, distance);
             }
         }
