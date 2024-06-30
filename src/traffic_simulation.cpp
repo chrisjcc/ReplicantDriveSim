@@ -136,6 +136,28 @@ void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, 
 
     const float max_velocity = 60.0f; // Maximum velocity (m/s)
 
+    // Process high-level actions
+    switch (high_level_action) {
+        case 0: // Keep lane
+            // No changes needed for keeping the lane
+            break;
+        case 1: // Left lane change
+            vehicle.setY(vehicle.getY() - LANE_WIDTH);
+            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            break;
+        case 2: // Right lane change
+            vehicle.setY(vehicle.getY() + LANE_WIDTH);
+            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            break;
+        case 3: // Speed up
+            vehicle.setVx(vehicle.getVx() + acceleration);
+            break;
+        case 4: // Slow down
+            vehicle.setVx(vehicle.getVx() - braking);
+            break;
+    }
+
+    // Update the velocities
     float initial_velocity_x = vehicle.getVx();
     float initial_velocity_y = vehicle.getVy();
 
@@ -143,7 +165,6 @@ void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, 
     float acceleration_x = net_acceleration * std::cos(steering);
     float acceleration_y = net_acceleration * std::sin(steering);
 
-    // Update the velocities
     float new_velocity_x = clamp(initial_velocity_x + acceleration_x * time_step, 0.0f, max_velocity);
     float new_velocity_y = clamp(initial_velocity_y + acceleration_y * time_step, 0.0f, max_velocity);
 
@@ -160,32 +181,12 @@ void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, 
     vehicle.setX(new_x);
     vehicle.setY(new_y);
 
-
     // Wrap around horizontally
     if (vehicle.getX() < 0) vehicle.setX(vehicle.getX() + SCREEN_WIDTH);
     if (vehicle.getX() >= SCREEN_WIDTH) vehicle.setX(vehicle.getX() - SCREEN_WIDTH);
 
     // Constrain vertically within the road
-    //vehicle.y = std::fmin(std::fmax(vehicle.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
-
-    switch (high_level_action) {
-        case 0: // Keep lane
-            break;
-        case 1: // Left lane change
-            vehicle.setY(vehicle.getY() - LANE_WIDTH);
-            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
-            break;
-        case 2: // Right lane change
-            vehicle.setY(vehicle.getY() + LANE_WIDTH);
-            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
-            break;
-        case 3: // Accelerate
-            vehicle.setVx(vehicle.getVx() + acceleration);
-            break;
-        case 4: // Decelerate
-            vehicle.setVx(vehicle.getVx() - braking);
-            break;
-    }
+    // vehicle.y = std::fmin(std::fmax(vehicle.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
 }
 
 std::vector<std::shared_ptr<Vehicle>> TrafficSimulation::getNearbyVehicles(const std::string& agent_name) const {
