@@ -250,9 +250,9 @@ class HighwayEnv(MultiAgentEnv):
         """
         # Get ego vehicle information
         agent = self.sim.get_agent_by_name(agent_name)
-        ego_position = np.array([agent.x, agent.y, agent.z] , dtype=np.float32) #np.array(self.sim.get_agent_position(agent))
-        ego_velocity = np.array([agent.vx, agent.vy, agent.vz] , dtype=np.float32) #np.array(self.sim.get_agent_velocity(agent))
-        ego_heading = agent.steering #self.sim.get_agent_heading(agent)
+        ego_position = np.array([agent.getX(), agent.getY(), agent.getZ()] , dtype=np.float32) #np.array(self.sim.get_agent_position(agent))
+        ego_velocity = np.array([agent.getVx(), agent.getVy(), agent.getVz()] , dtype=np.float32) #np.array(self.sim.get_agent_velocity(agent))
+        ego_heading = agent.getSteering() #self.sim.get_agent_heading(agent)
 
         # Use the C++ perception module to get nearby vehicles
         nearby_vehicles = self.sim.get_nearby_vehicles(agent_name)

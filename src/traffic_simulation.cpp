@@ -39,16 +39,18 @@ TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
     perceptionModule = new PerceptionModule(*this); // Initialize the pointer
 
     for (int i = 0; i < num_agents; ++i) {
-        agents[i].x = randFloat(0, SCREEN_WIDTH - VEHICLE_WIDTH);
-        agents[i].y = randFloat(0, SCREEN_HEIGHT - VEHICLE_HEIGHT);
-        agents[i].z = 0.0f;
-        agents[i].vx = randNormal(50.0f, 1.0f);  // Randomly sample initial speed
-        agents[i].vy = 0.0f;                     // Initial vertical velocity
-        agents[i].vz = 0.0f;
-        agents[i].steering = 0.0f;
-        agents[i].name = "agent_" + std::to_string(i);
-        agents[i].width = 2.0f;
-        agents[i].length = 5.0f;
+        // Set agent attributes
+        agents[i].setX(randFloat(0, SCREEN_WIDTH - VEHICLE_WIDTH));
+        agents[i].setY(randFloat(0, SCREEN_HEIGHT - VEHICLE_HEIGHT));
+        agents[i].setZ(0.0f);
+        agents[i].setVx(randNormal(50.0f, 1.0f)); // Randomly sample initial speed
+        agents[i].setVy(randNormal(0.0f, 1.0f));  // Initial lateral velocity
+        agents[i].setVz(0.0f);
+        agents[i].setSteering(randNormal(0.0f, 1.0f));
+        agents[i].setId(i);
+        agents[i].setName("agent_" + std::to_string(i));
+        agents[i].setWidth(2.0f);
+        agents[i].setLength(5.0f);
 
         // Initialize previous positions with current positions
         previous_positions[i] = agents[i];
@@ -60,18 +62,23 @@ TrafficSimulation::~TrafficSimulation() {
 }
 
 void TrafficSimulation::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
-    for (int i = 0; i < num_agents; ++i) {
-        applyAction(i, high_level_actions[i], low_level_actions[i]);
+
+    for (auto& agent : agents) {
+        updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
+
     }
+    //for (int i = 0; i < num_agents; ++i) {
+    //    applyAction(i, high_level_actions[i], low_level_actions[i]);
+    //}
 
     // Update perceptions
     perceptionModule->updatePerceptions();
 
     // Update vehicle position
-    updatePositions();
+    //updatePositions();
 
     // Check for collisions between agents
-    checkCollisions();
+    //checkCollisions();
 }
 
 const std::vector<Vehicle>& TrafficSimulation::get_agents() const { return agents; }
@@ -79,7 +86,7 @@ const std::vector<Vehicle>& TrafficSimulation::get_agents() const { return agent
 Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
     auto it = std::find_if(agents.begin(), agents.end(),
                            [&name](const Vehicle& agent) {
-                               return agent.name == name;
+                               return agent.getName() == name;
                            });
 
     if (it != agents.end()) {
@@ -93,7 +100,7 @@ Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_positions() const {
     std::unordered_map<std::string, std::vector<float>> positions;
     for (int i = 0; i < num_agents; ++i) {
-        positions["agent_" + std::to_string(i)] = {agents[i].x, agents[i].y, agents[i].z};
+        positions["agent_" + std::to_string(i)] = {agents[i].getX(), agents[i].getY(), agents[i].getZ()};
     }
     return positions;
 }
@@ -101,7 +108,7 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_velocities() const {
     std::unordered_map<std::string, std::vector<float>> velocities;
     for (int i = 0; i < num_agents; ++i) {
-        velocities["agent_" + std::to_string(i)] = {agents[i].vx, agents[i].vy, agents[i].vz};
+        velocities["agent_" + std::to_string(i)] = {agents[i].getVx(), agents[i].getVy(), agents[i].getVz()};
     }
     return velocities;
 }
@@ -109,56 +116,75 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_previous_positions() const {
     std::unordered_map<std::string, std::vector<float>> previous_positions_map;
     for (int i = 0; i < num_agents; ++i) {
-        previous_positions_map["agent_" + std::to_string(i)] = {previous_positions[i].x, previous_positions[i].y, previous_positions[i].z};
+        previous_positions_map["agent_" + std::to_string(i)] = {previous_positions[i].getX(), previous_positions[i].getY(), previous_positions[i].getZ()};
     }
     return previous_positions_map;
 }
 
-void TrafficSimulation::applyAction(int agent_idx, int high_level_action, const std::vector<float>& low_level_action) {
-    auto& agent = agents[agent_idx];
+void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, const std::vector<float>& low_level_action) {
+    // Bound kinematics to physical constraints
+    float steering = clamp(low_level_action[0], -0.610865f, 0.610865f); // Clamp steering between -35 and 35 degrees in radians
+    vehicle.setSteering(steering);
 
-    // Apply steering
-    agent.steering += low_level_action[0];
-    agent.steering = clamp(agent.steering, -0.610865f, 0.610865f);
-    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // acceleration
-    float braking = clamp(low_level_action[2], -8.0f, 0.0f); // braking
+    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // Acceleration (m/s^2)
+    float braking = clamp(low_level_action[2], -8.0f, 0.0f); // Braking deceleration (m/s^2)
+
+    float net_acceleration = acceleration + braking; // Net acceleration considering both acceleration and braking
+
+    // Time step (assuming a fixed time step, adjust as necessary)
+    float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
+
+    const float max_velocity = 60.0f; // Maximum velocity (m/s)
+
+    float initial_velocity_x = vehicle.getVx();
+    float initial_velocity_y = vehicle.getVy();
+
+    // Calculate the components of the net acceleration in the x and y directions
+    float acceleration_x = net_acceleration * std::cos(steering);
+    float acceleration_y = net_acceleration * std::sin(steering);
+
+    // Update the velocities
+    float new_velocity_x = clamp(initial_velocity_x + acceleration_x * time_step, 0.0f, max_velocity);
+    float new_velocity_y = clamp(initial_velocity_y + acceleration_y * time_step, 0.0f, max_velocity);
+
+    vehicle.setVx(new_velocity_x);
+    vehicle.setVy(new_velocity_y);
+
+    // Update the position using the kinematic equations
+    float delta_x = initial_velocity_x * time_step + 0.5f * acceleration_x * time_step * time_step;
+    float delta_y = initial_velocity_y * time_step + 0.5f * acceleration_y * time_step * time_step;
+
+    float new_x = vehicle.getX() + delta_x;
+    float new_y = vehicle.getY() + delta_y;
+
+    vehicle.setX(new_x);
+    vehicle.setY(new_y);
+
+
+    // Wrap around horizontally
+    if (vehicle.getX() < 0) vehicle.setX(vehicle.getX() + SCREEN_WIDTH);
+    if (vehicle.getX() >= SCREEN_WIDTH) vehicle.setX(vehicle.getX() - SCREEN_WIDTH);
+
+    // Constrain vertically within the road
+    //vehicle.y = std::fmin(std::fmax(vehicle.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
 
     switch (high_level_action) {
         case 0: // Keep lane
             break;
         case 1: // Left lane change
-            agent.y -= LANE_WIDTH;
-            agent.y = std::fmin(std::fmax(agent.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
+            vehicle.setY(vehicle.getY() - LANE_WIDTH);
+            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
             break;
         case 2: // Right lane change
-            agent.y += LANE_WIDTH;
-            agent.y = std::fmin(std::fmax(agent.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
+            vehicle.setY(vehicle.getY() + LANE_WIDTH);
+            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
             break;
         case 3: // Accelerate
-            agent.vx += acceleration;
+            vehicle.setVx(vehicle.getVx() + acceleration);
             break;
         case 4: // Decelerate
-            agent.vx -= braking;
+            vehicle.setVx(vehicle.getVx() - braking);
             break;
-    }
-
-    // Clamp velocities
-    const float max_velocity = 10.0f;
-    agent.vx = std::fmin(std::fmax(agent.vx, 0.0f), max_velocity);
-    agent.vy = std::fmin(std::fmax(agent.vy, -max_velocity), max_velocity);
-}
-
-void TrafficSimulation::updatePositions() {
-    for (auto& agent : agents) {
-        agent.x += agent.vx;
-        agent.y += agent.vy;
-
-        // Wrap around horizontally
-        if (agent.x < 0) agent.x += SCREEN_WIDTH;
-        if (agent.x >= SCREEN_WIDTH) agent.x -= SCREEN_WIDTH;
-
-        // Constrain vertically within the road
-        agent.y = std::fmin(std::fmax(agent.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
     }
 }
 
@@ -166,7 +192,7 @@ std::vector<std::shared_ptr<Vehicle>> TrafficSimulation::getNearbyVehicles(const
     // Find the vehicle corresponding to the given agent ID
     const Vehicle* ego_vehicle = nullptr;
     for (const auto& vehicle : agents) {
-        if (vehicle.name == agent_name) {
+        if (vehicle.getName() == agent_name) {
             ego_vehicle = &vehicle;
             break;
         }
@@ -184,10 +210,12 @@ std::vector<std::shared_ptr<Vehicle>> TrafficSimulation::getNearbyVehicles(const
 void TrafficSimulation::checkCollisions() {
     for (int i = 0; i < num_agents; ++i) {
         for (int j = i + 1; j < num_agents; ++j) {
-            if (std::hypot(agents[i].x - agents[j].x, agents[i].y - agents[j].y) < VEHICLE_WIDTH) {
+            if (std::hypot(agents[i].getX() - agents[j].getX(), agents[i].getY() - agents[j].getY()) < VEHICLE_WIDTH) {
                 // Handle collision
-                agents[i].vx = agents[i].vy = 0.0f;
-                agents[j].vx = agents[j].vy = 0.0f;
+                agents[i].setVx(0.0f);
+                agents[i].setVy(0.0f);
+                agents[j].setVx(0.0f);
+                agents[j].setVy(0.0f);
             }
         }
     }
