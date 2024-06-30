@@ -5,20 +5,14 @@
 #include <unordered_map>
 #include <string>
 
-class Vehicle {
-public:
-    float x, y;
-    float vx, vy;
-    float steering;
-    std::string name;
-    float prev_x, prev_y;
-    // ... (other members and methods)
-};
+#include "vehicle.h"
+//#include "perception_module.h"
 
 class TrafficSimulation {
 public:
     TrafficSimulation(int num_agents);
     void step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions);
+    const std::vector<Vehicle>& get_agents() const;
     Vehicle& get_agent_by_name(const std::string& name);
     std::unordered_map<std::string, std::vector<float>> get_agent_positions() const;
     std::unordered_map<std::string, std::vector<float>> get_agent_velocities() const;
