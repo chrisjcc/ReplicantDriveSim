@@ -1,4 +1,5 @@
 #include "traffic_simulation.h"
+#include "perception_module.h"
 #include <algorithm> // for std::max and std::min
 #include <cmath>
 #include <random>
@@ -55,6 +56,8 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
     updatePositions();
     checkCollisions();
 }
+
+const std::vector<Vehicle>& TrafficSimulation::get_agents() const { return agents; }
 
 Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
     auto it = std::find_if(agents.begin(), agents.end(),
