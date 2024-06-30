@@ -3,7 +3,6 @@
 
 #include <cmath>
 
-const int VEHICLE_WIDTH = 130;
 
 PerceptionModule::PerceptionModule(const TrafficSimulation& sim, int num_rays)
     : numRays(num_rays), delta_theta(2 * M_PI / num_rays), rayAngleIncrement(delta_theta), simulation(sim) {
@@ -26,6 +25,21 @@ void PerceptionModule::updatePerceptions() {
         // Store or use observations for further processing
         // Example: agent.setObservations(observations);
     }
+}
+
+std::vector<std::shared_ptr<Vehicle>> PerceptionModule::detectNearbyVehicles(const Vehicle& ego_vehicle) const {
+    std::vector<std::shared_ptr<Vehicle>> nearby_vehicles;
+
+    for (const auto& vehicle : simulation.get_agents()) {
+        if (vehicle.name != ego_vehicle.name) {
+            float distance = std::hypot(vehicle.x - ego_vehicle.x, vehicle.y - ego_vehicle.y);
+            if (distance <= vehicle.sensor_range) {
+                nearby_vehicles.push_back(std::make_shared<Vehicle>(vehicle));
+            }
+        }
+    }
+
+    return nearby_vehicles;
 }
 
 std::vector<float> PerceptionModule::getAgentObservation(const std::string& agent_name) const {
@@ -79,10 +93,10 @@ float PerceptionModule::calculateDistanceToObstacle(const Vehicle& agent, float 
         if (otherAgent.name != agent.name) { // Avoid checking against itself
             // Check if the ray intersects with the bounding box of the other agent
             // Bounding box coordinates
-            float minX = otherAgent.x - VEHICLE_WIDTH / 2.0f;
-            float maxX = otherAgent.x + VEHICLE_WIDTH / 2.0f;
-            float minY = otherAgent.y - VEHICLE_WIDTH / 2.0f;
-            float maxY = otherAgent.y + VEHICLE_WIDTH / 2.0f;
+            float minX = otherAgent.x - otherAgent.length / 2.0f;
+            float maxX = otherAgent.x + otherAgent.length / 2.0f;
+            float minY = otherAgent.y - otherAgent.width  / 2.0f;
+            float maxY = otherAgent.y + otherAgent.width  / 2.0f;
 
             // Check if the ray intersects the bounding box
             // Formula to calculate intersection point with the line segment

@@ -17,8 +17,8 @@ public:
     ~PerceptionModule(); 
 
     void updatePerceptions();
-
     std::vector<float> getAgentObservation(const std::string& agent_name) const;
+    std::vector<std::shared_ptr<Vehicle>> detectNearbyVehicles(const Vehicle& ego_vehicle) const;
 
 private:
     int numRays;
