@@ -95,6 +95,7 @@ class HighwayEnv(MultiAgentEnv):
             "continuous": self.low_level_action_space
         })
 
+        self.normalize_obs = False
         self.pygame_init = False
         self.render_mode = self.configs.get("render_mode", "human")
         self.max_episode_steps = self.configs.get("max_episode_steps", 10000)
@@ -237,7 +238,7 @@ class HighwayEnv(MultiAgentEnv):
 
         return observations, rewards, self.terminateds, self.truncateds, self.infos
 
-    def _get_observation(self, agent: str) -> np.ndarray:
+    def _get_observation(self, agent_name: str) -> np.ndarray:
         """
         Generate an observation for the given agent.
 
@@ -247,29 +248,59 @@ class HighwayEnv(MultiAgentEnv):
         Returns:
             np.ndarray: The observation array.
         """
-        # Observation space is similar to KinematicObservation in highway-env
-        agent_positions = self.sim.get_agent_positions()
-        agent_velocities = self.sim.get_agent_velocities()
+        # Get ego vehicle information
+        agent = self.sim.get_agent_by_name(agent_name)
+        ego_position = np.array([agent.x, agent.y, agent.z] , dtype=np.float32) #np.array(self.sim.get_agent_position(agent))
+        ego_velocity = np.array([agent.vx, agent.vy, agent.vz] , dtype=np.float32) #np.array(self.sim.get_agent_velocity(agent))
+        ego_heading = agent.steering #self.sim.get_agent_heading(agent)
 
-        ego_position = np.array(agent_positions[agent])
-        ego_velocity = np.array(agent_velocities[agent])
+        # Use the C++ perception module to get nearby vehicles
+        nearby_vehicles = self.sim.get_nearby_vehicles(agent_name)
 
-        other_agents = [a for a in self.agents if a != agent]
-        other_positions = [np.array(agent_positions[a]) for a in other_agents]
-        other_velocities = [np.array(agent_velocities[a]) for a in other_agents]
+        # Define the observation features
+        features = ["presence", "x", "y", "vx", "vy", "heading"]
+        vehicles_count = 15  # Default number of vehicles to observe
 
-        mean_other_positions = (
-            np.mean(other_positions, axis=0) if other_positions else np.zeros(2)
-        )
-        mean_other_velocities = (
-            np.mean(other_velocities, axis=0) if other_velocities else np.zeros(2)
-        )
+        # Initialize the observation array
+        observation = np.zeros((vehicles_count, len(features)))
 
-        observation = np.concatenate(
-            [ego_position, ego_velocity, mean_other_positions, mean_other_velocities]
-        )
+        # Fill in the observation array
+        for i, vehicle in enumerate(nearby_vehicles[:vehicles_count]):
+            if vehicle is not None:
+                observation[i, 0] = 1  # presence
+                relative_pos = vehicle.position - ego_position
+                observation[i, 1] = relative_pos[0]  # x
+                observation[i, 2] = relative_pos[1]  # y
+                observation[i, 3] = vehicle.velocity[0] - ego_velocity[0]  # vx
+                observation[i, 4] = vehicle.velocity[1] - ego_velocity[1]  # vy
+                observation[i, 5] = vehicle.heading - ego_heading  # heading
 
-        return observation
+        # Normalize and clip the observation
+        if self.normalize_obs:
+            observation = self._normalize_obs(observation)
+
+        # Flatten the observation array
+        return observation.flatten()
+
+    def _normalize_obs(self, obs):
+        """
+        Normalize the observation based on predefined ranges.
+        """
+        # Define normalization ranges (these should be adjusted based on your specific environment)
+        ranges = {
+            "x": [-100, 100],
+            "y": [-100, 100],
+            "vx": [-30, 30],
+            "vy": [-30, 30],
+            "heading": [-math.pi, math.pi]
+        }
+
+        for i, feature in enumerate(["presence", "x", "y", "vx", "vy", "heading"]):
+            if feature in ranges:
+                min_val, max_val = ranges[feature]
+                obs[:, i] = np.clip((obs[:, i] - min_val) / (max_val - min_val), 0, 1)
+
+        return obs
 
     def _get_reward(self, agent: str) -> Dict[str, float]:
         """

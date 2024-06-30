@@ -36,24 +36,41 @@ TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
 
+    perceptionModule = new PerceptionModule(*this); // Initialize the pointer
+
     for (int i = 0; i < num_agents; ++i) {
         agents[i].x = randFloat(0, SCREEN_WIDTH - VEHICLE_WIDTH);
         agents[i].y = randFloat(0, SCREEN_HEIGHT - VEHICLE_HEIGHT);
+        agents[i].z = 0.0f;
         agents[i].vx = randNormal(50.0f, 1.0f);  // Randomly sample initial speed
         agents[i].vy = 0.0f;                     // Initial vertical velocity
+        agents[i].vz = 0.0f;
         agents[i].steering = 0.0f;
         agents[i].name = "agent_" + std::to_string(i);
+        agents[i].width = 2.0f;
+        agents[i].length = 5.0f;
 
         // Initialize previous positions with current positions
         previous_positions[i] = agents[i];
     }
 }
 
+TrafficSimulation::~TrafficSimulation() {
+    delete perceptionModule; // Clean up the pointer in the destructor
+}
+
 void TrafficSimulation::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
     for (int i = 0; i < num_agents; ++i) {
         applyAction(i, high_level_actions[i], low_level_actions[i]);
     }
+
+    // Update perceptions
+    perceptionModule->updatePerceptions();
+
+    // Update vehicle position
     updatePositions();
+
+    // Check for collisions between agents
     checkCollisions();
 }
 
@@ -76,7 +93,7 @@ Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_positions() const {
     std::unordered_map<std::string, std::vector<float>> positions;
     for (int i = 0; i < num_agents; ++i) {
-        positions["agent_" + std::to_string(i)] = {agents[i].x, agents[i].y};
+        positions["agent_" + std::to_string(i)] = {agents[i].x, agents[i].y, agents[i].z};
     }
     return positions;
 }
@@ -84,7 +101,7 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_velocities() const {
     std::unordered_map<std::string, std::vector<float>> velocities;
     for (int i = 0; i < num_agents; ++i) {
-        velocities["agent_" + std::to_string(i)] = {agents[i].vx, agents[i].vy};
+        velocities["agent_" + std::to_string(i)] = {agents[i].vx, agents[i].vy, agents[i].vz};
     }
     return velocities;
 }
@@ -92,7 +109,7 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_previous_positions() const {
     std::unordered_map<std::string, std::vector<float>> previous_positions_map;
     for (int i = 0; i < num_agents; ++i) {
-        previous_positions_map["agent_" + std::to_string(i)] = {previous_positions[i].x, previous_positions[i].y};
+        previous_positions_map["agent_" + std::to_string(i)] = {previous_positions[i].x, previous_positions[i].y, previous_positions[i].z};
     }
     return previous_positions_map;
 }
@@ -143,6 +160,25 @@ void TrafficSimulation::updatePositions() {
         // Constrain vertically within the road
         agent.y = std::fmin(std::fmax(agent.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
     }
+}
+
+std::vector<std::shared_ptr<Vehicle>> TrafficSimulation::getNearbyVehicles(const std::string& agent_name) const {
+    // Find the vehicle corresponding to the given agent ID
+    const Vehicle* ego_vehicle = nullptr;
+    for (const auto& vehicle : agents) {
+        if (vehicle.name == agent_name) {
+            ego_vehicle = &vehicle;
+            break;
+        }
+    }
+
+    // If the vehicle with the given agent ID is not found, return an empty vector
+    if (ego_vehicle == nullptr) {
+        return std::vector<std::shared_ptr<Vehicle>>();
+    }
+
+    // Call the PerceptionModule method to detect nearby vehicles
+    return perceptionModule->detectNearbyVehicles(*ego_vehicle);
 }
 
 void TrafficSimulation::checkCollisions() {
