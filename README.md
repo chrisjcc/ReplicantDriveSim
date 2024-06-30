@@ -104,5 +104,6 @@ mlflow ui --backend-store-uri file:mlruns
 # Run unit tests
 ```shell
 ./build/tests/traffic_simulation_test
+./build/tests/perception_module_test
 ```
 Google Test provides robust features for writing and organizing unit tests in C++. Customize your test structure (TEST_F, TEST, etc.) as per your project requirements.
