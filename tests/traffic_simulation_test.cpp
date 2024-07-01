@@ -47,10 +47,10 @@ TEST_F(TrafficSimulationTest, BasicMovementAndAction) {
 // Test case to verify collision detection
 TEST_F(TrafficSimulationTest, CollisionDetection) {
     // Setup initial positions to induce collision
-    simulation.get_agent_by_name("agent_0").x = 50.0f;
-    simulation.get_agent_by_name("agent_1").x = 55.0f;
-    simulation.get_agent_by_name("agent_0").y = 100.0f;
-    simulation.get_agent_by_name("agent_1").y = 100.0f;
+    simulation.get_agent_by_name("agent_0").setX(50.0f);
+    simulation.get_agent_by_name("agent_1").setX(55.0f);
+    simulation.get_agent_by_name("agent_0").setY(100.0f);
+    simulation.get_agent_by_name("agent_1").setY(100.0f);
 
     // Step simulation
     simulation.step({0, 0, 0}, {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});

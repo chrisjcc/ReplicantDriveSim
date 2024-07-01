@@ -1,3 +1,4 @@
+import math
 import os
 from typing import Any, Dict, Optional, Tuple
 
@@ -88,13 +89,16 @@ class HighwayEnv(MultiAgentEnv):
             low=np.array([-0.610865, 0.0, -8.0], dtype=np.float32),
             high=np.array([0.610865, 4.5, 0.0], dtype=np.float32),
             shape=(3,),
-            dtype=np.float32
+            dtype=np.float32,
         )
-        self.action_space = gym.spaces.Dict({
-            "discrete": self.high_level_action_space,
-            "continuous": self.low_level_action_space
-        })
+        self.action_space = gym.spaces.Dict(
+            {
+                "discrete": self.high_level_action_space,
+                "continuous": self.low_level_action_space,
+            }
+        )
 
+        self.normalize_obs = False
         self.pygame_init = False
         self.render_mode = self.configs.get("render_mode", "human")
         self.max_episode_steps = self.configs.get("max_episode_steps", 10000)
@@ -132,7 +136,9 @@ class HighwayEnv(MultiAgentEnv):
         self.episode_step_count = 0
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
-        self.infos = {agent: {"cumulative_reward": 0.0} for agent in self.agents}  # Initialize cumulative rewards
+        self.infos = {
+            agent: {"cumulative_reward": 0.0} for agent in self.agents
+        }  # Initialize cumulative rewards
 
         self.sim = traffic_simulation.TrafficSimulation(
             len(self.agents)
@@ -197,19 +203,23 @@ class HighwayEnv(MultiAgentEnv):
 
         for agent, action in action_dict.items():
             reward_components = self._get_reward(agent)
-            rewards[agent] = sum(reward_components.values()) # Total step reward
+            rewards[agent] = sum(reward_components.values())  # Total step reward
 
             # Log individual rewards for each agent
-            mlflow.log_metric(f"{agent}_total_reward", rewards[agent], step=self.step_count)
+            mlflow.log_metric(
+                f"{agent}_total_reward", rewards[agent], step=self.step_count
+            )
 
             # Update cumulative_reward
             self.infos[agent]["cumulative_reward"] += rewards[agent]
 
             # Update other info fields without overwriting existing data
-            self.infos[agent].update({
-                "reward_components": reward_components,
-                "total_reward": rewards[agent],
-            })
+            self.infos[agent].update(
+                {
+                    "reward_components": reward_components,
+                    "total_reward": rewards[agent],
+                }
+            )
 
         # After updating the termination statuses of individual agents (e.g., due to collisions),
         # it is essential to check if all agents in the environment are terminated.
@@ -226,7 +236,11 @@ class HighwayEnv(MultiAgentEnv):
 
             for agent in self.agents:
                 # Log mean reward metric to MLflow
-                mlflow.log_metric(f"{agent}_mean_reward", self.infos[agent]["cumulative_reward"] / self.episode_step_count, step=self.episode_count)
+                mlflow.log_metric(
+                    f"{agent}_mean_reward",
+                    self.infos[agent]["cumulative_reward"] / self.episode_step_count,
+                    step=self.episode_count,
+                )
         else:
             self.terminateds["__all__"] = all(self.terminateds.values())
 
@@ -237,7 +251,7 @@ class HighwayEnv(MultiAgentEnv):
 
         return observations, rewards, self.terminateds, self.truncateds, self.infos
 
-    def _get_observation(self, agent: str) -> np.ndarray:
+    def _get_observation(self, agent_name: str) -> np.ndarray:
         """
         Generate an observation for the given agent.
 
@@ -247,29 +261,63 @@ class HighwayEnv(MultiAgentEnv):
         Returns:
             np.ndarray: The observation array.
         """
-        # Observation space is similar to KinematicObservation in highway-env
-        agent_positions = self.sim.get_agent_positions()
-        agent_velocities = self.sim.get_agent_velocities()
+        # Get ego vehicle information
+        agent = self.sim.get_agent_by_name(agent_name)
+        ego_position = np.array(
+            [agent.getX(), agent.getY(), agent.getZ()], dtype=np.float32
+        )  # np.array(self.sim.get_agent_position(agent))
+        ego_velocity = np.array(
+            [agent.getVx(), agent.getVy(), agent.getVz()], dtype=np.float32
+        )  # np.array(self.sim.get_agent_velocity(agent))
+        ego_heading = agent.getSteering()  # self.sim.get_agent_heading(agent)
 
-        ego_position = np.array(agent_positions[agent])
-        ego_velocity = np.array(agent_velocities[agent])
+        # Use the C++ perception module to get nearby vehicles
+        nearby_vehicles = self.sim.get_nearby_vehicles(agent_name)
 
-        other_agents = [a for a in self.agents if a != agent]
-        other_positions = [np.array(agent_positions[a]) for a in other_agents]
-        other_velocities = [np.array(agent_velocities[a]) for a in other_agents]
+        # Define the observation features
+        features = ["presence", "x", "y", "vx", "vy", "heading"]
+        vehicles_count = 15  # Default number of vehicles to observe
 
-        mean_other_positions = (
-            np.mean(other_positions, axis=0) if other_positions else np.zeros(2)
-        )
-        mean_other_velocities = (
-            np.mean(other_velocities, axis=0) if other_velocities else np.zeros(2)
-        )
+        # Initialize the observation array
+        observation = np.zeros((vehicles_count, len(features)))
 
-        observation = np.concatenate(
-            [ego_position, ego_velocity, mean_other_positions, mean_other_velocities]
-        )
+        # Fill in the observation array
+        for i, vehicle in enumerate(nearby_vehicles[:vehicles_count]):
+            if vehicle is not None:
+                observation[i, 0] = 1  # presence
+                relative_pos = vehicle.position - ego_position
+                observation[i, 1] = relative_pos[0]  # x
+                observation[i, 2] = relative_pos[1]  # y
+                observation[i, 3] = vehicle.velocity[0] - ego_velocity[0]  # vx
+                observation[i, 4] = vehicle.velocity[1] - ego_velocity[1]  # vy
+                observation[i, 5] = vehicle.heading - ego_heading  # heading
 
-        return observation
+        # Normalize and clip the observation
+        if self.normalize_obs:
+            observation = self._normalize_obs(observation)
+
+        # Flatten the observation array
+        return observation.flatten()
+
+    def _normalize_obs(self, obs):
+        """
+        Normalize the observation based on predefined ranges.
+        """
+        # Define normalization ranges (these should be adjusted based on your specific environment)
+        ranges = {
+            "x": [-100, 100],
+            "y": [-100, 100],
+            "vx": [-30, 30],
+            "vy": [-30, 30],
+            "heading": [-math.pi, math.pi],
+        }
+
+        for i, feature in enumerate(["presence", "x", "y", "vx", "vy", "heading"]):
+            if feature in ranges:
+                min_val, max_val = ranges[feature]
+                obs[:, i] = np.clip((obs[:, i] - min_val) / (max_val - min_val), 0, 1)
+
+        return obs
 
     def _get_reward(self, agent: str) -> Dict[str, float]:
         """
@@ -341,13 +389,21 @@ class HighwayEnv(MultiAgentEnv):
             self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
 
-        self.screen.fill((255, 255, 255))
+        self.screen.fill((255, 255, 255))  # Clear screen with white
+
+        # Draw road
         pygame.draw.rect(
             self.screen,
             (0, 0, 0),
-            (0, LANE_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT - 2 * LANE_WIDTH),
+            (
+                0,
+                LANE_WIDTH,
+                SCREEN_WIDTH,
+                SCREEN_HEIGHT - 2 * LANE_WIDTH,
+            ),  # Example road dimensions
         )
 
+        # Draw lane markers
         for i in range(15):
             pygame.draw.line(
                 self.screen,
@@ -357,24 +413,39 @@ class HighwayEnv(MultiAgentEnv):
                 5,
             )
 
+        # Get agent positions and steering angles
         agent_positions = self.sim.get_agent_positions()
+        agent_steerings = {
+            agent: self.sim.get_agents()[i].getSteering()
+            for i, (agent, _) in enumerate(agent_positions.items())
+        }
 
+        # Render each agent (vehicle)
         for agent, pos in agent_positions.items():
             x, y = int(pos[0]), int(pos[1])
-            color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
-            pygame.draw.rect(
-                self.screen,
-                color,
-                (
-                    x - VEHICLE_WIDTH // 2,
-                    y - VEHICLE_HEIGHT // 2,
-                    VEHICLE_WIDTH,
-                    VEHICLE_HEIGHT,
-                ),
-            )
+            steering_angle = agent_steerings[agent]
 
-        pygame.display.flip()
-        self.clock.tick(FPS)  # Cap the frame rate
+            # Determine color based on collision status
+            color = (255, 0, 0) if self.collisions.get(agent, False) else (0, 0, 255)
+
+            # Create a rectangle surface for the vehicle
+            rect = pygame.Surface((40, 20))  # Example vehicle dimensions
+            rect.fill(color)
+
+            # Rotate the rectangle surface based on steering angle
+            rotated_rect = pygame.transform.rotate(
+                rect, math.degrees(-steering_angle)
+            )  # Negative to correct the rotation direction
+
+            # Calculate position to blit the rotated rectangle
+            rect_x = x - rotated_rect.get_width() // 2
+            rect_y = y - rotated_rect.get_height() // 2
+
+            # Draw rotated rectangle on the screen
+            self.screen.blit(rotated_rect, (rect_x, rect_y))
+
+        pygame.display.flip()  # Update the full display surface to the screen
+        self.clock.tick(FPS)  # Cap the frame rate at 25 FPS (adjust as needed)
 
     def close(self) -> None:
         """

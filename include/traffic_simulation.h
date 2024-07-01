@@ -5,24 +5,25 @@
 #include <unordered_map>
 #include <string>
 
-class Vehicle {
-public:
-    float x, y;
-    float vx, vy;
-    float steering;
-    std::string name;
-    float prev_x, prev_y;
-    // ... (other members and methods)
-};
+#include "vehicle.h"
+#include "perception_module.h"
+
+// Forward declaration of PerceptionModule
+class PerceptionModule;
+
 
 class TrafficSimulation {
 public:
     TrafficSimulation(int num_agents);
+    ~TrafficSimulation(); // Destructor to clean up perceptionModule pointer
     void step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions);
+    const std::vector<Vehicle>& get_agents() const;
     Vehicle& get_agent_by_name(const std::string& name);
     std::unordered_map<std::string, std::vector<float>> get_agent_positions() const;
     std::unordered_map<std::string, std::vector<float>> get_agent_velocities() const;
     std::unordered_map<std::string, std::vector<float>> get_previous_positions() const;
+    std::vector<std::shared_ptr<Vehicle>> getNearbyVehicles(const std::string& agent_id) const;
+
     // ... (other members and methods)
 
 private:
@@ -30,12 +31,15 @@ private:
     std::vector<Vehicle> agents;
     std::vector<Vehicle> previous_positions;
 
-    void applyAction(int agent_idx, int high_level_action, const std::vector<float>& low_level_action);
+    PerceptionModule* perceptionModule; // Use a pointer to PerceptionModule
+
+    void updatePosition(Vehicle &vehicle, int high_level_action, const std::vector<float>& low_level_action);
     void updatePositions();
     void checkCollisions();
     float randFloat(float a, float b);
+
     // ... (other members and methods)
 
 };
 
-#endif
+#endif // TRAFFIC_SIMULATION_H
