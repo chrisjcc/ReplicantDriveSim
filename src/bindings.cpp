@@ -9,19 +9,23 @@ PYBIND11_MODULE(traffic_simulation, m) {
     m.doc() = "Traffic simulation module"; // Optional module docstring
 
     py::class_<Vehicle>(m, "Vehicle")
-        .def("getId", &Vehicle::getId)
+        .def(py::init<>()) // Bind the default constructor
+        .def(py::init<const std::string&, int, int, float, float>()) // Bind the parameterized constructor
         .def("getName", &Vehicle::getName)
+        .def("getId", &Vehicle::getId)
         .def("getLaneId", &Vehicle::getLaneId)
-        .def("getgetWidth", &Vehicle::getWidth)
-        .def("getgetLength", &Vehicle::getLength)
+        .def("getWidth", &Vehicle::getWidth)
+        .def("getLength", &Vehicle::getLength)
+        .def("getSteering", &Vehicle::getSteering)
         .def("getX", &Vehicle::getX)
         .def("getY", &Vehicle::getY)
         .def("getZ", &Vehicle::getZ)
         .def("getVx", &Vehicle::getVx)
         .def("getVy", &Vehicle::getVy)
         .def("getVz", &Vehicle::getVz)
-        .def("getSteering", &Vehicle::getSteering)
-        .def("getSensorRange", &Vehicle::getSensorRange);
+        .def("getAcceleration", &Vehicle::getAcceleration)
+        .def("getSensorRange", &Vehicle::getSensorRange)
+        .def("getPositionString", &Vehicle::getPositionString);
 
     py::class_<TrafficSimulation>(m, "TrafficSimulation")
         .def(py::init<int>())
