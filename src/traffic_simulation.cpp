@@ -31,15 +31,18 @@ float randNormal(float mean, float stddev) {
     return distribution(generator);
 }
 
-
+/**
+ * @brief Constructor for TrafficSimulation.
+ * @param num_agents Number of agents (vehicles) in the simulation.
+ */
 TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
 
     perceptionModule = new PerceptionModule(*this); // Initialize the pointer
 
+    // Initialize agents with random positions and attributes
     for (int i = 0; i < num_agents; ++i) {
-        // Set agent attributes
         agents[i].setX(randFloat(0, SCREEN_WIDTH - VEHICLE_WIDTH));
         agents[i].setY(randFloat(0, SCREEN_HEIGHT - VEHICLE_HEIGHT));
         agents[i].setZ(0.0f);
@@ -57,32 +60,48 @@ TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
     }
 }
 
+/**
+ * @brief Destructor for TrafficSimulation.
+ * Cleans up memory allocated for perception module.
+ */
 TrafficSimulation::~TrafficSimulation() {
     delete perceptionModule; // Clean up the pointer in the destructor
 }
 
+/**
+ * @brief Performs a simulation step.
+ * Updates agent positions based on high-level and low-level actions,
+ * updates perceptions, and checks for collisions.
+ * @param high_level_actions High-level actions for each agent.
+ * @param low_level_actions Low-level actions for each agent.
+ */
 void TrafficSimulation::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
-
+    // Update positions of all agents
     for (auto& agent : agents) {
         updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
-
     }
-    //for (int i = 0; i < num_agents; ++i) {
-    //    applyAction(i, high_level_actions[i], low_level_actions[i]);
-    //}
 
     // Update perceptions
     perceptionModule->updatePerceptions();
 
-    // Update vehicle position
-    //updatePositions();
-
     // Check for collisions between agents
-    //checkCollisions();
+    //checkCollisions(); // Uncomment if collision detection is implemented
 }
 
-const std::vector<Vehicle>& TrafficSimulation::get_agents() const { return agents; }
+/**
+ * @brief Retrieves all agents in the simulation.
+ * @return Vector of all agents.
+ */
+const std::vector<Vehicle>& TrafficSimulation::get_agents() const {
+    return agents;
+}
 
+/**
+ * @brief Retrieves an agent by its name.
+ * @param name The name of the agent to retrieve.
+ * @return Reference to the agent.
+ * @throws std::runtime_error if the agent with the given name is not found.
+ */
 Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
     auto it = std::find_if(agents.begin(), agents.end(),
                            [&name](const Vehicle& agent) {
@@ -92,11 +111,14 @@ Vehicle& TrafficSimulation::get_agent_by_name(const std::string& name) {
     if (it != agents.end()) {
         return *it;
     } else {
-        // Handle the case where the agent is not found
         throw std::runtime_error("Agent with name " + name + " not found.");
     }
 }
 
+/**
+ * @brief Retrieves positions of all agents.
+ * @return Unordered map where keys are agent names and values are positions.
+ */
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_positions() const {
     std::unordered_map<std::string, std::vector<float>> positions;
     for (int i = 0; i < num_agents; ++i) {
@@ -105,6 +127,10 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent
     return positions;
 }
 
+/**
+ * @brief Retrieves velocities of all agents.
+ * @return Unordered map where keys are agent names and values are velocities.
+ */
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent_velocities() const {
     std::unordered_map<std::string, std::vector<float>> velocities;
     for (int i = 0; i < num_agents; ++i) {
@@ -113,6 +139,10 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_agent
     return velocities;
 }
 
+/**
+ * @brief Retrieves previous positions of all agents.
+ * @return Unordered map where keys are agent names and values are previous positions.
+ */
 std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_previous_positions() const {
     std::unordered_map<std::string, std::vector<float>> previous_positions_map;
     for (int i = 0; i < num_agents; ++i) {
@@ -121,7 +151,13 @@ std::unordered_map<std::string, std::vector<float>> TrafficSimulation::get_previ
     return previous_positions_map;
 }
 
-void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, const std::vector<float>& low_level_action) {
+/**
+ * @brief Updates the position of a vehicle based on actions.
+ * @param vehicle Reference to the vehicle to update.
+ * @param high_level_action The high-level action to apply.
+ * @param low_level_action The low-level actions to apply.
+ */
+void TrafficSimulation::updatePosition(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action) {
     // Bound kinematics to physical constraints
     float steering = clamp(low_level_action[0], -0.610865f, 0.610865f); // Clamp steering between -35 and 35 degrees in radians
     vehicle.setSteering(steering);
@@ -189,6 +225,11 @@ void TrafficSimulation::updatePosition(Vehicle &vehicle, int high_level_action, 
     // vehicle.y = std::fmin(std::fmax(vehicle.y, LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH);
 }
 
+/**
+ * @brief Retrieves nearby vehicles for a given agent.
+ * @param agent_name The name of the agent.
+ * @return Vector of shared pointers to nearby vehicles.
+ */
 std::vector<std::shared_ptr<Vehicle>> TrafficSimulation::getNearbyVehicles(const std::string& agent_name) const {
     // Find the vehicle corresponding to the given agent ID
     const Vehicle* ego_vehicle = nullptr;
@@ -208,11 +249,15 @@ std::vector<std::shared_ptr<Vehicle>> TrafficSimulation::getNearbyVehicles(const
     return perceptionModule->detectNearbyVehicles(*ego_vehicle);
 }
 
+/**
+ * @brief Checks for collisions between agents.
+ * If two agents are within the vehicle width of each other, their velocities are set to zero.
+ */
 void TrafficSimulation::checkCollisions() {
     for (int i = 0; i < num_agents; ++i) {
         for (int j = i + 1; j < num_agents; ++j) {
             if (std::hypot(agents[i].getX() - agents[j].getX(), agents[i].getY() - agents[j].getY()) < VEHICLE_WIDTH) {
-                // Handle collision
+                // Handle collision by setting velocities to zero
                 agents[i].setVx(0.0f);
                 agents[i].setVy(0.0f);
                 agents[j].setVx(0.0f);
@@ -222,6 +267,12 @@ void TrafficSimulation::checkCollisions() {
     }
 }
 
+/**
+ * @brief Generates a random float within a specified range.
+ * @param a Lower bound of the range.
+ * @param b Upper bound of the range.
+ * @return Random float within the specified range.
+ */
 float TrafficSimulation::randFloat(float a, float b) {
     return a + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (b - a)));
 }
