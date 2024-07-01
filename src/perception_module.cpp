@@ -1,18 +1,24 @@
 #include "perception_module.h"
-#include "traffic_simulation.h"
+#include "traffic_simulation.h"  // Include here for definition purposes
 
 #include <cmath>
 
-
+/**
+ * @brief Constructs a PerceptionModule object.
+ * @param sim Reference to the traffic simulation object.
+ * @param num_rays Number of rays used for perception.
+ */
 PerceptionModule::PerceptionModule(const TrafficSimulation& sim, int num_rays)
-    : numRays(num_rays), delta_theta(2 * M_PI / num_rays), rayAngleIncrement(delta_theta), simulation(sim) {
-    // Constructor implementation
-}
+    : numRays(num_rays), deltaTheta(2 * M_PI / num_rays), rayAngleIncrement(deltaTheta), simulation(sim) {}
 
-PerceptionModule::~PerceptionModule() {
-    // Destructor definition
-}
+/**
+ * @brief Destructor for PerceptionModule.
+ */
+PerceptionModule::~PerceptionModule() {}
 
+/**
+ * @brief Updates the perception data for all agents in the simulation.
+ */
 void PerceptionModule::updatePerceptions() {
     // Iterate over agents and update their perceptions
     for (auto& agent : simulation.get_agents()) {
@@ -27,6 +33,11 @@ void PerceptionModule::updatePerceptions() {
     }
 }
 
+/**
+ * @brief Detects nearby vehicles around the given ego vehicle.
+ * @param ego_vehicle The vehicle for which to detect nearby vehicles.
+ * @return Vector of shared pointers to detected nearby vehicles.
+ */
 std::vector<std::shared_ptr<Vehicle>> PerceptionModule::detectNearbyVehicles(const Vehicle& ego_vehicle) const {
     std::vector<std::shared_ptr<Vehicle>> nearby_vehicles;
 
@@ -42,6 +53,11 @@ std::vector<std::shared_ptr<Vehicle>> PerceptionModule::detectNearbyVehicles(con
     return nearby_vehicles;
 }
 
+/**
+ * @brief Gets the observation data for a specific agent.
+ * @param agent_name Name of the agent.
+ * @return Vector of observation data for the agent.
+ */
 std::vector<float> PerceptionModule::getAgentObservation(const std::string& agent_name) const {
     // Retrieve and return observations for a specific agent
     // Example: return simulation.getAgentByName(agent_name).getObservations();
@@ -73,6 +89,12 @@ std::vector<float> PerceptionModule::getAgentObservation(const std::string& agen
     return observations;
 }
 
+/**
+ * @brief Calculates the distance to the nearest obstacle for a given agent and ray angle.
+ * @param agent The vehicle agent for which the distance is being calculated.
+ * @param rayAngle The angle of the ray being cast.
+ * @return Distance to the nearest obstacle.
+ */
 float PerceptionModule::calculateDistanceToObstacle(const Vehicle& agent, float rayAngle) const {
     // Implement raycasting logic to determine distance to obstacles
     // Placeholder implementation:
