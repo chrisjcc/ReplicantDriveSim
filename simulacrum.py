@@ -1,3 +1,4 @@
+import math
 import os
 from typing import Any, Dict, Optional, Tuple
 
@@ -88,12 +89,14 @@ class HighwayEnv(MultiAgentEnv):
             low=np.array([-0.610865, 0.0, -8.0], dtype=np.float32),
             high=np.array([0.610865, 4.5, 0.0], dtype=np.float32),
             shape=(3,),
-            dtype=np.float32
+            dtype=np.float32,
         )
-        self.action_space = gym.spaces.Dict({
-            "discrete": self.high_level_action_space,
-            "continuous": self.low_level_action_space
-        })
+        self.action_space = gym.spaces.Dict(
+            {
+                "discrete": self.high_level_action_space,
+                "continuous": self.low_level_action_space,
+            }
+        )
 
         self.normalize_obs = False
         self.pygame_init = False
@@ -133,7 +136,9 @@ class HighwayEnv(MultiAgentEnv):
         self.episode_step_count = 0
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
-        self.infos = {agent: {"cumulative_reward": 0.0} for agent in self.agents}  # Initialize cumulative rewards
+        self.infos = {
+            agent: {"cumulative_reward": 0.0} for agent in self.agents
+        }  # Initialize cumulative rewards
 
         self.sim = traffic_simulation.TrafficSimulation(
             len(self.agents)
@@ -198,19 +203,23 @@ class HighwayEnv(MultiAgentEnv):
 
         for agent, action in action_dict.items():
             reward_components = self._get_reward(agent)
-            rewards[agent] = sum(reward_components.values()) # Total step reward
+            rewards[agent] = sum(reward_components.values())  # Total step reward
 
             # Log individual rewards for each agent
-            mlflow.log_metric(f"{agent}_total_reward", rewards[agent], step=self.step_count)
+            mlflow.log_metric(
+                f"{agent}_total_reward", rewards[agent], step=self.step_count
+            )
 
             # Update cumulative_reward
             self.infos[agent]["cumulative_reward"] += rewards[agent]
 
             # Update other info fields without overwriting existing data
-            self.infos[agent].update({
-                "reward_components": reward_components,
-                "total_reward": rewards[agent],
-            })
+            self.infos[agent].update(
+                {
+                    "reward_components": reward_components,
+                    "total_reward": rewards[agent],
+                }
+            )
 
         # After updating the termination statuses of individual agents (e.g., due to collisions),
         # it is essential to check if all agents in the environment are terminated.
@@ -227,7 +236,11 @@ class HighwayEnv(MultiAgentEnv):
 
             for agent in self.agents:
                 # Log mean reward metric to MLflow
-                mlflow.log_metric(f"{agent}_mean_reward", self.infos[agent]["cumulative_reward"] / self.episode_step_count, step=self.episode_count)
+                mlflow.log_metric(
+                    f"{agent}_mean_reward",
+                    self.infos[agent]["cumulative_reward"] / self.episode_step_count,
+                    step=self.episode_count,
+                )
         else:
             self.terminateds["__all__"] = all(self.terminateds.values())
 
@@ -250,9 +263,13 @@ class HighwayEnv(MultiAgentEnv):
         """
         # Get ego vehicle information
         agent = self.sim.get_agent_by_name(agent_name)
-        ego_position = np.array([agent.getX(), agent.getY(), agent.getZ()] , dtype=np.float32) #np.array(self.sim.get_agent_position(agent))
-        ego_velocity = np.array([agent.getVx(), agent.getVy(), agent.getVz()] , dtype=np.float32) #np.array(self.sim.get_agent_velocity(agent))
-        ego_heading = agent.getSteering() #self.sim.get_agent_heading(agent)
+        ego_position = np.array(
+            [agent.getX(), agent.getY(), agent.getZ()], dtype=np.float32
+        )  # np.array(self.sim.get_agent_position(agent))
+        ego_velocity = np.array(
+            [agent.getVx(), agent.getVy(), agent.getVz()], dtype=np.float32
+        )  # np.array(self.sim.get_agent_velocity(agent))
+        ego_heading = agent.getSteering()  # self.sim.get_agent_heading(agent)
 
         # Use the C++ perception module to get nearby vehicles
         nearby_vehicles = self.sim.get_nearby_vehicles(agent_name)
@@ -292,7 +309,7 @@ class HighwayEnv(MultiAgentEnv):
             "y": [-100, 100],
             "vx": [-30, 30],
             "vy": [-30, 30],
-            "heading": [-math.pi, math.pi]
+            "heading": [-math.pi, math.pi],
         }
 
         for i, feature in enumerate(["presence", "x", "y", "vx", "vy", "heading"]):
@@ -372,13 +389,21 @@ class HighwayEnv(MultiAgentEnv):
             self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
 
-        self.screen.fill((255, 255, 255))
+        self.screen.fill((255, 255, 255))  # Clear screen with white
+
+        # Draw road
         pygame.draw.rect(
             self.screen,
             (0, 0, 0),
-            (0, LANE_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT - 2 * LANE_WIDTH),
+            (
+                0,
+                LANE_WIDTH,
+                SCREEN_WIDTH,
+                SCREEN_HEIGHT - 2 * LANE_WIDTH,
+            ),  # Example road dimensions
         )
 
+        # Draw lane markers
         for i in range(15):
             pygame.draw.line(
                 self.screen,
@@ -388,24 +413,39 @@ class HighwayEnv(MultiAgentEnv):
                 5,
             )
 
+        # Get agent positions and steering angles
         agent_positions = self.sim.get_agent_positions()
+        agent_steerings = {
+            agent: self.sim.get_agents()[i].getSteering()
+            for i, (agent, _) in enumerate(agent_positions.items())
+        }
 
+        # Render each agent (vehicle)
         for agent, pos in agent_positions.items():
             x, y = int(pos[0]), int(pos[1])
-            color = (255, 0, 0) if self.collisions[agent] else (0, 0, 255)
-            pygame.draw.rect(
-                self.screen,
-                color,
-                (
-                    x - VEHICLE_WIDTH // 2,
-                    y - VEHICLE_HEIGHT // 2,
-                    VEHICLE_WIDTH,
-                    VEHICLE_HEIGHT,
-                ),
-            )
+            steering_angle = agent_steerings[agent]
 
-        pygame.display.flip()
-        self.clock.tick(FPS)  # Cap the frame rate
+            # Determine color based on collision status
+            color = (255, 0, 0) if self.collisions.get(agent, False) else (0, 0, 255)
+
+            # Create a rectangle surface for the vehicle
+            rect = pygame.Surface((40, 20))  # Example vehicle dimensions
+            rect.fill(color)
+
+            # Rotate the rectangle surface based on steering angle
+            rotated_rect = pygame.transform.rotate(
+                rect, math.degrees(-steering_angle)
+            )  # Negative to correct the rotation direction
+
+            # Calculate position to blit the rotated rectangle
+            rect_x = x - rotated_rect.get_width() // 2
+            rect_y = y - rotated_rect.get_height() // 2
+
+            # Draw rotated rectangle on the screen
+            self.screen.blit(rotated_rect, (rect_x, rect_y))
+
+        pygame.display.flip()  # Update the full display surface to the screen
+        self.clock.tick(FPS)  # Cap the frame rate at 25 FPS (adjust as needed)
 
     def close(self) -> None:
         """
