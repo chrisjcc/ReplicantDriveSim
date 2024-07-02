@@ -34,7 +34,6 @@ private:
     PerceptionModule* perceptionModule; // Use a pointer to PerceptionModule
 
     void updatePosition(Vehicle &vehicle, int high_level_action, const std::vector<float>& low_level_action);
-    void updatePositions();
     void checkCollisions();
     float randFloat(float a, float b);
 

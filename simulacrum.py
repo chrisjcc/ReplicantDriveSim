@@ -413,29 +413,23 @@ class HighwayEnv(MultiAgentEnv):
                 5,
             )
 
-        # Get agent positions and steering angles
-        agent_positions = self.sim.get_agent_positions()
-        agent_steerings = {
-            agent: self.sim.get_agents()[i].getSteering()
-            for i, (agent, _) in enumerate(agent_positions.items())
-        }
-
         # Render each agent (vehicle)
-        for agent, pos in agent_positions.items():
-            x, y = int(pos[0]), int(pos[1])
-            steering_angle = agent_steerings[agent]
+        for agent in self.sim.get_agents():
+            x, y = int(agent.getX()), int(agent.getY())
 
             # Determine color based on collision status
-            color = (255, 0, 0) if self.collisions.get(agent, False) else (0, 0, 255)
+            color = (255, 0, 0) if self.collisions.get(agent.getName(), False) else (0, 0, 255)
 
-            # Create a rectangle surface for the vehicle
-            rect = pygame.Surface((40, 20))  # Example vehicle dimensions
+            # Create a rectangle surface for the vehicle with correct dimensions
+            rect_length = agent.getWidth() * 20  # scaled by 20 for visualization
+            rect_width = agent.getLength() * 20   # scaled by 20 for visualization
+            rect = pygame.Surface((rect_width, rect_length), pygame.SRCALPHA)  # Vehicle dimensions
             rect.fill(color)
 
+
             # Rotate the rectangle surface based on steering angle
-            rotated_rect = pygame.transform.rotate(
-                rect, math.degrees(-steering_angle)
-            )  # Negative to correct the rotation direction
+            steering_angle = math.degrees(agent.getSteering())  # Convert vehicle steering angle from rad to degrees
+            rotated_rect = pygame.transform.rotate(rect, steering_angle) # Negative to correct the rotation direction
 
             # Calculate position to blit the rotated rectangle
             rect_x = x - rotated_rect.get_width() // 2
@@ -468,7 +462,7 @@ if __name__ == "__main__":
         "collision": True,
         "safety_distance": True,
         "max_episode_steps": 1000,
-        "num_agents": 2,
+        "num_agents": 2, #2,
         "render_mode": "human",
     }
 
