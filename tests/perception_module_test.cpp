@@ -14,7 +14,9 @@ protected:
 };
 
 TEST_F(PerceptionModuleTest, AgentNotFound) {
-    std::vector<float> observations = perception->getAgentObservation("non_existing_agent");
+
+    Vehicle* agent = new Vehicle();
+    std::vector<float> observations = perception->getObservations(*agent);
 
     ASSERT_EQ(observations.size(), 12); // Assuming numRays = 12
 
