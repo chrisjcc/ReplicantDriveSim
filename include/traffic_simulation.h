@@ -80,7 +80,7 @@ private:
     int num_agents; ///< Number of agents in the simulation.
     std::vector<Vehicle> agents; ///< Vector of all agents in the simulation.
     std::vector<Vehicle> previous_positions; ///< Vector of previous positions of all agents.
-    PerceptionModule* perceptionModule; ///< Pointer to the PerceptionModule for perception calculations.
+    std::unique_ptr<PerceptionModule> perceptionModule; ///< Pointer to the PerceptionModule for perception calculations.
 
     // Helper functions
 

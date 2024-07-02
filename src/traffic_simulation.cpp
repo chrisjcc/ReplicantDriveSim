@@ -39,7 +39,7 @@ TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
 
-    perceptionModule = new PerceptionModule(*this); // Initialize the pointer
+    perceptionModule = std::make_unique<PerceptionModule>(*this); // Initialize the pointer
 
     // Initialize agents with random positions and attributes
     for (int i = 0; i < num_agents; ++i) {
@@ -64,7 +64,7 @@ TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
  * Cleans up memory allocated for perception module.
  */
 TrafficSimulation::~TrafficSimulation() {
-    delete perceptionModule; // Clean up the pointer in the destructor
+    // No need to delete perceptionModule explicitly; std::unique_ptr handles it
 }
 
 /**
