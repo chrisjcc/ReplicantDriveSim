@@ -2,7 +2,7 @@
 
 // Default constructor
 Vehicle::Vehicle()
-    : name(""), id(0), lane_id(0), width(5.0f), length(5.0f),
+    : name(""), id(0), lane_id(0), width(0.0f), length(0.0f),
       steering(0.0f), x(0.0f), y(0.0f), z(0.0f), vx(0.0f), vy(0.0f), vz(0.0f),
       acceleration(0.0f), sensor_range(0.0f) {}
 
