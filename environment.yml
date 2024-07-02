@@ -1,81 +1,89 @@
 name: drive
 channels:
   - defaults
-  - conda-forge
 dependencies:
-  - _libgcc_mutex=0.1=main
-  - _openmp_mutex=5.1=51_gnu
-  - ca-certificates=2024.3.11
-  - ld_impl_linux-aarch64=2.38
-  - libcxx=14.0.6
-  - libcxxabi=14.0.6
-  - libffi=3.4.4
-  - libgcc-ng=11.2.0
-  - libgomp=11.2.0
-  - libstdcxx-ng=11.2.0
-  - ncurses=6.4
-  - openssl=3.0.13
-  - pip=24.0
-  - python=3.9.19
-  - readline=8.2
-  - setuptools=69.5.1
-  - sqlite=3.45.3
-  - tk=8.6.14
-  - wheel=0.43.0
-  - xz=5.4.6
-  - zlib=1.2.13
+  - ca-certificates=2024.3.11=hca03da5_0
+  - libcxx=14.0.6=h848a8c0_0
+  - libffi=3.4.4=hca03da5_1
+  - ncurses=6.4=h313beb8_0
+  - openssl=3.0.13=h1a28f6b_2
+  - pip=24.0=py39hca03da5_0
+  - python=3.9.19=hb885b13_1
+  - readline=8.2=h1a28f6b_0
+  - setuptools=69.5.1=py39hca03da5_0
+  - sqlite=3.45.3=h80987f9_0
+  - tk=8.6.14=h6ba3021_0
+  - wheel=0.43.0=py39hca03da5_0
+  - xz=5.4.6=h80987f9_1
+  - zlib=1.2.13=h18a0788_1
   - pip:
       - absl-py==2.1.0
       - aiosignal==1.3.1
+      - alembic==1.13.2
       - attrs==23.2.0
+      - blinker==1.8.2
       - build==1.2.1
       - certifi==2024.6.2
       - charset-normalizer==3.3.2
       - click==8.1.7
       - cloudpickle==3.0.0
       - cmake==3.29.5
+      - databricks-cli==0.18.0
       - decorator==5.1.1
       - distlib==0.3.8
       - dm-tree==0.1.8
+      - docker==7.1.0
+      - entrypoints==0.4
       - farama-notifications==0.0.4
       - filelock==3.14.0
+      - flask==3.0.3
       - frozenlist==1.4.1
       - fsspec==2024.6.0
       - gast==0.5.4
+      - gitdb==4.0.11
+      - gitpython==3.1.43
       - grpcio==1.64.1
+      - gunicorn==22.0.0
       - gymnasium==0.26.3
       - gymnasium-notices==0.0.1
       - idna==3.7
       - imageio==2.34.1
       - importlib-metadata==7.1.0
+      - itsdangerous==2.2.0
       - jax-jumpy==1.0.0
       - jinja2==3.1.4
       - jsonschema==4.22.0
       - jsonschema-specifications==2023.12.1
       - lazy-loader==0.4
       - lz4==4.3.3
+      - mako==1.3.5
       - markdown-it-py==3.0.0
       - markupsafe==2.1.5
       - mdurl==0.1.2
-      - mlflow==2.14.1
+      - mlflow==1.27.0
       - mpmath==1.3.0
       - msgpack==1.0.8
       - networkx==3.2.1
       - numpy==1.26.4
+      - oauthlib==3.2.2
       - packaging==24.1
       - pandas==2.2.2
       - pillow==10.3.0
       - platformdirs==4.2.2
-      - protobuf==5.27.1
+      - prometheus-client==0.20.0
+      - prometheus-flask-exporter==0.23.0
+      - protobuf==5.27.2
       - pyarrow==16.1.0
       - pybind11==2.12.0
       - pygame==2.5.2
       - pygments==2.18.0
+      - pyjwt==2.8.0
       - pyproject-hooks==1.1.0
       - python-dateutil==2.9.0.post0
       - pytz==2024.1
       - pyyaml==6.0.1
-      - ray==2.3.0
+      - querystring-parser==1.2.4
+      - ray==2.31.0
       - referencing==0.35.1
       - requests==2.32.3
       - rich==13.7.1
@@ -84,6 +92,9 @@ dependencies:
       - scipy==1.13.1
       - shellingham==1.5.4
       - six==1.16.0
+      - smmap==5.0.1
+      - sqlalchemy==2.0.31
+      - sqlparse==0.5.0
       - sympy==1.12.1
       - tabulate==0.9.0
       - tensorboardx==2.6.2.2
@@ -96,5 +107,6 @@ dependencies:
       - tzdata==2024.1
       - urllib3==2.2.1
       - virtualenv==20.26.2
+      - werkzeug==3.0.3
       - zipp==3.19.2
-prefix: /opt/conda/envs/drive
+prefix: /Users/christiancontrerascampana/anaconda3/envs/drive
