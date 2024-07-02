@@ -200,16 +200,16 @@ public:
     std::string getPositionString() const;
 
 private:
-    std::string name; ///< Name of the vehicle.
-    int id; ///< ID of the vehicle.
-    int lane_id; ///< ID of the lane the vehicle is in.
-    float width; ///< Width of the vehicle.
-    float length; ///< Length of the vehicle.
-    float steering; ///< Steering angle of the vehicle.
-    float x, y, z; ///< Position of the vehicle.
-    float vx, vy, vz; ///< Velocity of the vehicle.
-    float acceleration; ///< Acceleration of the vehicle.
-    float sensor_range; ///< Sensor range of the vehicle.
+    std::string name_; ///< Name of the vehicle.
+    int id_; ///< ID of the vehicle.
+    int lane_id_; ///< ID of the lane the vehicle is in.
+    float width_; ///< Width of the vehicle.
+    float length_; ///< Length of the vehicle.
+    float steering_; ///< Steering angle of the vehicle.
+    float x_, y_, z_; ///< Position of the vehicle.
+    float vx_, vy_, vz_; ///< Velocity of the vehicle.
+    float acceleration_; ///< Acceleration of the vehicle.
+    float sensor_range_; ///< Sensor range of the vehicle.
 };
 
 #endif // VEHICLE_H
