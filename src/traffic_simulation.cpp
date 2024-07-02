@@ -1,15 +1,13 @@
 #include "traffic_simulation.h"
 #include "perception_module.h"
+#include <iostream>
 #include <algorithm> // for std::max and std::min
 #include <cmath>
 #include <random>
 
 const int SCREEN_WIDTH = 900;
-const int SCREEN_HEIGHT = 400;
 const int VEHICLE_WIDTH = 130;
-const int VEHICLE_HEIGHT = 55;
 const int LANE_WIDTH = 100;
-const int NUM_LANES = 2;
 
 // Custom clamp function for C++11
 template <typename T>
@@ -43,16 +41,16 @@ TrafficSimulation::TrafficSimulation(int num_agents) : num_agents(num_agents) {
 
     // Initialize agents with random positions and attributes
     for (int i = 0; i < num_agents; ++i) {
-        agents[i].setX(randFloat(0, SCREEN_WIDTH  - VEHICLE_WIDTH));
-        agents[i].setY(randFloat(0, SCREEN_HEIGHT - LANE_WIDTH - VEHICLE_HEIGHT));
-        agents[i].setZ(0.0f);
-        agents[i].setVx(randNormal(50.0f, 2.0f)); // Randomly sample initial speed
-        agents[i].setVy(randNormal(0.0f, 0.5f));  // Initial lateral velocity
-        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
         agents[i].setId(i);
         agents[i].setName("agent_" + std::to_string(i));
         agents[i].setWidth(2.0f);
         agents[i].setLength(5.0f);
+        agents[i].setX(randFloat(0.5*agents[i].getLength(), 1.0f));
+        agents[i].setY(randFloat(4*LANE_WIDTH + 0.5*agents[i].getWidth(), 1.0f));
+        agents[i].setZ(0.0f);
+        agents[i].setVx(randNormal(50.0f, 2.0f)); // Randomly sample initial speed
+        agents[i].setVy(randNormal(0.0f, 0.5f));  // Initial lateral velocity
+        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
 
         // Initialize previous positions with current positions
         previous_positions[i] = agents[i];
@@ -221,7 +219,7 @@ void TrafficSimulation::updatePosition(Vehicle& vehicle, int high_level_action, 
     if (vehicle.getX() >= SCREEN_WIDTH) vehicle.setX(vehicle.getX() - SCREEN_WIDTH);
 
     // Constrain vertically within the road
-    vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+    vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH + 1.5*vehicle.getWidth()), 2.5 * LANE_WIDTH + vehicle.getWidth()));
 }
 
 /**

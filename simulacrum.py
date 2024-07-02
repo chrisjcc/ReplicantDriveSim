@@ -14,9 +14,7 @@ from ray.rllib.utils.typing import MultiAgentDict
 SCREEN_WIDTH = 900
 SCREEN_HEIGHT = 400
 LANE_WIDTH = 100
-VEHICLE_WIDTH = 130
-VEHICLE_HEIGHT = 55
-NUM_LANES = 3
+NUM_LANES = 2
 FPS = 25
 
 
@@ -342,14 +340,14 @@ class HighwayEnv(MultiAgentEnv):
             for other_agent in [a for a in self.agents if a != agent]:
                 other_agent_position = agent_positions[other_agent]
                 distance = np.linalg.norm(agent_position - other_agent_position)
-                if distance < VEHICLE_WIDTH:
+                if distance < self.sim.get_agent_by_name(other_agent).getWidth():
                     reward_components["collision"] -= 1.0
 
         if self.configs.get("safety_distance", False):
             for other_agent in [a for a in self.agents if a != agent]:
                 other_agent_position = agent_positions[other_agent]
                 distance = np.linalg.norm(agent_position - other_agent_position)
-                if distance < 2 * VEHICLE_WIDTH:
+                if distance < 2 * self.sim.get_agent_by_name(other_agent).getWidth():
                     reward_components["safety_distance"] -= 1.0
             if (
                 agent_position[1] < LANE_WIDTH
@@ -388,6 +386,7 @@ class HighwayEnv(MultiAgentEnv):
             pygame.display.set_caption("Highway Simulation")
             self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
+            #bg = pygame.image.load("/Users/christiancontrerascampana/Downloads/highway.png")
 
         self.screen.fill((255, 255, 255))  # Clear screen with white
 
@@ -438,6 +437,9 @@ class HighwayEnv(MultiAgentEnv):
             # Draw rotated rectangle on the screen
             self.screen.blit(rotated_rect, (rect_x, rect_y))
 
+
+        # Clear the visible screen
+        #self.screen.blit(bg, (0, 0))
         pygame.display.flip()  # Update the full display surface to the screen
         self.clock.tick(FPS)  # Cap the frame rate at 25 FPS (adjust as needed)
 
