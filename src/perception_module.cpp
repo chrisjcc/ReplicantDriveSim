@@ -93,7 +93,7 @@ std::unordered_map<std::string, std::vector<float>> PerceptionModule::calculateD
     std::unordered_map<std::string, std::vector<float>> distances_map;
     std::vector<float> distances(num_rays_, -999.0f); // Initialize all distances to -999
 
-    float max_ray_length = 100.0f; // Maximum distance for a ray
+    float max_ray_length = 5000.0f; //100.0f; // Maximum distance for a ray
     float angle_increment = 2 * M_PI / num_rays_; // Angle increment for each ray
 
     for (int i = 0; i < num_rays_; ++i) {
