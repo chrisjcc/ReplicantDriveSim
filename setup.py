@@ -47,17 +47,17 @@ class CMakeBuild(build_ext):
             raise e
 
         # Move the built library to the proper location
-        # Flexible for traffic_simulation.cpython-39-darwin.so or traffic_simulation.cpython-39-aarch64-linux-gnu.so
+        # Flexible for simulation.cpython-39-darwin.so or simulation.cpython-39-aarch64-linux-gnu.so
         # Use glob in order to expand out the use of a wildcard "*" and extract the actual name of the file
-        lib_path = glob.glob(os.path.join(build_temp, 'lib', 'traffic_simulation*.so'))[0]
+        lib_path = glob.glob(os.path.join(build_temp, 'lib', 'simulation*.so'))[0]
 
         # Ensure destination directory exists
-        dest_path = os.path.dirname(self.get_ext_fullpath('traffic_simulation'))
+        dest_path = os.path.dirname(self.get_ext_fullpath('simulation'))
         if not os.path.exists(dest_path):
             os.makedirs(dest_path)
 
         # Correct destination filename
-        dest_file = self.get_ext_fullpath('traffic_simulation')
+        dest_file = self.get_ext_fullpath('simulation')
         if os.path.exists(dest_file):
             os.remove(dest_file)  # Remove if it already exists to avoid permission issues
 
@@ -66,13 +66,13 @@ class CMakeBuild(build_ext):
 sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo')
 
 setup(
-    name='traffic_simulation',
+    name='simulation',
     version='0.1.0',
     author='Your Name',
     author_email='your.email@example.com',
     description='Traffic simulation package with C++ backend',
     ext_modules=[CMakeExtension(
-        'traffic_simulation',
+        'simulation',
         sourcedir=sourcedir
     )],
     cmdclass={'build_ext': CMakeBuild},
