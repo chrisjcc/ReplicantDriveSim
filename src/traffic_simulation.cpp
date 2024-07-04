@@ -8,6 +8,7 @@
 const int SCREEN_WIDTH = 900;
 const int VEHICLE_WIDTH = 130;
 const int LANE_WIDTH = 100;
+const int NUM_LANES = 2;
 
 // Custom clamp function for C++11
 template <typename T>
@@ -82,7 +83,7 @@ void TrafficSimulation::step(const std::vector<int>& high_level_actions, const s
     perceptionModule->updatePerceptions();
 
     // Check for collisions between agents
-    //checkCollisions(); // Uncomment if collision detection is implemented
+    checkCollisions(); // Collision detection
 }
 
 /**
@@ -175,18 +176,18 @@ void TrafficSimulation::updatePosition(Vehicle& vehicle, int high_level_action, 
             // No changes needed for keeping the lane
             break;
         case 1: // Left lane change
-            //vehicle.setY(vehicle.getY() - LANE_WIDTH);
-            //vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            vehicle.setY(vehicle.getY() - LANE_WIDTH);
+            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
             break;
         case 2: // Right lane change
-            //vehicle.setY(vehicle.getY() + LANE_WIDTH);
-            //vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            vehicle.setY(vehicle.getY() + LANE_WIDTH);
+            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
             break;
         case 3: // Speed up
-            //vehicle.setVx(vehicle.getVx() + acceleration);
+            vehicle.setVx(vehicle.getVx() + acceleration);
             break;
         case 4: // Slow down
-            //vehicle.setVx(vehicle.getVx() - braking);
+            vehicle.setVx(vehicle.getVx() - braking);
             break;
     }
 
@@ -255,10 +256,13 @@ void TrafficSimulation::checkCollisions() {
         for (int j = i + 1; j < num_agents; ++j) {
             if (std::hypot(agents[i].getX() - agents[j].getX(), agents[i].getY() - agents[j].getY()) < VEHICLE_WIDTH) {
                 // Handle collision by setting velocities to zero
+                /*
                 agents[i].setVx(0.0f);
                 agents[i].setVy(0.0f);
                 agents[j].setVx(0.0f);
                 agents[j].setVy(0.0f);
+                */
+                std::cout << "*** Collision Detected ***" << std::endl;
             }
         }
     }
