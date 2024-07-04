@@ -5,13 +5,16 @@
 
 #include "vehicle.h"
 #include "traffic_simulation.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <memory>
 
+
 // Forward declaration of TrafficSimulation
 class TrafficSimulation;
+
 
 /**
  * @class PerceptionModule
