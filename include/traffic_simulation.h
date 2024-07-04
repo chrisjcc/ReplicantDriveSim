@@ -1,15 +1,18 @@
 #ifndef TRAFFIC_SIMULATION_H
 #define TRAFFIC_SIMULATION_H
 
+#include "vehicle.h"
+#include "perception_module.h"
+
 #include <vector>
 #include <unordered_map>
 #include <string>
 #include <memory> // for std::shared_ptr
 
-#include "vehicle.h"
-#include "perception_module.h"
 
-class PerceptionModule; // Forward declaration
+// Forward declaration of PerceptionModule
+class PerceptionModule;
+
 
 /**
  * @brief The TrafficSimulation class manages a simulation of multiple vehicles with

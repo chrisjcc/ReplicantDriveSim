@@ -40,6 +40,7 @@ message(STATUS "CMAKE_CURRENT_SOURCE_DIR is ${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Source files for the traffic simulation
 set(SOURCE_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/simulation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/traffic_simulation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/vehicle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp
