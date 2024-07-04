@@ -15,8 +15,8 @@ add_executable(traffic_simulation_test traffic_simulation_test.cpp)
 add_executable(perception_module_test perception_module_test.cpp)
 
 # Link the test executables with Google Test, gtest_main, and the traffic simulation static library
-target_link_libraries(traffic_simulation_test gtest traffic_simulation_static)
-target_link_libraries(perception_module_test gtest traffic_simulation_static)
+target_link_libraries(traffic_simulation_test gtest simulation_static)
+target_link_libraries(perception_module_test gtest simulation_static)
 
 # Optionally, specify a C++ standard
 set_target_properties(perception_module_test PROPERTIES
