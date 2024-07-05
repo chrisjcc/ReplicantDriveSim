@@ -177,7 +177,6 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     //float net_acceleration = acceleration + braking; // Net acceleration considering both acceleration and braking
     float net_acceleration = 0.0f;
 
-
     // Time step (assuming a fixed time step, adjust as necessary)
     float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
 
@@ -197,12 +196,10 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
             //vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
             break;
         case 3: // Speed up
-            //vehicle.setVx(vehicle.getVx() + acceleration);
             net_acceleration = acceleration;
             break;
         case 4: // Slow down
-            //vehicle.setVx(vehicle.getVx() - braking);
-           net_acceleration = braking;
+            net_acceleration = braking;
             break;
     }
 
