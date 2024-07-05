@@ -9,7 +9,7 @@
 const int SCREEN_WIDTH = 900;
 const int VEHICLE_WIDTH = 130;
 const int LANE_WIDTH = 100;
-const int NUM_LANES = 2;
+//const int NUM_LANES = 2;
 
 // Custom clamp function for C++11
 template <typename T>
@@ -76,8 +76,18 @@ Traffic::~Traffic() {
  */
 void Traffic::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
     // Update positions of all agents
+    /*
     for (auto& agent : agents) {
         updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
+    }
+    */
+
+    int num_frames = 25;
+
+    for (int frame = 0; frame < num_frames; ++frame) {
+        for (auto& agent : agents) {
+            updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
+        }
     }
 
     // Update perceptions
@@ -164,7 +174,9 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // Acceleration (m/s^2)
     float braking = clamp(low_level_action[2], -8.0f, 0.0f); // Braking deceleration (m/s^2)
 
-    float net_acceleration = acceleration + braking; // Net acceleration considering both acceleration and braking
+    //float net_acceleration = acceleration + braking; // Net acceleration considering both acceleration and braking
+    float net_acceleration = 0.0f;
+
 
     // Time step (assuming a fixed time step, adjust as necessary)
     float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
@@ -177,18 +189,20 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
             // No changes needed for keeping the lane
             break;
         case 1: // Left lane change
-            vehicle.setY(vehicle.getY() - LANE_WIDTH);
-            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            //vehicle.setY(vehicle.getY() - LANE_WIDTH);
+            //vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
             break;
         case 2: // Right lane change
-            vehicle.setY(vehicle.getY() + LANE_WIDTH);
-            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            //vehicle.setY(vehicle.getY() + LANE_WIDTH);
+            //vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
             break;
         case 3: // Speed up
-            vehicle.setVx(vehicle.getVx() + acceleration);
+            //vehicle.setVx(vehicle.getVx() + acceleration);
+            net_acceleration = acceleration;
             break;
         case 4: // Slow down
-            vehicle.setVx(vehicle.getVx() - braking);
+            //vehicle.setVx(vehicle.getVx() - braking);
+           net_acceleration = braking;
             break;
     }
 
