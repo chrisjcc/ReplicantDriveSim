@@ -6,7 +6,7 @@ import gymnasium as gym
 import mlflow
 import numpy as np
 import pygame
-import traffic_simulation  # Import the compiled C++ module
+import simulation  # Import the compiled C++ module
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
 
@@ -68,7 +68,7 @@ class HighwayEnv(MultiAgentEnv):
         self.agents = [
             "agent_" + str(i) for i in range(self.configs.get("num_agents", 2))
         ]
-        self.sim = traffic_simulation.TrafficSimulation(
+        self.sim = simulation.TrafficSimulation(
             self.configs.get("num_agents", 2)
         )
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
@@ -138,7 +138,7 @@ class HighwayEnv(MultiAgentEnv):
             agent: {"cumulative_reward": 0.0} for agent in self.agents
         }  # Initialize cumulative rewards
 
-        self.sim = traffic_simulation.TrafficSimulation(
+        self.sim = simulation.TrafficSimulation(
             len(self.agents)
         )  # Reset the simulation
 

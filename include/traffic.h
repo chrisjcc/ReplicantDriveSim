@@ -1,32 +1,35 @@
-#ifndef TRAFFIC_SIMULATION_H
-#define TRAFFIC_SIMULATION_H
+#ifndef TRAFFIC_H
+#define TRAFFIC_H
+
+#include "vehicle.h"
+#include "perception_module.h"
 
 #include <vector>
 #include <unordered_map>
 #include <string>
 #include <memory> // for std::shared_ptr
 
-#include "vehicle.h"
-#include "perception_module.h"
 
-class PerceptionModule; // Forward declaration
+// Forward declaration of PerceptionModule
+class PerceptionModule;
+
 
 /**
- * @brief The TrafficSimulation class manages a simulation of multiple vehicles with
+ * @brief The Traffic class manages a simulation of multiple vehicles with
  *        their positions and velocities, along with collision detection and perception.
  */
-class TrafficSimulation {
+class Traffic {
 public:
     /**
-     * @brief Constructs a TrafficSimulation object with the specified number of agents.
+     * @brief Constructs a Traffic object with the specified number of agents.
      * @param num_agents Number of agents (vehicles) in the simulation.
      */
-    TrafficSimulation(int num_agents);
+    Traffic(int num_agents);
 
     /**
      * @brief Destructor to clean up resources, including perceptionModule.
      */
-    ~TrafficSimulation();
+    ~Traffic();
 
     /**
      * @brief Advances the simulation by one time step, updating agent positions and handling actions.
@@ -107,4 +110,4 @@ private:
     float randFloat(float a, float b);
 };
 
-#endif // TRAFFIC_SIMULATION_H
+#endif // TRAFFIC_H

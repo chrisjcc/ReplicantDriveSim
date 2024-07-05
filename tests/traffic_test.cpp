@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
-#include "traffic_simulation.h"
+#include "traffic.h"
 
-class TrafficSimulationTest : public ::testing::Test {
+class TrafficTest : public ::testing::Test {
 protected:
-    TrafficSimulation simulation;
+    Traffic simulation;
 
-    // Constructor: Create a TrafficSimulation object with 3 agents for testing
-    TrafficSimulationTest() : simulation(3) {}
+    // Constructor: Create a Traffic object with 3 agents for testing
+    TrafficTest() : simulation(3) {}
 
     // Destructor
-    virtual ~TrafficSimulationTest() {}
+    virtual ~TrafficTest() {}
 
     // Set up function to be executed before each test case
     virtual void SetUp() {}
@@ -19,7 +19,7 @@ protected:
 };
 
 // Test case to verify basic movement and action application
-TEST_F(TrafficSimulationTest, BasicMovementAndAction) {
+TEST_F(TrafficTest, BasicMovementAndAction) {
     // Perform actions and verify positions and velocities
 
     // Get initial positions and velocities
@@ -45,7 +45,7 @@ TEST_F(TrafficSimulationTest, BasicMovementAndAction) {
 }
 
 // Test case to verify collision detection
-TEST_F(TrafficSimulationTest, CollisionDetection) {
+TEST_F(TrafficTest, CollisionDetection) {
     // Setup initial positions to induce collision
     simulation.get_agent_by_name("agent_0").setX(50.0f);
     simulation.get_agent_by_name("agent_1").setX(55.0f);
