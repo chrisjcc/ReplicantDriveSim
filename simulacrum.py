@@ -68,7 +68,7 @@ class HighwayEnv(MultiAgentEnv):
         self.agents = [
             "agent_" + str(i) for i in range(self.configs.get("num_agents", 2))
         ]
-        self.sim = simulation.TrafficSimulation(
+        self.sim = simulation.Traffic(
             self.configs.get("num_agents", 2)
         )
         self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
@@ -138,7 +138,7 @@ class HighwayEnv(MultiAgentEnv):
             agent: {"cumulative_reward": 0.0} for agent in self.agents
         }  # Initialize cumulative rewards
 
-        self.sim = simulation.TrafficSimulation(
+        self.sim = simulation.Traffic(
             len(self.agents)
         )  # Reset the simulation
 
