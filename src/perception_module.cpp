@@ -3,14 +3,14 @@
 #include <algorithm>
 
 #include "perception_module.h"
-#include "traffic_simulation.h"
+#include "traffic.h"
 
 /**
  * @brief Constructs a PerceptionModule object.
  * @param sim Reference to the traffic simulation object.
  * @param num_rays Number of rays used for perception.
  */
-PerceptionModule::PerceptionModule(const TrafficSimulation& sim, int num_rays)
+PerceptionModule::PerceptionModule(const Traffic& sim, int num_rays)
     : num_rays_(num_rays), simulation_(sim) {}
 
 /**

@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 #include "perception_module.h"
-#include "traffic_simulation.h"
+#include "traffic.h"
 
 class PerceptionModuleTest : public ::testing::Test {
 protected:
-    std::unique_ptr<TrafficSimulation> sim;
+    std::unique_ptr<Traffic> sim;
     std::unique_ptr<PerceptionModule> perception;
 
     virtual void SetUp() {
-        sim = std::make_unique<TrafficSimulation>(3); // Example with 3 agents
+        sim = std::make_unique<Traffic>(3); // Example with 3 agents
         perception = std::make_unique<PerceptionModule>(*sim);
     }
 };
