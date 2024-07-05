@@ -4,11 +4,11 @@
 #include <pybind11/operators.h>
 
 #include "vehicle.h"
-#include "traffic_simulation.h"
+#include "traffic.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(traffic_simulation, m) {
+PYBIND11_MODULE(simulation, m) {
     m.doc() = "Traffic simulation module";
 
     py::class_<Vehicle>(m, "Vehicle")
@@ -30,15 +30,15 @@ PYBIND11_MODULE(traffic_simulation, m) {
         .def("getSensorRange", &Vehicle::getSensorRange)
         .def("getPositionString", &Vehicle::getPositionString);
 
-    py::class_<TrafficSimulation>(m, "TrafficSimulation")
+    py::class_<Traffic>(m, "Traffic")
         .def(py::init<int>())
-        .def("step", &TrafficSimulation::step)
-        .def("get_agents", &TrafficSimulation::get_agents, py::return_value_policy::reference)
-        .def("get_agent_by_name", &TrafficSimulation::get_agent_by_name, py::return_value_policy::reference)
-        .def("get_agent_positions", &TrafficSimulation::get_agent_positions)
-        .def("get_agent_velocities", &TrafficSimulation::get_agent_velocities)
-        .def("get_previous_positions", &TrafficSimulation::get_previous_positions)
-        .def("get_nearby_vehicles", &TrafficSimulation::getNearbyVehicles);
+        .def("step", &Traffic::step)
+        .def("get_agents", &Traffic::get_agents, py::return_value_policy::reference)
+        .def("get_agent_by_name", &Traffic::get_agent_by_name, py::return_value_policy::reference)
+        .def("get_agent_positions", &Traffic::get_agent_positions)
+        .def("get_agent_velocities", &Traffic::get_agent_velocities)
+        .def("get_previous_positions", &Traffic::get_previous_positions)
+        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles);
 
     // Bind vector of shared_ptr<Vehicle> using a custom caster
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")

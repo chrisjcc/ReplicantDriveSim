@@ -4,14 +4,17 @@
 #pragma once
 
 #include "vehicle.h"
-#include "traffic_simulation.h"
+#include "traffic.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <memory>
 
-// Forward declaration of TrafficSimulation
-class TrafficSimulation;
+
+// Forward declaration of Traffic
+class Traffic;
+
 
 /**
  * @class PerceptionModule
@@ -24,7 +27,7 @@ public:
      * @param sim Reference to the traffic simulation object.
      * @param num_rays Number of rays used for perception.
      */
-    explicit PerceptionModule(const TrafficSimulation& sim, int num_rays = 12);
+    explicit PerceptionModule(const Traffic& sim, int num_rays = 12);
 
     /**
      * @brief Destructor for PerceptionModule.
@@ -58,7 +61,7 @@ public:
 
 private:
     int num_rays_; ///< Number of rays used for perception.
-    const TrafficSimulation& simulation_; ///< Reference to the traffic simulation.
+    const Traffic& simulation_; ///< Reference to the traffic simulation.
     std::unordered_map<std::string, std::vector<float>> observation_map_; ///< Map storing observation data for each agent.
 
     /**
