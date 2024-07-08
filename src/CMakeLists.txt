@@ -69,6 +69,7 @@ message(STATUS "Include directory is ${CMAKE_CURRENT_SOURCE_DIR}/../include")
 # Specify include directories
 target_include_directories(simulation_static PUBLIC ${CMAKE_SOURCE_DIR}/include ${pybind11_INCLUDE_DIRS})
 target_include_directories(simulation PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(simulation_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../external/libOpenDRIVE/include)
 
 # Add compile options
 target_compile_options(simulation_static PRIVATE -Wall -Wextra -Werror)
@@ -80,6 +81,11 @@ set_target_properties(simulation_static PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
+
+add_dependencies(simulation_static OpenDrive)
+
+# Link with libOpenDRIVE
+target_link_libraries(simulation_static PRIVATE OpenDrive)
 
 # Install the static library
 install(TARGETS simulation_static

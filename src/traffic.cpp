@@ -6,6 +6,17 @@
 #include <cmath>
 #include <random>
 
+
+// Include order: standard headers, then local headers
+#include "Lane.h"
+#include "LaneSection.h"
+#include "Math.hpp"
+#include "Mesh.h"
+#include "OpenDriveMap.h"
+#include "RoadNetworkMesh.h"
+#include "Road.h"
+#include "collision_detection.h"
+
 const int SCREEN_WIDTH = 900;
 const int VEHICLE_WIDTH = 130;
 const int LANE_WIDTH = 100;
