@@ -12,6 +12,9 @@ include_directories(include)
 # Add Google Test
 add_subdirectory(external/googletest)
 
+# Add the libOpenDRIVE subdirectory
+add_subdirectory(external/libOpenDRIVE)
+
 # Include subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)
