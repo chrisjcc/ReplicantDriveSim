@@ -1,7 +1,7 @@
 #include "simulation.h"
 
-Simulation::Simulation(int num_agents, int num_rays)
-    : trafficSimulation(num_agents), perceptionModule(trafficSimulation, num_rays) {}
+Simulation::Simulation(int num_agents, const std::string& map_file, int num_rays)
+    : trafficSimulation(num_agents, map_file), perceptionModule(trafficSimulation, num_rays) {}
 
 Simulation::~Simulation() = default;
 
