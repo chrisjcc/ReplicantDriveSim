@@ -6,7 +6,6 @@
 #include "vehicle.h"
 #include "traffic.h"
 
-#include "traffic_simulation.h"   // Adjust this include path as per your project structure
 #include "OpenDriveMap.h"         // Ensure you include the header for OpenDriveMap
 #include "Road.h"                 // Include the header for Road class
 #include "RoadNetworkMesh.h"      // Include the header for RoadNetworkMesh
@@ -62,7 +61,7 @@ PYBIND11_MODULE(simulation, m) {
 
 
     py::class_<Traffic>(m, "Traffic")
-        .def(py::init<int>())
+        .def(py::init<int, const std::string&>())
         .def("step", &Traffic::step)
         .def("get_agents", &Traffic::get_agents, py::return_value_policy::reference)
         .def("get_agent_by_name", &Traffic::get_agent_by_name, py::return_value_policy::reference)
@@ -71,8 +70,8 @@ PYBIND11_MODULE(simulation, m) {
         .def("get_previous_positions", &Traffic::get_previous_positions)
         .def("get_nearby_vehicles", &Traffic::getNearbyVehicles)
         .def_property("odr_map",
-                      [](const TrafficSimulation& ts) { return ts.get_odr_map(); },
-                      [](TrafficSimulation& ts, const std::shared_ptr<odr::OpenDriveMap>& map) { ts.set_odr_map(map); });
+                      [](const Traffic& ts) { return ts.get_odr_map(); },
+                      [](Traffic& ts, const std::shared_ptr<odr::OpenDriveMap>& map) { ts.set_odr_map(map); });
 
     // Bind vector of shared_ptr<Vehicle> using a custom caster
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")

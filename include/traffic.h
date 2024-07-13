@@ -9,6 +9,13 @@
 #include <string>
 #include <memory> // for std::shared_ptr
 
+#include "Lane.h"
+#include "LaneSection.h"
+#include "Math.hpp"
+#include "Mesh.h"
+#include "OpenDriveMap.h"
+#include "RoadNetworkMesh.h"
+#include "Road.h"
 
 // Forward declaration of PerceptionModule
 class PerceptionModule;
@@ -24,7 +31,7 @@ public:
      * @brief Constructs a Traffic object with the specified number of agents.
      * @param num_agents Number of agents (vehicles) in the simulation.
      */
-    Traffic(int num_agents);
+    Traffic(int num_agents, const std::string& map_file);
 
     /**
      * @brief Destructor to clean up resources, including perceptionModule.
@@ -37,8 +44,6 @@ public:
      * @param low_level_actions Low-level actions for each agent.
      */
     void step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions);
-
-    // Getters
 
     /**
      * @brief Retrieves all agents currently in the simulation.
@@ -78,6 +83,21 @@ public:
      * @return Vector of shared pointers to nearby vehicles.
      */
     std::vector<std::shared_ptr<Vehicle>> getNearbyVehicles(const std::string& agent_id) const;
+
+    /**
+     * @brief Gets the OpenDrive map.
+     * @return A shared pointer to the OpenDrive map.
+     */
+    std::shared_ptr<odr::OpenDriveMap> get_odr_map() const;
+
+    /**
+     * @brief Sets the OpenDrive map.
+     * @param map A shared pointer to the new OpenDrive map.
+     */
+    void set_odr_map(const std::shared_ptr<odr::OpenDriveMap>& map);
+
+    // Public members
+    std::shared_ptr<odr::OpenDriveMap> odr_map; ///< Shared pointer to the OpenDrive map.
 
 private:
     int num_agents; ///< Number of agents in the simulation.
