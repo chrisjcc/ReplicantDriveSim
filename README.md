@@ -6,7 +6,20 @@ ReplicantDriveSim is an advanced traffic simulation project designed for autonom
 Use the following command to initialize and clone any submodules defined in the repository.
 ```shell
 git submodule update --init --recursive
- ```
+```
+
+# Update the submodule
+This will clone the submodule repository and check out the appropriate commit specified in the parent repository.
+```shell
+git submodule update
+```
+
+# Verify the submodule status
+Ensure that the submodule is now populated correctly.
+```shell
+git submodule status
+```
+
 
 # Environment setup
 ```shell
