@@ -16,8 +16,9 @@ conda activate drive
 
 # Build and check setup
 ```shell
+export MACOSX_DEPLOYMENT_TARGET=14.0
 TRAFFIC_SIM_SOURCEDIR=$PWD python -m build -v
-unzip -l dist/traffic_simulation-*.whl
+unzip -l dist/simulation-*.whl
 ```
 
 or configure and build a stand alone traffic library
