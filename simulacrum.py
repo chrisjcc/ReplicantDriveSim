@@ -71,7 +71,7 @@ class HighwayEnv(MultiAgentEnv):
         self.sim = simulation.Traffic(
             self.configs.get("num_agents", 2)
         )
-        self.agent_positions = {agent: np.array([0.0, 0.0]) for agent in self.agents}
+        self.agent_positions = {agent: np.array([0.0, 0.0, 0.0]) for agent in self.agents}
         self.previous_positions = {
             agent: np.copy(self.agent_positions[agent]) for agent in self.agents
         }  # Track previous positions
@@ -148,12 +148,22 @@ class HighwayEnv(MultiAgentEnv):
             for agent, pos in self.sim.get_agent_positions().items()
         }
         self.agent_velocities = {
-            agent: np.array([pos[0], pos[1], 0.0])
-            for agent, pos in self.sim.get_agent_velocities().items()
+            agent: np.array(vel)
+            for agent, vel in self.sim.get_agent_velocities().items()
         }
         self.previous_positions = {
             agent: np.copy(self.agent_positions[agent]) for agent in self.agents
         }
+        self.agent_orientations = {
+            agent: np.array([orientation)
+            for agent, orientation in self.sim.get_agent_orientations().items()
+        }
+
+        for agent, position in self.agent_positions.items():
+            self.infos[agent].update({"position": position})
+
+        for agent, orientation in self.agent_orientations.items():
+             self.infos[agent].update({"orientation": orientation})
 
         self.collisions = {agent: False for agent in self.agents}  # Reset collisions
 

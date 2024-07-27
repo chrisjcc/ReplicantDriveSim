@@ -38,6 +38,7 @@ PYBIND11_MODULE(simulation, m) {
         .def("get_agent_positions", &Traffic::get_agent_positions)
         .def("get_agent_velocities", &Traffic::get_agent_velocities)
         .def("get_previous_positions", &Traffic::get_previous_positions)
+        .def("get_agent_orientations", &Traffic::get_agent_orientations)
         .def("get_nearby_vehicles", &Traffic::getNearbyVehicles);
 
     // Bind vector of shared_ptr<Vehicle> using a custom caster

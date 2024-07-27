@@ -28,16 +28,15 @@ def main():
         "render_mode": None #"human"  # Set to False to disable rendering for now
     }
 
-    env = HighwayEnv(configs=configs)  # Initialize the environment
-
     def signal_handler(sig, frame):
         logging.info('Shutting down server...')
-        env.close()
         try:
             sock.close()
         except:
             pass
         sys.exit(0)
+
+    env = HighwayEnv(configs=configs)  # Initialize the environment
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -67,7 +66,7 @@ def main():
 def handle_client(conn, env):
     try:
         conn.settimeout(5)  # Set a timeout of 5 seconds
-        command = conn.recv(4096).decode() # Increase buffer size from 1024
+        command = conn.recv(1024).decode() # Increase buffer size from 1024
 
         logging.info(f"Received command: {command}")
 
@@ -75,14 +74,15 @@ def handle_client(conn, env):
 
         if command == "step":
             observations, infos = env.reset()
-            render_data = prepare_render_data(observations)
+            render_data = prepare_render_data(infos)
 
             # Measure memory size of render_data
             size_bytes = sys.getsizeof(render_data)
             print(f"Memory size of render_data: {size_bytes} bytes")
 
             try:
-                conn.sendall(json.dumps(render_data).encode())
+                message = json.dumps(render_data)
+                conn.sendall(message.encode('utf-8'))
             except BrokenPipeError:
                 logging.info("Client disconnected")
                 return
@@ -97,10 +97,11 @@ def handle_client(conn, env):
                 actions = {agent: {"discrete": env.high_level_action_space.sample(), "continuous": env.low_level_action_space.sample()} for agent in env.agents}
 
                 observations, rewards, terminateds, truncateds, infos = env.step(actions)
-                render_data = prepare_render_data(observations)
+                render_data = prepare_render_data(infos)
 
                 try:
-                    conn.sendall(json.dumps(render_data).encode())
+                    message = json.dumps(render_data)
+                    conn.sendall(message.encode('utf-8'))
                 except BrokenPipeError:
                     logging.info("Client disconnected")
                     break
@@ -128,10 +129,11 @@ def handle_client(conn, env):
 
 def prepare_render_data(observations):
     render_data = {"agents": []}
-    for agent, obs in observations.items():
+    for agent, attributes in observations.items():
         render_data["agents"].append({
             "agent_id": agent,
-            "position": obs.tolist()  # Convert ndarray to list
+            "position": attributes["position"].tolist(),  # Convert ndarray to list
+            "orientation": attributes["orientation"].tolist()  # Convert ndarray to list
         })
     return render_data
 
