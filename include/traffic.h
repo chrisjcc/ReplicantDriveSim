@@ -73,6 +73,12 @@ public:
     std::unordered_map<std::string, std::vector<float>> get_previous_positions() const;
 
     /**
+     * @brief Retrieves orientations of all agents.
+     * @return Unordered map where keys are agent names and values are orientations.
+     */
+    std::unordered_map<std::string, std::vector<float>> get_agent_orientations() const;
+
+    /**
      * @brief Retrieves nearby vehicles for a given agent.
      * @param agent_id The ID of the agent.
      * @return Vector of shared pointers to nearby vehicles.

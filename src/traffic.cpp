@@ -151,6 +151,19 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_previous_positi
 }
 
 /**
+ * @brief Retrieves orientations of all agents.
+ * @return Unordered map where keys are agent names and values are orientations.
+ */
+std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_orientations() const {
+    std::unordered_map<std::string, std::vector<float>> orientations;
+    for (int i = 0; i < num_agents; ++i) {
+        // Euler angles (roll, pitch, yaw)
+        orientations["agent_" + std::to_string(i)] = {0.0, 0.0, agents[i].getSteering()};
+    }
+    return orientations;
+}
+
+/**
  * @brief Updates the position of a vehicle based on actions.
  * @param vehicle Reference to the vehicle to update.
  * @param high_level_action The high-level action to apply.
