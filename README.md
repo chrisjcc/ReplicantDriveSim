@@ -2,11 +2,23 @@
 
 ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research. It leverages reinforcement learning, imitation learning, and computer vision to create realistic traffic scenarios and synthetic driving data. The simulation environment is built using Pygame for visualization and Miniforge for Python package management, ensuring a seamless development and deployment experience. This Docker image provides a fully configured environment with all necessary dependencies, enabling efficient experimentation and development of autonomous driving algorithms.
 
+# Verifying Git LFS Installation
+
+To check if Git LFS is correctly installed and initialized, you can run:
+```shell
+git lfs version
+```
+
+Check if specific files are being tracked by Git LFS using:
+```shell
+git lfs ls-files
+```
+
 # Initialize Submodules
 Use the following command to initialize and clone any submodules defined in the repository.
 ```shell
 git submodule update --init --recursive
- ```
+```
 
 # Environment setup
 ```shell
