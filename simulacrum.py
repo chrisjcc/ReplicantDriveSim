@@ -155,7 +155,7 @@ class HighwayEnv(MultiAgentEnv):
             agent: np.copy(self.agent_positions[agent]) for agent in self.agents
         }
         self.agent_orientations = {
-            agent: np.array([orientation)
+            agent: np.array(orientation)
             for agent, orientation in self.sim.get_agent_orientations().items()
         }
 
