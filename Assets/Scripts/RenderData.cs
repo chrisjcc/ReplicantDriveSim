@@ -15,4 +15,5 @@ public class AgentInfo //AgentData
     public string agent_id;
     //public Vector3 position;
     public List<float> position;
+    public List<float> orientation;
 }

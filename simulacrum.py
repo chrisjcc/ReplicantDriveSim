@@ -144,18 +144,18 @@ class HighwayEnv(MultiAgentEnv):
 
         # Get the initial agent positions and velocities from the simulation
         self.agent_positions = {
-            agent: np.array(pos)
+            agent: np.array(pos, dtype=np.float32)
             for agent, pos in self.sim.get_agent_positions().items()
         }
         self.agent_velocities = {
-            agent: np.array(vel)
+            agent: np.array(vel, dtype=np.float32)
             for agent, vel in self.sim.get_agent_velocities().items()
         }
         self.previous_positions = {
             agent: np.copy(self.agent_positions[agent]) for agent in self.agents
         }
         self.agent_orientations = {
-            agent: np.array(orientation)
+            agent: np.array(orientation, dtype=np.float32)
             for agent, orientation in self.sim.get_agent_orientations().items()
         }
 
@@ -201,12 +201,16 @@ class HighwayEnv(MultiAgentEnv):
         self.sim.step(high_level_actions, low_level_actions)
 
         self.agent_positions = {
-            agent: np.array(pos)
+            agent: np.array(pos, dtype=np.float32)
             for agent, pos in self.sim.get_agent_positions().items()
         }
         self.previous_positions = {
-            agent: np.array(pos)
+            agent: np.array(pos, dtype=np.float32)
             for agent, pos in self.sim.get_previous_positions().items()
+        }
+        self.agent_orientations = {
+            agent: np.array(orientation, dtype=np.float32)
+            for agent, orientation in self.sim.get_agent_orientations().items()
         }
 
         for agent, action in action_dict.items():
@@ -256,6 +260,12 @@ class HighwayEnv(MultiAgentEnv):
         self.step_count += 1
 
         observations = {agent: self._get_observation(agent) for agent in self.agents}
+
+        for agent, position in self.agent_positions.items():
+            self.infos[agent].update({"position": position})
+
+        for agent, orientation in self.agent_orientations.items():
+            self.infos[agent].update({"orientation": orientation})
 
         return observations, rewards, self.terminateds, self.truncateds, self.infos
 

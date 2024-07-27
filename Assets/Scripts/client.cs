@@ -87,13 +87,14 @@ public class client : MonoBehaviour
     {
         Debug.Log("ReceiveDataCoroutine ...");
 
-        byte[] receiveBuffer = new byte[4096]; // Increased buffer size from 1024
+        byte[] receiveBuffer = new byte[1024]; // Increased buffer size from 1024
 
         while (true)
         {
             try
             {
                 int bytesRead = stream.Read(receiveBuffer, 0, receiveBuffer.Length);
+
                 if (bytesRead == 0)
                 {
                     Debug.Log("Connection closed by server.");
@@ -113,9 +114,10 @@ public class client : MonoBehaviour
                 // Update agent positions in Unity scene
                 foreach (AgentInfo agentInfo in renderData.agents)
                 {
-                    Debug.Log("Processing Agent ID: " + agentInfo.agent_id);
+                    Debug.Log($"Processing Agent ID: {agentInfo.agent_id}");
                     presentAgentIds.Add(agentInfo.agent_id);
-                    InstantiateOrUpdateAgent(agentInfo.agent_id, agentInfo.position);
+                    InstantiateOrUpdateAgent(agentInfo.agent_id, agentInfo);
+
                 }
 
                 // Create a temporary list of keys
@@ -142,9 +144,13 @@ public class client : MonoBehaviour
     }
 
     //private void InstantiateOrUpdateAgent(int agentID, Vector3 position)
-    private void InstantiateOrUpdateAgent(string agentID, List<float> observation)
+    private void InstantiateOrUpdateAgent(string agentID, AgentInfo agentInfo)
     {
-        Vector3 position = new Vector3(observation[1], observation[2], observation[0]);
+        // Coordinate (x, z, y)
+        Vector3 position = new Vector3(agentInfo.position[1], agentInfo.position[2], agentInfo.position[0]);
+
+        // Convert Euler angles to Quaternion, Euler angles (roll, pitch, yaw)
+        Quaternion rotation = Quaternion.Euler(agentInfo.orientation[0] * Mathf.Rad2Deg, agentInfo.orientation[2] * Mathf.Rad2Deg, agentInfo.orientation[1] * Mathf.Rad2Deg);
 
         // Get the main camera
         Camera mainCamera = Camera.main;
@@ -181,7 +187,9 @@ public class client : MonoBehaviour
         if (!agentInstances.ContainsKey(agentID))
         {
             Debug.Log("Instantiating agentPrefab: " + agentPrefab.name);
-            GameObject newAgent = Instantiate(agentPrefab, position, Quaternion.identity);
+
+            // Instantiate the new GameObject with the specified position and orientation
+            GameObject newAgent = Instantiate(agentPrefab, position, rotation); // Quaternion.identity
 
             newAgent.transform.SetParent(this.transform);  // Use 'this.transform' to refer to the TrafficSimulationManager's transform
 
@@ -190,6 +198,7 @@ public class client : MonoBehaviour
         else // Update the position of the agent instance based on the received data
         {
             agentInstances[agentID].transform.position = position;
+            agentInstances[agentID].transform.rotation = rotation;
         }
     }
 
