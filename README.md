@@ -15,9 +15,15 @@ git lfs ls-files
 ```
 
 # Initialize Submodules
-Use the following command to initialize and clone any submodules defined in the repository.
+This will initialize and clone the submodule repository and check out the appropriate commit specified in the parent repository.
 ```shell
 git submodule update --init --recursive
+```
+
+# Verify the submodule status
+Ensure that the submodule is now populated correctly.
+```shell
+git submodule status
 ```
 
 # Environment setup
