@@ -118,7 +118,7 @@ def handle_client(conn, env):
                 step_count += 1
 
                 # Introduce a small delay to throttle data flow
-                time.sleep(0.1)  # Adjust as needed (default: 0.1)
+                time.sleep(1.0)  # Adjust as needed (default: 0.1)
 
         env.close()
 
