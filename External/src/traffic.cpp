@@ -240,7 +240,7 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
  * @param agent_name The name of the agent.
  * @return Vector of shared pointers to nearby vehicles.
  */
-std::vector<std::shared_ptr<Vehicle>> Traffic::getNearbyVehicles(const std::string& agent_name) const {
+ std::vector<Vehicle> Traffic::getNearbyVehicles(const std::string& agent_name) const {
     // Find the vehicle corresponding to the given agent ID
     const Vehicle* ego_vehicle = nullptr;
 
@@ -254,7 +254,7 @@ std::vector<std::shared_ptr<Vehicle>> Traffic::getNearbyVehicles(const std::stri
 
     // If the vehicle with the given agent ID is not found, return an empty vector
     if (ego_vehicle == nullptr) {
-        return std::vector<std::shared_ptr<Vehicle>>();
+        return std::vector<Vehicle>();
     }
 
     // Call the PerceptionModule method to detect nearby vehicles

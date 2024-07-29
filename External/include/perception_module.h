@@ -55,9 +55,9 @@ public:
     /**
      * @brief Detects nearby vehicles around the given ego vehicle.
      * @param ego_vehicle The vehicle for which to detect nearby vehicles.
-     * @return Vector of shared pointers to detected nearby vehicles.
+     * @return Vector of detected nearby vehicles.
      */
-    std::vector<std::shared_ptr<Vehicle>> detectNearbyVehicles(const Vehicle& ego_vehicle) const;
+    std::vector<Vehicle> detectNearbyVehicles(const Vehicle& ego_vehicle) const;
 
 private:
     int num_rays_; ///< Number of rays used for perception.
