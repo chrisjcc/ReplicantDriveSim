@@ -131,3 +131,18 @@ mlflow ui --backend-store-uri file:mlruns
 ./build/tests/perception_module_test
 ```
 Google Test provides robust features for writing and organizing unit tests in C++. Customize your test structure (TEST_F, TEST, etc.) as per your project requirements.
+
+
+# Project Setup
+
+## Required Unity Version
+This project was developed using Unity 2022.3.39f1 (LTS). To ensure compatibility, please use this version or later Long Term Support (LTS) versions of Unity. You can download the specific version from the Unity Hub or the Unity Archive.
+
+### Installation: 
+1. Clone the repository:
+```shell
+git clone git@github.com:chrisjcc/ReplicantDriveSim.git
+```
+2. Open the project in Unity Hub and select the Unity version 2022.3.39f1.
+3. Let Unity install any necessary packages and dependencies.
+
