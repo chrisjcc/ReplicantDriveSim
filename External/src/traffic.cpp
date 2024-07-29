@@ -8,7 +8,7 @@
 
 const int SCREEN_WIDTH = 900;
 const int VEHICLE_WIDTH = 130;
-const int LANE_WIDTH = 100;
+const int LANE_WIDTH = 25;
 
 // Custom clamp function for C++11
 template <typename T>
@@ -46,11 +46,12 @@ Traffic::Traffic(int num_agents) : num_agents(num_agents) {
         agents[i].setName("agent_" + std::to_string(i));
         agents[i].setWidth(2.0f);
         agents[i].setLength(5.0f);
-        agents[i].setX(randFloat(0.5*agents[i].getLength(), 1.0f));
-        agents[i].setY(randFloat(4*LANE_WIDTH + 0.5*agents[i].getWidth(), 1.0f));
+        agents[i].setX(randFloat(0.0f, 4.0f * agents[i].getLength()));
+        agents[i].setY(randFloat(-0.5 * (LANE_WIDTH - 0.5 * agents[i].getWidth()), 0.5 * (LANE_WIDTH - agents[i].getWidth())));
         agents[i].setZ(0.0f);
         agents[i].setVx(randNormal(50.0f, 2.0f)); // Randomly sample initial speed
         agents[i].setVy(randNormal(0.0f, 0.5f));  // Initial lateral velocity
+        agents[i].setVz(0.0f);
         agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
 
         // Initialize previous positions with current positions
@@ -230,7 +231,7 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     if (vehicle.getX() >= SCREEN_WIDTH) vehicle.setX(vehicle.getX() - SCREEN_WIDTH);
 
     // Constrain vertically within the road
-    vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH + 1.5*vehicle.getWidth()), 2.5 * LANE_WIDTH + vehicle.getWidth()));
+    vehicle.setY(std::fmin(std::fmax(vehicle.getY(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
 }
 
 /**

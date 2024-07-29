@@ -23,7 +23,7 @@ public class CreateRoad : MonoBehaviour
         roadMaterial.mainTextureScale = new Vector2(1, 10);
 
         // Optional: position the road if necessary
-        road.transform.position = new Vector3(100, 0, 0);
+        road.transform.position = new Vector3(0, (float)0.15, 0);
     }
 }
 
