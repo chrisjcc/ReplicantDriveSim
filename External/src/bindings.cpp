@@ -39,7 +39,7 @@ PYBIND11_MODULE(simulation, m) {
         .def("get_agent_velocities", &Traffic::get_agent_velocities)
         .def("get_previous_positions", &Traffic::get_previous_positions)
         .def("get_agent_orientations", &Traffic::get_agent_orientations)
-        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles);
+        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles, py::return_value_policy::reference_internal);
 
     // Bind vector of shared_ptr<Vehicle> using a custom caster
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")
@@ -49,5 +49,5 @@ PYBIND11_MODULE(simulation, m) {
             if (i >= v.size())
                 throw py::index_error();
             return v[i];
-        }, py::return_value_policy::reference);
+        }, py::return_value_policy::reference_internal);
 }

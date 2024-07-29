@@ -147,7 +147,7 @@ public class client : MonoBehaviour
     private void InstantiateOrUpdateAgent(string agentID, AgentInfo agentInfo)
     {
         // Coordinate (x, z, y)
-        Vector3 position = new Vector3(agentInfo.position[1], agentInfo.position[2], agentInfo.position[0]);
+        Vector3 position = new Vector3(agentInfo.position[0], agentInfo.position[1], agentInfo.position[2]);
 
         // Convert Euler angles to Quaternion, Euler angles (roll, pitch, yaw)
         Quaternion rotation = Quaternion.Euler(agentInfo.orientation[0] * Mathf.Rad2Deg, agentInfo.orientation[2] * Mathf.Rad2Deg, agentInfo.orientation[1] * Mathf.Rad2Deg);
