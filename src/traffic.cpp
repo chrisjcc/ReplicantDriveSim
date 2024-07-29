@@ -9,7 +9,6 @@
 const int SCREEN_WIDTH = 900;
 const int VEHICLE_WIDTH = 130;
 const int LANE_WIDTH = 100;
-const int NUM_LANES = 2;
 
 // Custom clamp function for C++11
 template <typename T>
