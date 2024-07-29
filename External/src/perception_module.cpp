@@ -29,10 +29,13 @@ void PerceptionModule::updatePerceptions() {
 
         // Output retrieved observations
         std::cout << "Observations for " << agent.getName() << ": ";
+
         const auto& obs = getObservations(agent);
+
         for (const auto& val : obs) {
             std::cout << val << " ";
         }
+
         std::cout << std::endl;
     }
 }

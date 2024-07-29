@@ -46,12 +46,13 @@ Traffic::Traffic(int num_agents) : num_agents(num_agents) {
         agents[i].setName("agent_" + std::to_string(i));
         agents[i].setWidth(2.0f);
         agents[i].setLength(5.0f);
-        agents[i].setX(randFloat(0.0f, 4.0f * agents[i].getLength()));
-        agents[i].setY(randFloat(-0.5 * (LANE_WIDTH - 0.5 * agents[i].getWidth()), 0.5 * (LANE_WIDTH - agents[i].getWidth())));
-        agents[i].setZ(0.0f);
-        agents[i].setVx(randNormal(50.0f, 2.0f)); // Randomly sample initial speed
-        agents[i].setVy(randNormal(0.0f, 0.5f));  // Initial lateral velocity
-        agents[i].setVz(0.0f);
+        agents[i].setSensorRange(200.0f);
+        agents[i].setX(randFloat(-0.5 * (LANE_WIDTH - 0.5 * agents[i].getWidth()), 0.5 * (LANE_WIDTH - agents[i].getWidth())));
+        agents[i].setY(0.0f);
+        agents[i].setZ(randFloat(0.0f, 4.0f * agents[i].getLength()));
+        agents[i].setVx(randNormal(0.0f, 0.5f));  // Initial lateral speed
+        agents[i].setVy(0.0f);  // Initial verticle speed
+        agents[i].setVz(randNormal(50.0f, 2.0f)); // Initial longitudinal speed
         agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
 
         // Initialize previous positions with current positions
@@ -203,35 +204,35 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     }
 
     // Update the velocities
+    float initial_velocity_z = vehicle.getVz();
     float initial_velocity_x = vehicle.getVx();
-    float initial_velocity_y = vehicle.getVy();
 
-    // Calculate the components of the net acceleration in the x and y directions
-    float acceleration_x = net_acceleration * std::cos(steering);
-    float acceleration_y = net_acceleration * std::sin(steering);
+    // Calculate the components of the net acceleration in the z and x directions
+    float acceleration_z = net_acceleration * std::cos(steering);
+    float acceleration_x = net_acceleration * std::sin(steering);
 
+    float new_velocity_z = clamp(initial_velocity_z + acceleration_z * time_step, 0.0f, max_velocity);
     float new_velocity_x = clamp(initial_velocity_x + acceleration_x * time_step, 0.0f, max_velocity);
-    float new_velocity_y = clamp(initial_velocity_y + acceleration_y * time_step, 0.0f, max_velocity);
 
+    vehicle.setVz(new_velocity_z);
     vehicle.setVx(new_velocity_x);
-    vehicle.setVy(new_velocity_y);
 
     // Update the position using the kinematic equations
+    float delta_z = initial_velocity_z * time_step + 0.5f * acceleration_z * time_step * time_step;
     float delta_x = initial_velocity_x * time_step + 0.5f * acceleration_x * time_step * time_step;
-    float delta_y = initial_velocity_y * time_step + 0.5f * acceleration_y * time_step * time_step;
 
+    float new_z = vehicle.getZ() + delta_z;
     float new_x = vehicle.getX() + delta_x;
-    float new_y = vehicle.getY() + delta_y;
 
+    vehicle.setZ(new_z);
     vehicle.setX(new_x);
-    vehicle.setY(new_y);
 
     // Wrap around horizontally
-    if (vehicle.getX() < 0) vehicle.setX(vehicle.getX() + SCREEN_WIDTH);
-    if (vehicle.getX() >= SCREEN_WIDTH) vehicle.setX(vehicle.getX() - SCREEN_WIDTH);
+    if (vehicle.getZ() < 0) vehicle.setZ(vehicle.getZ() + SCREEN_WIDTH);
+    if (vehicle.getZ() >= SCREEN_WIDTH) vehicle.setZ(vehicle.getZ() - SCREEN_WIDTH);
 
     // Constrain vertically within the road
-    vehicle.setY(std::fmin(std::fmax(vehicle.getY(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
+    vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
 }
 
 /**
@@ -242,7 +243,9 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
 std::vector<std::shared_ptr<Vehicle>> Traffic::getNearbyVehicles(const std::string& agent_name) const {
     // Find the vehicle corresponding to the given agent ID
     const Vehicle* ego_vehicle = nullptr;
+
     for (const auto& vehicle : agents) {
+
         if (vehicle.getName() == agent_name) {
             ego_vehicle = &vehicle;
             break;
@@ -265,7 +268,8 @@ std::vector<std::shared_ptr<Vehicle>> Traffic::getNearbyVehicles(const std::stri
 void Traffic::checkCollisions() {
     for (int i = 0; i < num_agents; ++i) {
         for (int j = i + 1; j < num_agents; ++j) {
-            if (std::hypot(agents[i].getX() - agents[j].getX(), agents[i].getY() - agents[j].getY()) < VEHICLE_WIDTH) {
+            float distance = std::hypot(agents[i].getZ() - agents[j].getZ(), agents[i].getX() - agents[j].getX());
+            if (distance < VEHICLE_WIDTH) {
                 // Handle collision by setting velocities to zero
                 /*
                 agents[i].setVx(0.0f);
@@ -273,7 +277,7 @@ void Traffic::checkCollisions() {
                 agents[j].setVx(0.0f);
                 agents[j].setVy(0.0f);
                 */
-                std::cout << "*** Collision Detected ***" << std::endl;
+                std::cout << "*** Collision Detected *** (distance gap " << distance << ")" << std::endl;
             }
         }
     }
