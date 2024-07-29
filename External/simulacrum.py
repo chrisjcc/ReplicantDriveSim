@@ -293,7 +293,7 @@ class HighwayEnv(MultiAgentEnv):
         nearby_vehicles = self.sim.get_nearby_vehicles(agent_name)
 
         # Define the observation features
-        features = ["presence", "x", "y", "vx", "vy", "heading"]
+        features = ["presence", "x", "y", "z", "vx", "vy", "vz", "heading"]
         vehicles_count = 15  # Default number of vehicles to observe
 
         # Initialize the observation array
@@ -303,12 +303,14 @@ class HighwayEnv(MultiAgentEnv):
         for i, vehicle in enumerate(nearby_vehicles[:vehicles_count]):
             if vehicle is not None:
                 observation[i, 0] = 1  # presence
-                relative_pos = vehicle.position - ego_position
+                relative_pos = np.array([agent.getX(), agent.getY(), agent.getZ()], dtype=np.float32) - ego_position
                 observation[i, 1] = relative_pos[0]  # x
                 observation[i, 2] = relative_pos[1]  # y
-                observation[i, 3] = vehicle.velocity[0] - ego_velocity[0]  # vx
-                observation[i, 4] = vehicle.velocity[1] - ego_velocity[1]  # vy
-                observation[i, 5] = vehicle.heading - ego_heading  # heading
+                observation[i, 3] = relative_pos[2]  # z
+                observation[i, 4] = vehicle.getX() - ego_velocity[0]  # vx
+                observation[i, 5] = vehicle.getY() - ego_velocity[1]  # vy
+                observation[i, 6] = vehicle.getZ() - ego_velocity[2]  # vz
+                observation[i, 7] = vehicle.getSteering() - ego_heading  # heading
 
         # Normalize and clip the observation
         if self.normalize_obs:
@@ -325,12 +327,14 @@ class HighwayEnv(MultiAgentEnv):
         ranges = {
             "x": [-100, 100],
             "y": [-100, 100],
+            "z": [-100, 100],
             "vx": [-30, 30],
             "vy": [-30, 30],
+            "vz": [-30, 30],
             "heading": [-math.pi, math.pi],
         }
 
-        for i, feature in enumerate(["presence", "x", "y", "vx", "vy", "heading"]):
+        for i, feature in enumerate(["presence", "x", "y", "z", "vx", "vy", "vz", "heading"]):
             if feature in ranges:
                 min_val, max_val = ranges[feature]
                 obs[:, i] = np.clip((obs[:, i] - min_val) / (max_val - min_val), 0, 1)

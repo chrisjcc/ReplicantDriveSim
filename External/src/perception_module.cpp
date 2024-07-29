@@ -71,16 +71,16 @@ void PerceptionModule::setObservations(const std::unordered_map<std::string, std
 /**
  * @brief Detects nearby vehicles around the given ego vehicle.
  * @param ego_vehicle The vehicle for which to detect nearby vehicles.
- * @return Vector of shared pointers to detected nearby vehicles.
+ * @return Vector of detected nearby vehicles.
  */
-std::vector<std::shared_ptr<Vehicle>> PerceptionModule::detectNearbyVehicles(const Vehicle& ego_vehicle) const {
-    std::vector<std::shared_ptr<Vehicle>> nearby_vehicles;
+std::vector<Vehicle> PerceptionModule::detectNearbyVehicles(const Vehicle& ego_vehicle) const {
+    std::vector<Vehicle> nearby_vehicles;
 
     for (const auto& vehicle : simulation_.get_agents()) {
         if (vehicle.getName() != ego_vehicle.getName()) {
             float distance = std::hypot(vehicle.getX() - ego_vehicle.getX(), vehicle.getY() - ego_vehicle.getY());
             if (distance <= vehicle.getSensorRange()) {
-                nearby_vehicles.push_back(std::make_shared<Vehicle>(vehicle));
+                nearby_vehicles.push_back(vehicle);
             }
         }
     }

@@ -81,9 +81,9 @@ public:
     /**
      * @brief Retrieves nearby vehicles for a given agent.
      * @param agent_id The ID of the agent.
-     * @return Vector of shared pointers to nearby vehicles.
+     * @return Vector of nearby vehicles.
      */
-    std::vector<std::shared_ptr<Vehicle>> getNearbyVehicles(const std::string& agent_id) const;
+    std::vector<Vehicle> getNearbyVehicles(const std::string& agent_id) const;
 
 private:
     int num_agents; ///< Number of agents in the simulation.
