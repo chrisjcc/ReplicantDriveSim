@@ -14,6 +14,11 @@ Check if specific files are being tracked by Git LFS using:
 git lfs ls-files
 ```
 
+Fetching LFS Files:
+```shell
+git lfs pull
+```
+
 # Initialize Submodules
 This will initialize and clone the submodule repository and check out the appropriate commit specified in the parent repository.
 ```shell
