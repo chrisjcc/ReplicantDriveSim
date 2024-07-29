@@ -56,7 +56,7 @@ This will build the Google Test library (libgtest.a and libgtest_main.a).
 
 # Install Traffic Simulation
 ```python
-pip install --force-reinstall dist/traffic_simulation-*.whl
+pip install --force-reinstall dist/simulation-*.whl
 ```
 
 ## Example Usage
