@@ -46,15 +46,16 @@ void PerceptionModule::updatePerceptions() {
  * @return Vector of observation data for the agent.
  */
 const std::vector<float>& PerceptionModule::getObservations(const Vehicle& agent) const {
-    const std::string& name = agent.getName();
+    int id = agent.getId();
 
-    auto it = observation_map_.find(name);
+    auto it = observation_map_.find(id);
+
     if (it != observation_map_.end()) {
         return it->second;
     } else {
         // If not found, return an empty vector (assuming empty observations)
-        static const std::vector<float> empty;
-        return empty;
+        static const std::vector<float> error_vector(12, -1.0f); // Default error value
+        return error_vector;
     }
 }
 
@@ -62,7 +63,7 @@ const std::vector<float>& PerceptionModule::getObservations(const Vehicle& agent
  * @brief Sets the observation data for all agents.
  * @param observations A map containing observation data for all agents.
  */
-void PerceptionModule::setObservations(const std::unordered_map<std::string, std::vector<float>>& observations) {
+void PerceptionModule::setObservations(const std::unordered_map<int, std::vector<float>>& observations) {
     for (const auto& observation : observations) {
         observation_map_[observation.first] = observation.second;
     }
@@ -93,8 +94,8 @@ std::vector<Vehicle> PerceptionModule::detectNearbyVehicles(const Vehicle& ego_v
  * @param agent The vehicle agent for which the distance is being calculated.
  * @return Map containing distances to the nearest obstacles for each ray.
  */
-std::unordered_map<std::string, std::vector<float>> PerceptionModule::calculateDistanceToObstacles(const Vehicle& agent) const {
-    std::unordered_map<std::string, std::vector<float>> distances_map;
+std::unordered_map<int, std::vector<float>> PerceptionModule::calculateDistanceToObstacles(const Vehicle& agent) const {
+    std::unordered_map<int, std::vector<float>> distances_map;
     std::vector<float> distances(num_rays_, -999.0f); // Initialize all distances to -999
 
     float max_ray_length = 5000.0f; //100.0f; // Maximum distance for a ray
@@ -108,7 +109,7 @@ std::unordered_map<std::string, std::vector<float>> PerceptionModule::calculateD
         float end_y = agent.getY() + max_ray_length * std::sin(ray_angle);
 
         for (const auto& other_agent : simulation_.get_agents()) {
-            if (other_agent.getName() != agent.getName()) { // Avoid checking against itself
+            if (other_agent.getId() != agent.getId()) { // Avoid checking against itself
                 float min_x = other_agent.getX() - other_agent.getLength() / 2.0f;
                 float max_x = other_agent.getX() + other_agent.getLength() / 2.0f;
                 float min_y = other_agent.getY() - other_agent.getWidth()  / 2.0f;
@@ -147,6 +148,7 @@ std::unordered_map<std::string, std::vector<float>> PerceptionModule::calculateD
         }
     }
 
-    distances_map[agent.getName()] = distances;
+    distances_map[agent.getId()] = distances;
+
     return distances_map;
 }

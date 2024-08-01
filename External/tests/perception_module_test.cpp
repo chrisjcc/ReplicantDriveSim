@@ -16,6 +16,10 @@ protected:
 TEST_F(PerceptionModuleTest, AgentNotFound) {
 
     Vehicle* agent = new Vehicle();
+
+    agent->setId(999); // Set an ID
+    agent->setName("999"); // Set a name
+
     std::vector<float> observations = perception->getObservations(*agent);
 
     ASSERT_EQ(observations.size(), 12); // Assuming numRays = 12
