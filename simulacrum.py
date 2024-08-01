@@ -464,7 +464,7 @@ if __name__ == "__main__":
         "collision": True,
         "safety_distance": True,
         "max_episode_steps": 1000,
-        "num_agents": 2, #2,
+        "num_agents": 2,
         "render_mode": "human",
     }
 
