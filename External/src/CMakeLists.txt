@@ -105,6 +105,7 @@ add_dependencies(simulation_static OpenDrive)
 
 # Link with libOpenDRIVE
 target_link_libraries(simulation_static PRIVATE OpenDrive)
+target_link_libraries(simulation PRIVATE OpenDrive)
 
 # Install the static library
 install(TARGETS simulation_static
