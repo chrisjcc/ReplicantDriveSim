@@ -6,6 +6,16 @@
 #include <cmath>
 #include <random>
 
+
+// Include order: standard headers, then local headers
+#include "Lane.h"
+#include "LaneSection.h"
+#include "Math.hpp"
+#include "Mesh.h"
+#include "OpenDriveMap.h"
+#include "RoadNetworkMesh.h"
+#include "Road.h"
+
 const int SCREEN_WIDTH = 900;
 const int VEHICLE_WIDTH = 130;
 const int LANE_WIDTH = 25;
@@ -34,7 +44,7 @@ float randNormal(float mean, float stddev) {
  * @brief Constructor for Traffic.
  * @param num_agents Number of agents (vehicles) in the simulation.
  */
-Traffic::Traffic(int num_agents) : num_agents(num_agents) {
+Traffic::Traffic(int num_agents, const std::string& map_file) : odr_map(std::make_shared<odr::OpenDriveMap>(map_file)), num_agents(num_agents) {
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
 
@@ -262,6 +272,22 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
 }
 
 /**
+ * @brief Gets the OpenDRIVE map associated with the simulation.
+ * @return Shared pointer to the OpenDRIVE map.
+ */
+std::shared_ptr<odr::OpenDriveMap> Traffic::get_odr_map() const {
+    return odr_map;
+}
+
+/**
+ * @brief Sets the OpenDRIVE map for the simulation.
+ * @param map Shared pointer to the OpenDRIVE map.
+ */
+void Traffic::set_odr_map(const std::shared_ptr<odr::OpenDriveMap>& map) {
+    odr_map = map;
+}
+
+/**
  * @brief Checks for collisions between agents.
  * If two agents are within the vehicle width of each other, their velocities are set to zero.
  */
@@ -271,12 +297,10 @@ void Traffic::checkCollisions() {
             float distance = std::hypot(agents[i].getZ() - agents[j].getZ(), agents[i].getX() - agents[j].getX());
             if (distance < VEHICLE_WIDTH) {
                 // Handle collision by setting velocities to zero
-                /*
                 agents[i].setVx(0.0f);
                 agents[i].setVy(0.0f);
                 agents[j].setVx(0.0f);
                 agents[j].setVy(0.0f);
-                */
                 std::cout << "*** Collision Detected *** (distance gap " << distance << ")" << std::endl;
             }
         }
