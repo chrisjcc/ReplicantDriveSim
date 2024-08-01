@@ -173,9 +173,8 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
 
     float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // Acceleration (m/s^2)
     float braking = clamp(low_level_action[2], -8.0f, 0.0f); // Braking deceleration (m/s^2)
-
-    float net_acceleration = acceleration + braking; // Net acceleration considering both acceleration and braking
-
+    float net_acceleration = 0.0f;
+    
     // Time step (assuming a fixed time step, adjust as necessary)
     float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
 
@@ -184,21 +183,19 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     // Process high-level actions
     switch (high_level_action) {
         case 0: // Keep lane
-            // No changes needed for keeping the lane
+            // No changes are needed to keep the lane
             break;
         case 1: // Left lane change
-            vehicle.setY(vehicle.getY() - LANE_WIDTH);
-            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            net_acceleration = 0.0;
             break;
         case 2: // Right lane change
-            vehicle.setY(vehicle.getY() + LANE_WIDTH);
-            vehicle.setY(std::fmin(std::fmax(vehicle.getY(), LANE_WIDTH), (NUM_LANES - 1) * LANE_WIDTH));
+            net_acceleration = 0.0;
             break;
         case 3: // Speed up
-            vehicle.setVx(vehicle.getVx() + acceleration);
+            net_acceleration = acceleration;
             break;
         case 4: // Slow down
-            vehicle.setVx(vehicle.getVx() - braking);
+            net_acceleration = braking;
             break;
     }
 

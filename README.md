@@ -5,10 +5,16 @@ ReplicantDriveSim is an advanced traffic simulation project designed for autonom
 ![Image Alt text](/images/NISSAN-GTR_ReplicantDriveSim.png "Optional title")
 
 # Initialize Submodules
-Use the following command to initialize and clone any submodules defined in the repository.
+This will initialize and clone the submodule repository and check out the appropriate commit specified in the parent repository.
 ```shell
 git submodule update --init --recursive
- ```
+```
+
+# Verify the submodule status
+Ensure that the submodule is now populated correctly.
+```shell
+git submodule status
+```
 
 # Environment setup
 ```shell
@@ -18,8 +24,9 @@ conda activate drive
 
 # Build and check setup
 ```shell
+export MACOSX_DEPLOYMENT_TARGET=14.0
 TRAFFIC_SIM_SOURCEDIR=$PWD python -m build -v
-unzip -l dist/traffic_simulation-*.whl
+unzip -l dist/simulation-*.whl
 ```
 
 or configure and build a stand alone traffic library
