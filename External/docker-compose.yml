@@ -1,0 +1,18 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      ssh:
+        - default
+    volumes:
+      - ./data:/app/repo/data # Mount the host ./data directory to /app/repo/data in the container
+    environment:
+      - DISPLAY=${DISPLAY}
+    secrets:
+      - sshkey
+
+secrets:
+  sshkey:
+    file: /Users/$USER/.ssh/id_ed25519
