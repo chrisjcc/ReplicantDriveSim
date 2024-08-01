@@ -38,9 +38,18 @@ TEST_F(TrafficTest, BasicMovementAndAction) {
     auto updated_velocities = simulation.get_agent_velocities();
 
     // Verify that positions and velocities have changed appropriately
+    const float epsilon = 1e-5f; // Small tolerance for floating-point comparisons
+
     for (int i = 0; i < 3; ++i) {
-        EXPECT_NE(initial_positions["agent_" + std::to_string(i)], updated_positions["agent_" + std::to_string(i)]);
-        EXPECT_NE(initial_velocities["agent_" + std::to_string(i)], updated_velocities["agent_" + std::to_string(i)]);
+        auto initial_pos = initial_positions["agent_" + std::to_string(i)];
+        auto updated_pos = updated_positions["agent_" + std::to_string(i)];
+        EXPECT_GT((updated_pos[0] - initial_pos[0])*(updated_pos[0] - initial_pos[0]) +
+                  (updated_pos[1] - initial_pos[1])*(updated_pos[1] - initial_pos[1]), epsilon);
+
+        auto initial_vel = initial_velocities["agent_" + std::to_string(i)];
+        auto updated_vel = updated_velocities["agent_" + std::to_string(i)];
+        EXPECT_GT(std::abs(updated_vel[0] - initial_vel[0]) +
+                  std::abs(updated_vel[1] - initial_vel[1]), epsilon);
     }
 }
 
@@ -60,8 +69,11 @@ TEST_F(TrafficTest, CollisionDetection) {
     auto velocities_after_collision = simulation.get_agent_velocities();
 
     // Agents 0 and 1 should have velocities set to 0 after collision
-    EXPECT_EQ(velocities_after_collision["agent_0"], (std::vector<float>{0.0f, 0.0f}));
-    EXPECT_EQ(velocities_after_collision["agent_1"], (std::vector<float>{0.0f, 0.0f}));
+    const float epsilon = 1e-5f; // Small tolerance for floating-point comparisons
+    EXPECT_NEAR(velocities_after_collision["agent_0"][0], 0.0f, epsilon);
+    EXPECT_NEAR(velocities_after_collision["agent_0"][1], 0.0f, epsilon);
+    EXPECT_NEAR(velocities_after_collision["agent_1"][0], 0.0f, epsilon);
+    EXPECT_NEAR(velocities_after_collision["agent_1"][1], 0.0f, epsilon);
 }
 
 // Main function to run all tests
