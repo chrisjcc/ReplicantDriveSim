@@ -1,6 +1,9 @@
 [submodule "External/external/googletest"]
 	path = External/external/googletest
 	url = https://github.com/google/googletest.git
+[submodule "external/external/libOpenDRIVE"]
+	path = external/external/libOpenDRIVE
+	url = https://github.com/pageldev/libOpenDRIVE.git
 [submodule "External/external/libOpenDRIVE"]
 	path = External/external/libOpenDRIVE
 	url = https://github.com/pageldev/libOpenDRIVE.git
