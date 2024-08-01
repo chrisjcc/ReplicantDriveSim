@@ -297,12 +297,10 @@ void Traffic::checkCollisions() {
             float distance = std::hypot(agents[i].getZ() - agents[j].getZ(), agents[i].getX() - agents[j].getX());
             if (distance < VEHICLE_WIDTH) {
                 // Handle collision by setting velocities to zero
-                /*
                 agents[i].setVx(0.0f);
                 agents[i].setVy(0.0f);
                 agents[j].setVx(0.0f);
                 agents[j].setVy(0.0f);
-                */
                 std::cout << "*** Collision Detected *** (distance gap " << distance << ")" << std::endl;
             }
         }

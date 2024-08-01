@@ -45,7 +45,7 @@ public:
      * @brief Sets the observation data for all agents.
      * @param observations A map containing observation data for all agents.
      */
-    void setObservations(const std::unordered_map<std::string, std::vector<float>>& observations);
+    void setObservations(const std::unordered_map<int, std::vector<float>>& observations);
 
     /**
      * @brief Updates the perception data for all agents in the simulation.
@@ -62,7 +62,7 @@ public:
 private:
     int num_rays_; ///< Number of rays used for perception.
     const Traffic& simulation_; ///< Reference to the traffic simulation.
-    std::unordered_map<std::string, std::vector<float>> observation_map_; ///< Map storing observation data for each agent.
+    std::unordered_map<int, std::vector<float>> observation_map_; ///< Map storing observation data for each agent.
 
     /**
      * @brief Calculates the distance to the nearest obstacle for a given agent and ray angle.
@@ -70,7 +70,7 @@ private:
      * @param ray_angle The angle of the ray being cast.
      * @return Distance to the nearest obstacle.
      */
-    std::unordered_map<std::string, std::vector<float>> calculateDistanceToObstacles(const Vehicle& agent) const;
+    std::unordered_map<int, std::vector<float>> calculateDistanceToObstacles(const Vehicle& agent) const;
 };
 
 #endif // PERCEPTION_MODULE_H
