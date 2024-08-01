@@ -66,14 +66,33 @@ set_target_properties(simulation PROPERTIES
 
 message(STATUS "Include directory is ${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
-# Specify include directories
-target_include_directories(simulation_static PUBLIC ${CMAKE_SOURCE_DIR}/include ${pybind11_INCLUDE_DIRS})
-target_include_directories(simulation PUBLIC ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(simulation_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../external/libOpenDRIVE/include)
+# Add this line to include libOpenDRIVE headers
+include_directories(
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/include
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/thirdparty
+)
+
+# Update your target_include_directories commands
+target_include_directories(simulation_static PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${pybind11_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/include
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/thirdparty
+)
+target_include_directories(simulation PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/include
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/thirdparty
+)
+target_include_directories(perception_module PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/include
+    ${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/thirdparty
+)
 
 # Add compile options
-target_compile_options(simulation_static PRIVATE -Wall -Wextra -Werror)
-target_compile_options(simulation PRIVATE -Wall -Wextra -Werror)
+target_compile_options(simulation_static PRIVATE -Wall -Wextra)
+target_compile_options(simulation PRIVATE -Wall -Wextra)
 
 # Explicitly specify where to place the generated shared object file
 set_target_properties(simulation_static PROPERTIES

@@ -7,14 +7,16 @@ project(ReplicantDriveSim)
 set(CMAKE_CXX_STANDARD 14)
 
 # Include directories
-include_directories(include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/include)
+include_directories(${CMAKE_SOURCE_DIR}/external/libOpenDRIVE/thirdparty)
 
-# Add Google Test
-add_subdirectory(external/googletest)
+# Add Google Test subdirectory
+add_subdirectory(${CMAKE_SOURCE_DIR}/external/googletest)
 
 # Add the libOpenDRIVE subdirectory
-add_subdirectory(external/libOpenDRIVE)
+add_subdirectory(${CMAKE_SOURCE_DIR}/external/libOpenDRIVE)
 
 # Include subdirectories
-add_subdirectory(src)
-add_subdirectory(tests)
+add_subdirectory(${CMAKE_SOURCE_DIR}/src)
+add_subdirectory(${CMAKE_SOURCE_DIR}/tests)

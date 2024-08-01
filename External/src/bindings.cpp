@@ -69,11 +69,11 @@ PYBIND11_MODULE(simulation, m) {
         .def("get_agent_velocities", &Traffic::get_agent_velocities)
         .def("get_previous_positions", &Traffic::get_previous_positions)
         .def("get_nearby_vehicles", &Traffic::getNearbyVehicles)
+        .def("get_agent_orientations", &Traffic::get_agent_orientations)
+        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles, py::return_value_policy::reference_internal)
         .def_property("odr_map",
                       [](const Traffic& ts) { return ts.get_odr_map(); },
                       [](Traffic& ts, const std::shared_ptr<odr::OpenDriveMap>& map) { ts.set_odr_map(map); });
-        .def("get_agent_orientations", &Traffic::get_agent_orientations)
-        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles, py::return_value_policy::reference_internal);
 
     // Bind vector of shared_ptr<Vehicle> using a custom caster
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")
