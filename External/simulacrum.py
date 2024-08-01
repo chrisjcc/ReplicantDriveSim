@@ -108,6 +108,10 @@ class HighwayEnv(MultiAgentEnv):
         self.truncateds = {"__all__": False}
         self.infos = {}
 
+        self.odr_map = self.sim.odr_map
+        self.road_network_mesh = self.odr_map.get_road_network_mesh(0.1)  # eps = 0.1
+        self.scale_factor = 5.0 #1.5 #10  # Adjust this to scale the map to fit the screen
+
         mlflow.log_params(
             {
                 "num_agents": self.configs.get("num_agents", 2),
@@ -409,65 +413,63 @@ class HighwayEnv(MultiAgentEnv):
         if not self.pygame_init:
             pygame.init()
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-            pygame.display.set_caption("Highway Simulation")
+            pygame.display.set_caption("OpenDRIVE Traffic Simulation")
             self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
-            #bg = pygame.image.load("/Users/christiancontrerascampana/Downloads/highway.png")
 
         self.screen.fill((255, 255, 255))  # Clear screen with white
 
-        # Draw road
-        pygame.draw.rect(
-            self.screen,
-            (0, 0, 0),
-            (
-                0,
-                LANE_WIDTH,
-                SCREEN_WIDTH,
-                SCREEN_HEIGHT - 2 * LANE_WIDTH,
-            ),  # Example road dimensions
-        )
+        # Calculate the center offset
+        center_offset_x = SCREEN_WIDTH // 2
+        center_offset_y = SCREEN_HEIGHT // 2
 
-        # Draw lane markers
-        for i in range(15):
-            pygame.draw.line(
-                self.screen,
-                (255, 255, 255),
-                (i * 60, SCREEN_HEIGHT // 2),
-                ((i * 60) + 30, SCREEN_HEIGHT // 2),
-                5,
-            )
+        # Render the road network
+        for road in self.odr_map.get_roads():
+            # Process each road, for example:
+            #print(f"Road ID: {road.id}")  # Assuming Road has an 'id' attribute
 
-        # Render each agent (vehicle)
-        for agent in self.sim.get_agents():
-            x, y = int(agent.getX()), int(agent.getY())
+            for s in range(int(road.length)):
+                for t in [-3., 0., 3.]:  # Adjust these values based on lane widths
+                    start_point = road.get_xyz(float(s), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+                    end_point = road.get_xyz(float(s + 1), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+                    pygame.draw.line(
+                        self.screen,
+                        (100, 100, 100),  # Gray color for roads
+                        (int(start_point[0] * self.scale_factor) + center_offset_x, int(start_point[1] * self.scale_factor) + center_offset_y),
+                        (int(end_point[0] * self.scale_factor) + center_offset_x, int(end_point[1] * self.scale_factor) + center_offset_y),
+                        2
+                    )
 
-            # Determine color based on collision status
-            color = (255, 0, 0) if self.collisions.get(agent.getName(), False) else (0, 0, 255)
 
-            # Create a rectangle surface for the vehicle with correct dimensions
-            rect_length = agent.getWidth() * 20  # scaled by 20 for visualization
-            rect_width = agent.getLength() * 20   # scaled by 20 for visualization
-            rect = pygame.Surface((rect_width, rect_length), pygame.SRCALPHA)  # Vehicle dimensions
+        # Render vehicles
+        agent_positions = self.sim.get_agent_positions()
+        agent_steerings = {agent: self.sim.get_agents()[i].getSteering() for i, (agent, _) in enumerate(agent_positions.items())}
+
+        for i, (agent, pos), in enumerate(agent_positions.items()):
+            x, y = int(pos[0] * self.scale_factor) + center_offset_x, int(pos[1] * self.scale_factor) + center_offset_y
+            steering_angle = agent_steerings[agent]
+
+            # Red color for vehicles otherwise blue in the event of a collision
+            color = (255, 0, 0) #if self.collisions[agent] else (0, 0, 255)
+
+            # Draw the vehicle as a rotated rectangle
+            rect = pygame.Surface((self.sim.get_agents()[i].getLength(), self.sim.get_agents()[i].getWidth() ))
             rect.fill(color)
 
-
             # Rotate the rectangle surface based on steering angle
-            steering_angle = math.degrees(agent.getSteering())  # Convert vehicle steering angle from rad to degrees
-            rotated_rect = pygame.transform.rotate(rect, steering_angle) # Negative to correct the rotation direction
+            steering_angle = math.degrees(agent_steerings[agent])  # Convert vehicle steering angle from rad to degrees
+            rotated_rect = pygame.transform.rotate(rect, steering_angle)  # Negative to correct the rotation direction
 
-            # Calculate position to blit the rotated rectangle
+            # Calculate the position to blit the rotated rectangle
             rect_x = x - rotated_rect.get_width() // 2
             rect_y = y - rotated_rect.get_height() // 2
 
             # Draw rotated rectangle on the screen
             self.screen.blit(rotated_rect, (rect_x, rect_y))
 
-
         # Clear the visible screen
-        #self.screen.blit(bg, (0, 0))
         pygame.display.flip()  # Update the full display surface to the screen
-        self.clock.tick(FPS)  # Cap the frame rate at 25 FPS (adjust as needed)
+        self.clock.tick(FPS)   # Cap the frame rate at 25 FPS (adjust as needed)
 
     def close(self) -> None:
         """
