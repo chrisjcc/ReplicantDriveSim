@@ -59,7 +59,6 @@ PYBIND11_MODULE(simulation, m) {
         .def("get_road_network_mesh", &odr::OpenDriveMap::get_road_network_mesh)  // Expose the method
         .def("get_roads", &odr::OpenDriveMap::get_roads);  // Expose and bind the get_roads method
 
-
     py::class_<Traffic>(m, "Traffic")
         .def(py::init<int, const std::string&>())
         .def("step", &Traffic::step)
@@ -75,7 +74,7 @@ PYBIND11_MODULE(simulation, m) {
                       [](const Traffic& ts) { return ts.get_odr_map(); },
                       [](Traffic& ts, const std::shared_ptr<odr::OpenDriveMap>& map) { ts.set_odr_map(map); });
 
-    // Bind vector of shared_ptr<Vehicle> using a custom caster
+    // Bind vector of shared_ptr<Vehicle> using a custom class
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")
         .def(py::init<>())
         .def("size", &std::vector<std::shared_ptr<Vehicle>>::size)
