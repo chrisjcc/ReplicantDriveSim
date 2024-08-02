@@ -410,7 +410,6 @@ class HighwayEnv(MultiAgentEnv):
             pygame.display.set_caption("Highway Simulation")
             self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
-            #bg = pygame.image.load("/Users/christiancontrerascampana/Downloads/highway.png")
 
         self.screen.fill((255, 255, 255))  # Clear screen with white
 
@@ -454,7 +453,7 @@ class HighwayEnv(MultiAgentEnv):
             steering_angle = math.degrees(agent.getSteering())  # Convert vehicle steering angle from rad to degrees
             rotated_rect = pygame.transform.rotate(rect, steering_angle) # Negative to correct the rotation direction
 
-            # Calculate position to blit the rotated rectangle
+            # Calculate the position to blit the rotated rectangle
             rect_x = x - rotated_rect.get_width() // 2
             rect_y = y - rotated_rect.get_height() // 2
 
@@ -463,9 +462,8 @@ class HighwayEnv(MultiAgentEnv):
 
 
         # Clear the visible screen
-        #self.screen.blit(bg, (0, 0))
         pygame.display.flip()  # Update the full display surface to the screen
-        self.clock.tick(FPS)  # Cap the frame rate at 25 FPS (adjust as needed)
+        self.clock.tick(FPS)   # Cap the frame rate at 25 FPS (adjust as needed)
 
     def close(self) -> None:
         """
