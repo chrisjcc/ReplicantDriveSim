@@ -16,25 +16,16 @@ T clamp(T value, T min_val, T max_val) {
     return std::max(min_val, std::min(value, max_val));
 }
 
-// Function to generate a random float within a specified range
-float randFloat(float a, float b) {
-    static std::default_random_engine generator;
-    std::uniform_real_distribution<float> distribution(a, b);
-    return distribution(generator);
-}
-
-// Function to generate a random float from a normal distribution
-float randNormal(float mean, float stddev) {
-    static std::default_random_engine generator;
-    std::normal_distribution<float> distribution(mean, stddev);
-    return distribution(generator);
-}
 
 /**
  * @brief Constructor for Traffic.
  * @param num_agents Number of agents (vehicles) in the simulation.
  */
 Traffic::Traffic(int num_agents) : num_agents(num_agents) {
+    // Initialize vehicle and perception related data
+    seed = 42;
+    generator.seed(seed), // Initialize the generator with the seed
+
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
 
@@ -290,5 +281,21 @@ void Traffic::checkCollisions() {
  * @return Random float within the specified range.
  */
 float Traffic::randFloat(float a, float b) {
-    return a + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (b - a)));
+    std::uniform_real_distribution<float> distribution(a, b);
+    return distribution(generator);
+}
+
+/**
+ * @brief Generates a random float following a normal (Gaussian) distribution.
+ *
+ * This function uses a normal distribution characterized by the given mean
+ * and standard deviation to generate a random floating-point number.
+ *
+ * @param mean The mean (average) of the normal distribution.
+ * @param stddev The standard deviation of the normal distribution.
+ * @return Random float following the specified normal distribution.
+ */
+float Traffic::randNormal(float mean, float stddev) {
+    std::normal_distribution<float> distribution(mean, stddev);
+    return distribution(generator);
 }
