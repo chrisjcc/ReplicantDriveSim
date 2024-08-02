@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <memory> // for std::shared_ptr
-
+#include <random>
 
 // Forward declaration of PerceptionModule
 class PerceptionModule;
@@ -86,6 +86,9 @@ public:
     std::vector<Vehicle> getNearbyVehicles(const std::string& agent_id) const;
 
 private:
+    unsigned int seed;
+    std::mt19937 generator;  ///< // Separate generator for each vehicle. Alternative, std::default_random_engine
+
     int num_agents; ///< Number of agents in the simulation.
     std::vector<Vehicle> agents; ///< Vector of all agents in the simulation.
     std::vector<Vehicle> previous_positions; ///< Vector of previous positions of all agents.
@@ -114,6 +117,19 @@ private:
      * @return Random float within the specified range.
      */
     float randFloat(float a, float b);
+
+    /**
+     * @brief Generates a random float following a normal (Gaussian) distribution.
+     *
+     * This function uses a normal distribution characterized by the given mean
+     * and standard deviation to generate a random floating-point number.
+     *
+     * @param mean The mean (average) of the normal distribution.
+     * @param stddev The standard deviation of the normal distribution.
+     * @return Random float following the specified normal distribution.
+     */
+    float randNormal(float mean, float stddev);
 };
+
 
 #endif // TRAFFIC_H
