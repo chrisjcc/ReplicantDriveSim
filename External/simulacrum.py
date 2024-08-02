@@ -11,8 +11,8 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
 
 # Constants for the Pygame simulation
-SCREEN_WIDTH = 900
-SCREEN_HEIGHT = 400
+SCREEN_WIDTH = 2 * 900
+SCREEN_HEIGHT = 2 * 400
 LANE_WIDTH = 100
 NUM_LANES = 2
 FPS = 25
@@ -412,8 +412,10 @@ class HighwayEnv(MultiAgentEnv):
 
         if not self.pygame_init:
             pygame.init()
+
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
             pygame.display.set_caption("OpenDRIVE Traffic Simulation")
+
             self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
 
@@ -432,6 +434,7 @@ class HighwayEnv(MultiAgentEnv):
                 for t in [-3., 0., 3.]:  # Adjust these values based on lane widths
                     start_point = road.get_xyz(float(s), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
                     end_point = road.get_xyz(float(s + 1), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+
                     pygame.draw.line(
                         self.screen,
                         (100, 100, 100),  # Gray color for roads
@@ -440,20 +443,22 @@ class HighwayEnv(MultiAgentEnv):
                         2
                     )
 
-
         # Render vehicles
         agent_positions = self.sim.get_agent_positions()
         agent_steerings = {agent: self.sim.get_agents()[i].getSteering() for i, (agent, _) in enumerate(agent_positions.items())}
 
         for i, (agent, pos), in enumerate(agent_positions.items()):
             x, y = int(pos[0] * self.scale_factor) + center_offset_x, int(pos[1] * self.scale_factor) + center_offset_y
-            steering_angle = agent_steerings[agent]
 
             # Red color for vehicles otherwise blue in the event of a collision
             color = (255, 0, 0) #if self.collisions[agent] else (0, 0, 255)
 
+            # Create a rectangle surface for the vehicle with correct dimensions
+            rect_length = self.sim.get_agents()[i].getWidth() * 3   # scaled by 3 for visualization
+            rect_width  = self.sim.get_agents()[i].getLength() * 3  # scaled by 3 for visualization
+
             # Draw the vehicle as a rotated rectangle
-            rect = pygame.Surface((self.sim.get_agents()[i].getLength(), self.sim.get_agents()[i].getWidth() ))
+            rect = pygame.Surface((rect_width, rect_length), pygame.SRCALPHA)  # Vehicle dimensions
             rect.fill(color)
 
             # Rotate the rectangle surface based on steering angle
@@ -494,7 +499,12 @@ if __name__ == "__main__":
         "max_episode_steps": 1000,
         "num_agents": 2,
         "render_mode": "human",
-        "map_file": "external/libOpenDRIVE/test.xodr",
+        "map_file": "data/maps/data.xodr",
+        #"data/maps/Gaimersheim-RA+JT-City-65KM_UR_AC_DE_ING_RELEASE_20210831.xodr",
+        #"data/maps/Am_Reisenfeld-RA+JT-11KM_UR_AC_DE_MUC_RELEASE_20210901.xodr",
+        #"data/maps/A10-IN-5-14KM_HW_AC_DE_BER_RELEASE_20210510.xodr",
+        #"data/maps/data.xodr",
+        #"external/libOpenDRIVE/test.xodr",
     }
 
     # Log params for main run

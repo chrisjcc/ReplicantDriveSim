@@ -26,18 +26,9 @@ T clamp(T value, T min_val, T max_val) {
     return std::max(min_val, std::min(value, max_val));
 }
 
-// Function to generate a random float within a specified range
-float randFloat(float a, float b) {
-    static std::default_random_engine generator;
-    std::uniform_real_distribution<float> distribution(a, b);
-    return distribution(generator);
-}
-
-// Function to generate a random float from a normal distribution
-float randNormal(float mean, float stddev) {
-    static std::default_random_engine generator;
-    std::normal_distribution<float> distribution(mean, stddev);
-    return distribution(generator);
+// Helper function to calculate distance between two Vec3D points
+float distance(const odr::Vec3D& a, const odr::Vec3D& b) {
+    return std::sqrt(std::pow(a[0] - b[0], 2) + std::pow(a[1] - b[1], 2) + std::pow(a[2] - b[2], 2));
 }
 
 /**
@@ -45,10 +36,68 @@ float randNormal(float mean, float stddev) {
  * @param num_agents Number of agents (vehicles) in the simulation.
  */
 Traffic::Traffic(int num_agents, const std::string& map_file) : odr_map(std::make_shared<odr::OpenDriveMap>(map_file)), num_agents(num_agents) {
+    seed = 314; //42;
+    generator.seed(seed), // Initialize the generator with the seed
+
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
 
     perceptionModule = std::make_unique<PerceptionModule>(*this); // Initialize the pointer
+
+    // Get all roads from the OpenDRIVE map
+    std::vector<odr::Road> roads = odr_map->get_roads();
+
+    // Randomly select a road
+    const odr::Road& road = roads[rand() % roads.size()];
+
+    // Randomly select a lane section
+    std::vector<odr::LaneSection> lane_sections = road.get_lanesections();
+    size_t lane_section_index = rand() % lane_sections.size();
+    const odr::LaneSection& lane_section = lane_sections[lane_section_index];
+
+    // Determine the start and end position of the lane section
+    float s0 = lane_section.s0;
+    float s1 = (lane_section_index == lane_sections.size() - 1) ? road.length : lane_sections[lane_section_index + 1].s0;
+
+    // Get drivable lanes (excluding sidewalks, etc.)
+    std::vector<const odr::Lane*> drivable_lanes;
+
+    for (const auto& lane_pair : lane_section.id_to_lane) {
+        const odr::Lane* lane = &lane_pair.second;
+
+        if (lane->type == "driving" || lane->type == "exit" || lane->type == "entry") {
+            drivable_lanes.push_back(lane);
+        }
+    }
+
+    // Randomly select a drivable lane
+    const odr::Lane* lane = drivable_lanes[rand() % drivable_lanes.size()];
+
+    // Sample a position along the lane
+    float s = s0 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (s1 - s0);
+
+    // Calculate t coordinate (assuming lane center)
+    float t = 0.0f;
+
+    for (const auto& lane_pair : lane_section.id_to_lane) {
+        const odr::Lane* current_lane = &lane_pair.second;
+
+        if (current_lane == lane) {
+            t += 0.5f * current_lane->lane_width.get(s); // Center of the lane
+            break;
+        }
+        if (lane->id > 0) {
+            t += current_lane->lane_width.get(s);
+        } else {
+            t -= current_lane->lane_width.get(s);
+        }
+    }
+
+    // Convert lane coordinates to world coordinates
+    odr::Vec3D position = road.get_xyz(s, t, 0.0);
+
+    // Get the heading direction at position s on the lane
+    float heading = get_heading(position);
 
     // Initialize agents with random positions and attributes
     for (int i = 0; i < num_agents; ++i) {
@@ -63,12 +112,22 @@ Traffic::Traffic(int num_agents, const std::string& map_file) : odr_map(std::mak
         agents[i].setVx(randNormal(0.0f, 0.5f));  // Initial lateral speed
         agents[i].setVy(0.0f);  // Initial verticle speed
         agents[i].setVz(randNormal(50.0f, 2.0f)); // Initial longitudinal speed
-        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
+        agents[i].setSteering(clamp(randNormal(heading, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
 
         // Initialize previous positions with current positions
         previous_positions[i] = agents[i];
     }
 }
+
+/**
+ * @brief Initializes the position of a specific agent.
+ * @param agent_index Index of the agent to be initialized.
+ */
+/*
+void Traffic::initializeAgentPosition(int agent_index) {
+
+}
+*/
 
 /**
  * @brief Destructor for Traffic.
@@ -238,11 +297,11 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     vehicle.setX(new_x);
 
     // Wrap around horizontally
-    if (vehicle.getZ() < 0) vehicle.setZ(vehicle.getZ() + SCREEN_WIDTH);
-    if (vehicle.getZ() >= SCREEN_WIDTH) vehicle.setZ(vehicle.getZ() - SCREEN_WIDTH);
+    //if (vehicle.getZ() < 0) vehicle.setZ(vehicle.getZ() + SCREEN_WIDTH);
+    //if (vehicle.getZ() >= SCREEN_WIDTH) vehicle.setZ(vehicle.getZ() - SCREEN_WIDTH);
 
     // Constrain vertically within the road
-    vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
+    //vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
 }
 
 /**
@@ -297,10 +356,12 @@ void Traffic::checkCollisions() {
             float distance = std::hypot(agents[i].getZ() - agents[j].getZ(), agents[i].getX() - agents[j].getX());
             if (distance < VEHICLE_WIDTH) {
                 // Handle collision by setting velocities to zero
+                /*
                 agents[i].setVx(0.0f);
                 agents[i].setVy(0.0f);
                 agents[j].setVx(0.0f);
                 agents[j].setVy(0.0f);
+                */
                 std::cout << "*** Collision Detected *** (distance gap " << distance << ")" << std::endl;
             }
         }
@@ -308,11 +369,219 @@ void Traffic::checkCollisions() {
 }
 
 /**
+ * @brief Calculates the heading of the road at a given s coordinate.
+ * @param road The road object.
+ * @param s The s coordinate along the road.
+ * @return The heading in radians.
+ */
+float Traffic::get_heading(const odr::Vec3D& vehicle_position) {
+    std::cout << "++ Traffic::get_heading ++" << std::endl;
+
+    const odr::Road* nearest_road = nullptr;
+    const odr::Lane* nearest_lane = nullptr;
+    float nearest_s = 0.0f;
+    float nearest_t = 0.0f;
+    float min_distance = std::numeric_limits<float>::max();
+
+    std::vector<odr::Road> roads = odr_map->get_roads();
+    std::cout << "NUM. ROARDS: " << roads.size() << std::endl;
+
+    for (const auto& road : roads) {
+        std::cout << "Processing Road ID: " << road.id << ", Length: " << road.length << std::endl;
+
+        odr::Vec3D projected_pos;
+        float s, t;
+
+        try {
+            project_xy_to_st(road, vehicle_position, s, t, projected_pos);
+        } catch (const std::exception& e) {
+            std::cout << "Exception in project_xy_to_st: " << e.what() << std::endl;
+            continue;
+        }
+
+        std::cout << "Projected s: " << s << ", t: " << t << std::endl;
+
+        // Check if s is within the road's length
+        if (s < 0 || s > road.length) {
+            std::cout << "Warning: s is outside road length!" << std::endl;
+            continue;
+        }
+
+        float dist = distance(vehicle_position, projected_pos);
+        std::cout << "dist: " << dist << std::endl;
+        std::cout << "min_distance: " << min_distance<< std::endl;
+
+        if (dist < min_distance) {
+            min_distance = dist;
+            nearest_road = &road;
+            nearest_s = s;
+            nearest_t = t;
+
+            std::cout << "Road ID: " << road.id << ", Road Length: " << road.length << std::endl;
+            std::cout << "Projected s: " << s << ", t: " << t << std::endl;
+
+            // Check if s is within the road's length
+            if (s < 0 || s > road.length) {
+                std::cout << "Warning: s is outside road length!" << std::endl;
+                continue;
+            }
+
+            std::cout << "Try to get lane section " << std::endl;
+            try {
+                odr::LaneSection lane_section = road.get_lanesection(s);
+                std::cout << "Extracted lane section! " << std::endl;
+
+                // Print lane section details
+                std::cout << "Lane Section s0: " << lane_section.s0 << std::endl;
+                std::cout << "Number of lanes: " << lane_section.id_to_lane.size() << std::endl;
+
+                float accumulated_width = 0.0f;
+
+                for (const auto& lane_pair : lane_section.id_to_lane) {
+                    std::cout << "Attempt to obtain lane type!!" << std::endl;
+                    const odr::Lane& lane = lane_pair.second;
+
+                    if (lane.type == "driving" || lane.type == "exit" || lane.type == "entry") {
+                        float lane_width = lane.lane_width.get(s); // Evaluate the CubicSpline at s
+
+                        if (std::abs(t) >= accumulated_width && std::abs(t) < accumulated_width + lane_width) {
+                            nearest_lane = &lane;
+                            break;
+                        }
+                        accumulated_width += lane_width;
+                    }
+                    else {
+                        std::cout << "* NOT A VALID LANE TYPE * " << std::endl;
+                    }
+                }
+            } catch (const std::exception& e) {
+                std::cout << "Exception when getting lane section: " << e.what() << std::endl;
+            }
+        }
+    }
+
+    if (!nearest_road || !nearest_lane) {
+        return 0.0f;
+    }
+
+    float delta_s = 0.01f;
+    odr::Vec3D pos1, pos2;
+
+    try {
+        pos1 = nearest_road->get_xyz(nearest_s, nearest_t, 0.0f);
+        pos2 = nearest_road->get_xyz(nearest_s + delta_s, nearest_t, 0.0f);
+    } catch (const std::exception& e) {
+        std::cout << "Exception when getting XYZ coordinates: " << e.what() << std::endl;
+        return 0.0f;
+    }
+
+    float dx = pos2[0] - pos1[0];
+    float dy = pos2[1] - pos1[1];
+    float heading = std::atan2(dy, dx);
+
+    if (nearest_lane->id < 0) {
+        heading += M_PI;
+        if (heading > M_PI) heading -= 2 * M_PI;
+    }
+    std::cout << "Final heading: " << heading << std::endl;
+    return heading;
+}
+
+/**
+ * @brief Projects a 3D point (x, y, z) onto the road's s-t coordinate system.
+ *
+ * This method takes a 3D point in the global coordinate system and projects it onto
+ * the road's local s-t coordinate system. It finds the closest point on the road to
+ * the given (x, y, z) point and calculates the corresponding s (longitudinal) and
+ * t (lateral) coordinates.
+ *
+ * @param road The road object onto which the point is being projected.
+ * @param xy The 3D point in the global coordinate system to be projected.
+ * @param s [out] The calculated s-coordinate (longitudinal distance along the road).
+ * @param t [out] The calculated t-coordinate (lateral offset from the road's reference line).
+ * @param projected_pos [out] The 3D position of the projected point on the road.
+ *
+ * @note This method uses a sampling approach to find the closest point on the road.
+ *       The accuracy of the projection depends on the number of samples used.
+ *
+ * @throws std::runtime_error If there's an error in accessing road geometry or if
+ *         the projection falls outside the valid road length.
+ */
+void Traffic::project_xy_to_st(const odr::Road& road, const odr::Vec3D& xy, float& s, float& t, odr::Vec3D& projected_pos) {
+    float min_distance = std::numeric_limits<float>::max();
+    float best_s = 0.0f;
+    odr::Vec3D best_projection;
+
+    float road_length = road.length;
+    int num_samples = 100;
+
+    for (int i = 0; i <= num_samples; ++i) {
+        float sample_s = (i / static_cast<float>(num_samples)) * road_length;
+        if (sample_s > road_length) {
+            sample_s = road_length;  // Clamp to road length
+        }
+
+        odr::Vec3D sample_point;
+        try {
+            sample_point = road.get_xyz(sample_s, 0.0, 0.0);
+        } catch (const std::exception& e) {
+            std::cout << "Exception in get_xyz: " << e.what() << " at s = " << sample_s << std::endl;
+            continue;
+        }
+
+        float dist = distance(xy, sample_point);
+
+        if (dist < min_distance) {
+            min_distance = dist;
+            best_s = sample_s;
+            best_projection = sample_point;
+        }
+    }
+
+    odr::Vec3D nearest_point = road.get_xyz(best_s, 0.0, 0.0);
+    float dx = xy[0] - nearest_point[0];
+    float dy = xy[1] - nearest_point[1];
+
+    odr::Vec3D next_point;
+    if (best_s + 0.1 <= road_length) {
+        next_point = road.get_xyz(best_s + 0.1, 0.0, 0.0);
+    } else {
+        next_point = road.get_xyz(road_length, 0.0, 0.0);
+    }
+    float road_dx = next_point[0] - nearest_point[0];
+    float road_dy = next_point[1] - nearest_point[1];
+    float road_heading = std::atan2(road_dy, road_dx);
+
+    float heading = std::atan2(dy, dx);
+    t = std::sqrt(dx * dx + dy * dy) * std::sin(heading - road_heading);
+
+    s = best_s;
+    projected_pos = best_projection;
+}
+
+/**
  * @brief Generates a random float within a specified range.
+ *
  * @param a Lower bound of the range.
  * @param b Upper bound of the range.
  * @return Random float within the specified range.
  */
 float Traffic::randFloat(float a, float b) {
-    return a + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (b - a)));
+    std::uniform_real_distribution<float> distribution(a, b);
+    return distribution(generator);
+}
+
+/**
+ * @brief Generates a random float following a normal (Gaussian) distribution.
+ *
+ * This function uses a normal distribution characterized by the given mean
+ * and standard deviation to generate a random floating-point number.
+ *
+ * @param mean The mean (average) of the normal distribution.
+ * @param stddev The standard deviation of the normal distribution.
+ * @return Random float following the specified normal distribution.
+ */
+float Traffic::randNormal(float mean, float stddev) {
+    std::normal_distribution<float> distribution(mean, stddev);
+    return distribution(generator);
 }

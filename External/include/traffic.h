@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <memory> // for std::shared_ptr
+#include <random>
 
 #include "Lane.h"
 #include "LaneSection.h"
@@ -27,6 +28,8 @@ class PerceptionModule;
  */
 class Traffic {
 public:
+    std::shared_ptr<odr::OpenDriveMap> odr_map; ///< Shared pointer to the OpenDrive map.
+
     /**
      * @brief Constructs a Traffic object with the specified number of agents.
      * @param num_agents Number of agents (vehicles) in the simulation.
@@ -102,16 +105,42 @@ public:
      */
     void set_odr_map(const std::shared_ptr<odr::OpenDriveMap>& map);
 
-    // Public members
-    std::shared_ptr<odr::OpenDriveMap> odr_map; ///< Shared pointer to the OpenDrive map.
+    /**
+     * @brief Calculates the heading of the road at a given s coordinate.
+     * @param vehicle_position The vehicle position (x, y, z).
+     * @return The heading in radians.
+     */
+    float get_heading(const odr::Vec3D& vehicle_position);
+
+    /**
+     * @brief Projects a 3D point (x, y, z) onto the road's s-t coordinate system.
+     *
+     * This method takes a 3D point in the global coordinate system and projects it onto
+     * the road's local s-t coordinate system. It finds the closest point on the road to
+     * the given (x, y, z) point and calculates the corresponding s (longitudinal) and
+     * t (lateral) coordinates.
+     *
+     * @param road The road object onto which the point is being projected.
+     * @param xy The 3D point in the global coordinate system to be projected.
+     * @param s [out] The calculated s-coordinate (longitudinal distance along the road).
+     * @param t [out] The calculated t-coordinate (lateral offset from the road's reference line).
+     * @param projected_pos [out] The 3D position of the projected point on the road.
+     *
+     * @note This method uses a sampling approach to find the closest point on the road.
+     *       The accuracy of the projection depends on the number of samples used.
+     *
+     * @throws std::runtime_error If there's an error in accessing road geometry or if
+     *         the projection falls outside the valid road length.
+     */
+    void project_xy_to_st(const odr::Road& road, const odr::Vec3D& xy, float& s, float& t, odr::Vec3D& projected_pos);
 
 private:
     int num_agents; ///< Number of agents in the simulation.
     std::vector<Vehicle> agents; ///< Vector of all agents in the simulation.
     std::vector<Vehicle> previous_positions; ///< Vector of previous positions of all agents.
     std::unique_ptr<PerceptionModule> perceptionModule; ///< Pointer to the PerceptionModule for perception calculations.
-
-    // Helper functions
+    unsigned int seed;  ///< Seed value used in generator engine
+    std::mt19937 generator;  ///< Alternative, std::default_random_engine
 
     /**
      * @brief Updates the position of a vehicle based on actions.
@@ -134,6 +163,19 @@ private:
      * @return Random float within the specified range.
      */
     float randFloat(float a, float b);
+
+
+    /**
+     * @brief Generates a random float following a normal (Gaussian) distribution.
+     *
+     * This function uses a normal distribution characterized by the given mean
+     * and standard deviation to generate a random floating-point number.
+     *
+     * @param mean The mean (average) of the normal distribution.
+     * @param stddev The standard deviation of the normal distribution.
+     * @return Random float following the specified normal distribution.
+     */
+    float randNormal(float mean, float stddev);
 };
 
 #endif // TRAFFIC_H
