@@ -69,7 +69,8 @@ class HighwayEnv(MultiAgentEnv):
             "agent_" + str(i) for i in range(self.configs.get("num_agents", 2))
         ]
         self.sim = simulation.Traffic(
-            self.configs.get("num_agents", 2)
+            self.configs.get("num_agents", 2),
+            self.configs.get("seed", 314),
         )
         self.agent_positions = {agent: np.array([0.0, 0.0, 0.0]) for agent in self.agents}
         self.previous_positions = {
@@ -139,7 +140,8 @@ class HighwayEnv(MultiAgentEnv):
         }  # Initialize cumulative rewards
 
         self.sim = simulation.Traffic(
-            len(self.agents)
+            len(self.agents),
+            self.configs.get("seed", 314),
         )  # Reset the simulation
 
         # Get the initial agent positions and velocities from the simulation
@@ -482,6 +484,7 @@ if __name__ == "__main__":
 
     # Configure parameters
     configs = {
+        "seed": 314,
         "progress": True,
         "collision": True,
         "safety_distance": True,
