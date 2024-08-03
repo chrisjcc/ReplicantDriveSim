@@ -8,7 +8,7 @@ protected:
     std::unique_ptr<PerceptionModule> perception;
 
     virtual void SetUp() {
-        sim = std::make_unique<Traffic>(3); // Example with 3 agents
+        sim = std::make_unique<Traffic>(3, 314); // Example with 3 agents
         perception = std::make_unique<PerceptionModule>(*sim);
     }
 };

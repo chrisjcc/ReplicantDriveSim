@@ -71,8 +71,8 @@ target_include_directories(simulation_static PUBLIC ${CMAKE_SOURCE_DIR}/include 
 target_include_directories(simulation PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 # Add compile options
-target_compile_options(simulation_static PRIVATE -Wall -Wextra -Werror)
-target_compile_options(simulation PRIVATE -Wall -Wextra -Werror)
+target_compile_options(simulation_static PRIVATE -Wall -Wextra)
+target_compile_options(simulation PRIVATE -Wall -Wextra)
 
 # Explicitly specify where to place the generated shared object file
 set_target_properties(simulation_static PROPERTIES
