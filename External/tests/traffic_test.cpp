@@ -6,7 +6,7 @@ protected:
     Traffic simulation;
 
     // Constructor: Create a Traffic object with 3 agents for testing
-    TrafficTest() : simulation(3) {}
+    TrafficTest() : simulation(3, 314) {}
 
     // Destructor
     virtual ~TrafficTest() {}

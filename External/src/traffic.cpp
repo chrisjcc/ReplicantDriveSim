@@ -21,10 +21,11 @@ T clamp(T value, T min_val, T max_val) {
  * @brief Constructor for Traffic.
  * @param num_agents Number of agents (vehicles) in the simulation.
  */
-Traffic::Traffic(int num_agents) : num_agents(num_agents) {
+Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_agents), seed(seed) {
+    std::cout << "Traffic simulation initialized with seed: " << seed << std::endl;
+
     // Initialize vehicle and perception related data
-    seed = 42;
-    generator.seed(seed), // Initialize the generator with the seed
+    generator.seed(seed); // Initialize the generator with the seed
 
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
