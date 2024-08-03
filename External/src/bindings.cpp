@@ -60,7 +60,7 @@ PYBIND11_MODULE(simulation, m) {
         .def("get_roads", &odr::OpenDriveMap::get_roads);  // Expose and bind the get_roads method
 
     py::class_<Traffic>(m, "Traffic")
-        .def(py::init<int, const std::string&>())
+        .def(py::init<const int&, const std::string&, const unsigned&>())
         .def("step", &Traffic::step)
         .def("get_agents", &Traffic::get_agents, py::return_value_policy::reference)
         .def("get_agent_by_name", &Traffic::get_agent_by_name, py::return_value_policy::reference)
