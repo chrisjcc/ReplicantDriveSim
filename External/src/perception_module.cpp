@@ -23,11 +23,12 @@ PerceptionModule::~PerceptionModule() {}
  */
 void PerceptionModule::updatePerceptions() {
     // Iterate over agents and update their perceptions
-    for (const auto& agent : simulation_.get_agents()) {
+    for (const auto& agent : simulation_.getAgents()) {
         auto observations = calculateDistanceToObstacles(agent);
         setObservations(observations);
 
         // Output retrieved observations
+        /*
         std::cout << "Observations for " << agent.getName() << ": ";
 
         const auto& obs = getObservations(agent);
@@ -37,6 +38,7 @@ void PerceptionModule::updatePerceptions() {
         }
 
         std::cout << std::endl;
+        */
     }
 }
 
@@ -77,7 +79,7 @@ void PerceptionModule::setObservations(const std::unordered_map<int, std::vector
 std::vector<Vehicle> PerceptionModule::detectNearbyVehicles(const Vehicle& ego_vehicle) const {
     std::vector<Vehicle> nearby_vehicles;
 
-    for (const auto& vehicle : simulation_.get_agents()) {
+    for (const auto& vehicle : simulation_.getAgents()) {
         if (vehicle.getName() != ego_vehicle.getName()) {
             float distance = std::hypot(vehicle.getX() - ego_vehicle.getX(), vehicle.getY() - ego_vehicle.getY());
             if (distance <= vehicle.getSensorRange()) {
@@ -108,7 +110,7 @@ std::unordered_map<int, std::vector<float>> PerceptionModule::calculateDistanceT
         float end_x = agent.getX() + max_ray_length * std::cos(ray_angle);
         float end_y = agent.getY() + max_ray_length * std::sin(ray_angle);
 
-        for (const auto& other_agent : simulation_.get_agents()) {
+        for (const auto& other_agent : simulation_.getAgents()) {
             if (other_agent.getId() != agent.getId()) { // Avoid checking against itself
                 float min_x = other_agent.getX() - other_agent.getLength() / 2.0f;
                 float max_x = other_agent.getX() + other_agent.getLength() / 2.0f;

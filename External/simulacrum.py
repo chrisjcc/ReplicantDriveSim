@@ -70,7 +70,8 @@ class HighwayEnv(MultiAgentEnv):
         ]
         self.sim = simulation.Traffic(
             self.configs.get("num_agents", 2),
-            self.configs.get("map_file", "external/libOpenDRIVE/test.xodr")
+            self.configs.get("map_file", "data/maps/test.xodr"),
+            self.configs.get("seed", 314),
         )
         self.agent_positions = {agent: np.array([0.0, 0.0, 0.0]) for agent in self.agents}
         self.previous_positions = {
@@ -85,8 +86,8 @@ class HighwayEnv(MultiAgentEnv):
         self.high_level_action_space = gym.spaces.Discrete(5)
         # Control action correspond to steering angle (rad), acceleration (m/s^2), and braking (m/s^2)
         self.low_level_action_space = gym.spaces.Box(
-            low=np.array([-0.610865, 0.0, -8.0], dtype=np.float32),
-            high=np.array([0.610865, 4.5, 0.0], dtype=np.float32),
+            low=np.array([-math.pi, 0.0, -8.0], dtype=np.float32),
+            high=np.array([math.pi, 4.5, 0.0], dtype=np.float32),
             shape=(3,),
             dtype=np.float32,
         )
@@ -110,7 +111,7 @@ class HighwayEnv(MultiAgentEnv):
 
         self.odr_map = self.sim.odr_map
         self.road_network_mesh = self.odr_map.get_road_network_mesh(0.1)  # eps = 0.1
-        self.scale_factor = 5.0 #1.5 #10  # Adjust this to scale the map to fit the screen
+        self.scale_factor = 2.0 #5.0 #2.0 #1.5 #10  # Adjust this to scale the map to fit the screen
 
         mlflow.log_params(
             {
@@ -145,7 +146,8 @@ class HighwayEnv(MultiAgentEnv):
 
         self.sim = simulation.Traffic(
             len(self.agents),
-            self.configs.get("map_file", "external/libOpenDRIVE/test.xodr")
+            self.configs.get("map_file", "external/libOpenDRIVE/test.xodr"),
+            self.configs.get("seed", 314),
         )  # Reset the simulation
 
         # Get the initial agent positions and velocities from the simulation
@@ -422,8 +424,10 @@ class HighwayEnv(MultiAgentEnv):
         self.screen.fill((255, 255, 255))  # Clear screen with white
 
         # Calculate the center offset
-        center_offset_x = SCREEN_WIDTH // 2
-        center_offset_y = SCREEN_HEIGHT // 2
+        x_offset = 200 #-1000
+        y_offset = -300 #-1700 # -300 #600
+        center_offset_x = (SCREEN_WIDTH + x_offset) // 2
+        center_offset_y = (SCREEN_HEIGHT + y_offset)// 2
 
         # Render the road network
         for road in self.odr_map.get_roads():
@@ -449,6 +453,7 @@ class HighwayEnv(MultiAgentEnv):
 
         for i, (agent, pos), in enumerate(agent_positions.items()):
             x, y = int(pos[0] * self.scale_factor) + center_offset_x, int(pos[1] * self.scale_factor) + center_offset_y
+            #x, y = int(pos[2] * self.scale_factor) + center_offset_x, int(pos[0] * self.scale_factor) + center_offset_y
 
             # Red color for vehicles otherwise blue in the event of a collision
             color = (255, 0, 0) #if self.collisions[agent] else (0, 0, 255)
@@ -493,6 +498,7 @@ if __name__ == "__main__":
 
     # Configure parameters
     configs = {
+        "seed": 42,
         "progress": True,
         "collision": True,
         "safety_distance": True,
@@ -502,9 +508,9 @@ if __name__ == "__main__":
         "map_file": "data/maps/data.xodr",
         #"data/maps/Gaimersheim-RA+JT-City-65KM_UR_AC_DE_ING_RELEASE_20210831.xodr",
         #"data/maps/Am_Reisenfeld-RA+JT-11KM_UR_AC_DE_MUC_RELEASE_20210901.xodr",
-        #"data/maps/A10-IN-5-14KM_HW_AC_DE_BER_RELEASE_20210510.xodr",
-        #"data/maps/data.xodr",
-        #"external/libOpenDRIVE/test.xodr",
+        #"map_file": "data/maps/A10-IN-5-14KM_HW_AC_DE_BER_RELEASE_20210510.xodr",
+        #"map_file": "data/maps/test.xodr",
+        #"map_file": "data/maps/Town01.xodr",
     }
 
     # Log params for main run
@@ -534,8 +540,8 @@ if __name__ == "__main__":
 
             for agent in env.agents:
                 total_reward = rewards[agent]
-                print(f"Rewards for {agent}: {total_reward}")
-                print(f"Reward components for {agent}: {infos[agent]}")
+                #print(f"Rewards for {agent}: {total_reward}")
+                #print(f"Reward components for {agent}: {infos[agent]}")
 
             done = terminateds.get("__all__", False) or terminateds.get(
                 "__all__", False
