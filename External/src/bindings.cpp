@@ -62,17 +62,16 @@ PYBIND11_MODULE(simulation, m) {
     py::class_<Traffic>(m, "Traffic")
         .def(py::init<const int&, const std::string&, const unsigned&>())
         .def("step", &Traffic::step)
-        .def("get_agents", &Traffic::get_agents, py::return_value_policy::reference)
-        .def("get_agent_by_name", &Traffic::get_agent_by_name, py::return_value_policy::reference)
-        .def("get_agent_positions", &Traffic::get_agent_positions)
-        .def("get_agent_velocities", &Traffic::get_agent_velocities)
-        .def("get_previous_positions", &Traffic::get_previous_positions)
-        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles)
-        .def("get_agent_orientations", &Traffic::get_agent_orientations)
+        .def("get_agents", &Traffic::getAgents, py::return_value_policy::reference)
+        .def("get_agent_by_name", &Traffic::getAgentByName, py::return_value_policy::reference)
+        .def("get_agent_positions", &Traffic::getAgentPositions)
+        .def("get_agent_velocities", &Traffic::getAgentVelocities)
+        .def("get_previous_positions", &Traffic::getPreviousPositions)
+        .def("get_agent_orientations", &Traffic::getAgentOrientations)
         .def("get_nearby_vehicles", &Traffic::getNearbyVehicles, py::return_value_policy::reference_internal)
         .def_property("odr_map",
-                      [](const Traffic& ts) { return ts.get_odr_map(); },
-                      [](Traffic& ts, const std::shared_ptr<odr::OpenDriveMap>& map) { ts.set_odr_map(map); });
+                      [](const Traffic& ts) { return ts.getOdrMap(); },
+                      [](Traffic& ts, const std::shared_ptr<odr::OpenDriveMap>& map) { ts.setOdrMap(map); });
 
     // Bind vector of shared_ptr<Vehicle> using a custom class
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")
