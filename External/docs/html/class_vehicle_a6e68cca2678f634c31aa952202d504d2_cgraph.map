@@ -1,9 +1,0 @@
-<map id="Vehicle::getPositionString" name="Vehicle::getPositionString">
-<area shape="rect" id="Node000001" title="Gets a formatted string of the vehicle&#39;s position (for debugging)." alt="" coords="5,55,177,80"/>
-<area shape="rect" id="Node000002" href="$class_vehicle.html#a6a96a9d417cdecf0c8e606f22eb83ed1" title="Gets the X position of the vehicle." alt="" coords="225,5,324,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="141,51,209,33,211,38,142,57"/>
-<area shape="rect" id="Node000003" href="$class_vehicle.html#a08fc9ca2264227112bd1bcce001bb5cb" title="Gets the Y position of the vehicle." alt="" coords="225,55,324,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="177,65,209,65,209,70,177,70"/>
-<area shape="rect" id="Node000004" href="$class_vehicle.html#a16a6f77788b3090cfc7bbfa47dce1309" title="Gets the Z position of the vehicle." alt="" coords="225,104,324,130"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="142,78,211,97,210,102,141,84"/>
-</map>
