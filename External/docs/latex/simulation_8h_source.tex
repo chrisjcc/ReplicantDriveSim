@@ -1,0 +1,24 @@
+\doxysection{simulation.\+h}
+\hypertarget{simulation_8h_source}{}\label{simulation_8h_source}\index{External/include/simulation.h@{External/include/simulation.h}}
+\mbox{\hyperlink{simulation_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ SIMULATION\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ SIMULATION\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{perception__module_8h}{perception\_module.h}}"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{traffic_8h}{traffic.h}}"{}}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_simulation}{Simulation}}\ \{}
+\DoxyCodeLine{00008\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00009\ \ \ \ \ \mbox{\hyperlink{class_simulation_ad091fb4599416d6873caae2d9f291a6c}{Simulation}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\&\ num\_agents,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{unsigned}\&\ seed,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\&\ num\_rays);}
+\DoxyCodeLine{00010\ \ \ \ \ \mbox{\hyperlink{class_simulation_a80fad3f57dfaf195a36f7bc49bc88279}{\string~Simulation}}();}
+\DoxyCodeLine{00011\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_simulation_a965a2ef177239fd4b2d3c0495bfdb459}{step}}(\textcolor{keyword}{const}\ std::vector<int>\&\ high\_level\_actions,\ \textcolor{keyword}{const}\ std::vector<std::vector<float>>\&\ low\_level\_actions);}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00014\ \ \ \ \ \mbox{\hyperlink{class_traffic}{Traffic}}\ trafficSimulation;}
+\DoxyCodeLine{00015\ \ \ \ \ \mbox{\hyperlink{class_perception_module}{PerceptionModule}}\ perceptionModule;}
+\DoxyCodeLine{00016\ \};}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ SIMULATION\_H}}
+
+\end{DoxyCode}

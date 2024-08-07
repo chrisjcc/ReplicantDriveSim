@@ -1,0 +1,60 @@
+\doxysection{External/src/traffic.cpp File Reference}
+\hypertarget{traffic_8cpp}{}\label{traffic_8cpp}\index{External/src/traffic.cpp@{External/src/traffic.cpp}}
+{\ttfamily \#include "{}traffic.\+h"{}}\newline
+{\ttfamily \#include "{}perception\+\_\+module.\+h"{}}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$algorithm$>$}\newline
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$random$>$}\newline
+Include dependency graph for traffic.\+cpp\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{traffic_8cpp__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T $>$ }\\T \mbox{\hyperlink{traffic_8cpp_a83100694a686c920777a21081dc0db93}{clamp}} (T value, T min\+\_\+val, T max\+\_\+val)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const int \mbox{\hyperlink{traffic_8cpp_a3482785bd2a4c8b307f9e0b6f54e2c36}{SCREEN\+\_\+\+WIDTH}} = 900
+\item 
+const int \mbox{\hyperlink{traffic_8cpp_a8584420e1884c1d838b5260519e2e956}{VEHICLE\+\_\+\+WIDTH}} = 130
+\item 
+const int \mbox{\hyperlink{traffic_8cpp_a9d51e3d192e070b1d6870e5fed379e8c}{LANE\+\_\+\+WIDTH}} = 25
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{traffic_8cpp_a83100694a686c920777a21081dc0db93}\index{traffic.cpp@{traffic.cpp}!clamp@{clamp}}
+\index{clamp@{clamp}!traffic.cpp@{traffic.cpp}}
+\doxysubsubsection{\texorpdfstring{clamp()}{clamp()}}
+{\footnotesize\ttfamily \label{traffic_8cpp_a83100694a686c920777a21081dc0db93} 
+template$<$typename T $>$ \\
+T clamp (\begin{DoxyParamCaption}\item[{T}]{value}{, }\item[{T}]{min\+\_\+val}{, }\item[{T}]{max\+\_\+val}{}\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{traffic_8cpp_a9d51e3d192e070b1d6870e5fed379e8c}\index{traffic.cpp@{traffic.cpp}!LANE\_WIDTH@{LANE\_WIDTH}}
+\index{LANE\_WIDTH@{LANE\_WIDTH}!traffic.cpp@{traffic.cpp}}
+\doxysubsubsection{\texorpdfstring{LANE\_WIDTH}{LANE\_WIDTH}}
+{\footnotesize\ttfamily \label{traffic_8cpp_a9d51e3d192e070b1d6870e5fed379e8c} 
+const int LANE\+\_\+\+WIDTH = 25}
+
+\Hypertarget{traffic_8cpp_a3482785bd2a4c8b307f9e0b6f54e2c36}\index{traffic.cpp@{traffic.cpp}!SCREEN\_WIDTH@{SCREEN\_WIDTH}}
+\index{SCREEN\_WIDTH@{SCREEN\_WIDTH}!traffic.cpp@{traffic.cpp}}
+\doxysubsubsection{\texorpdfstring{SCREEN\_WIDTH}{SCREEN\_WIDTH}}
+{\footnotesize\ttfamily \label{traffic_8cpp_a3482785bd2a4c8b307f9e0b6f54e2c36} 
+const int SCREEN\+\_\+\+WIDTH = 900}
+
+\Hypertarget{traffic_8cpp_a8584420e1884c1d838b5260519e2e956}\index{traffic.cpp@{traffic.cpp}!VEHICLE\_WIDTH@{VEHICLE\_WIDTH}}
+\index{VEHICLE\_WIDTH@{VEHICLE\_WIDTH}!traffic.cpp@{traffic.cpp}}
+\doxysubsubsection{\texorpdfstring{VEHICLE\_WIDTH}{VEHICLE\_WIDTH}}
+{\footnotesize\ttfamily \label{traffic_8cpp_a8584420e1884c1d838b5260519e2e956} 
+const int VEHICLE\+\_\+\+WIDTH = 130}
+

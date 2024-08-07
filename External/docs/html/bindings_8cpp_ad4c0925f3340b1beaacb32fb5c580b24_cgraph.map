@@ -1,0 +1,53 @@
+<map id="PYBIND11_MODULE" name="PYBIND11_MODULE">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,629,156,654"/>
+<area shape="rect" id="Node000002" href="$class_traffic.html#aa9e49ad4e3d18dac7f27afe3fe94bad9" title="Retrieves an agent by its name." alt="" coords="230,5,354,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="80,628,91,518,114,348,131,258,151,174,174,105,187,78,202,57,215,45,219,49,206,61,192,81,179,107,156,176,136,259,119,348,96,519,86,628"/>
+<area shape="rect" id="Node000003" href="$class_traffic.html#ac7466406334a19437c6bb4d8b64761a1" title="Retrieves orientations of all agents." alt="" coords="230,71,354,111"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="81,628,93,529,118,378,135,299,154,226,176,165,202,123,215,111,218,115,206,126,181,167,159,227,140,300,123,379,98,530,86,629"/>
+<area shape="rect" id="Node000004" href="$class_traffic.html#a74b30d825057072fef819b83cc19d582" title="Retrieves positions of all agents." alt="" coords="230,136,354,177"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="79,628,80,553,85,498,94,437,109,371,131,306,161,243,202,188,215,177,218,181,206,191,166,246,136,308,114,373,99,438,90,499,85,554,84,628"/>
+<area shape="rect" id="Node000005" href="$class_traffic.html#aaabbefcf013bc38f161b3abbf3e16728" title="Retrieves velocities of all agents." alt="" coords="230,201,354,242"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="79,628,84,562,100,462,116,407,137,351,165,299,202,252,215,241,218,245,206,256,170,301,142,353,121,408,106,463,89,563,85,628"/>
+<area shape="rect" id="Node000006" href="$class_traffic.html#a92f91cd8ef52c465fabf54dd85e67be8" title="Retrieves all agents currently in the simulation." alt="" coords="227,266,357,292"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="80,628,86,569,104,482,120,434,141,386,168,341,202,302,211,295,214,299,206,306,172,345,146,389,125,436,110,483,91,570,85,629"/>
+<area shape="rect" id="Node000007" href="$class_traffic.html#a56f4e191969e2b4cbe3dd257bd9ecfc2" title="Retrieves previous positions of all agents." alt="" coords="222,316,362,357"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="81,628,92,580,114,510,149,434,173,398,202,366,207,362,210,366,206,370,178,401,154,436,119,512,97,581,87,629"/>
+<area shape="rect" id="Node000008" href="$class_vehicle.html#a9d354107763969c4096f7425cfd26892" title="Gets the acceleration of the vehicle." alt="" coords="211,381,373,406"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="83,627,95,586,119,529,154,468,176,440,202,416,207,412,210,416,205,420,180,444,158,471,123,531,100,588,88,629"/>
+<area shape="rect" id="Node000009" href="$class_vehicle.html#acc208e54e31926eaf2eb5d236ab64d99" title="Gets the ID of the vehicle." alt="" coords="241,430,342,456"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="85,627,100,594,125,550,159,504,202,465,225,453,227,458,205,469,163,508,130,553,105,597,90,629"/>
+<area shape="rect" id="Node000010" href="$class_vehicle.html#a222ea65d6c4c8e10b209098c6a771c6a" title="Gets the ID of the lane the vehicle is in." alt="" coords="227,480,356,505"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="89,627,133,572,166,541,202,514,211,509,214,514,205,519,169,545,137,576,93,630"/>
+<area shape="rect" id="Node000011" href="$class_vehicle.html#aae626a5711ea4c0a65a6b46c8e4003d1" title="Gets the length of the vehicle." alt="" coords="227,529,356,554"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="98,626,144,595,203,563,217,557,219,562,205,568,147,600,101,631"/>
+<area shape="rect" id="Node000012" href="$class_vehicle.html#a204b11958e935c6fafb09f4ecac5d91e" title="Gets the name of the vehicle." alt="" coords="428,604,553,629"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="156,634,412,618,413,624,156,640"/>
+<area shape="rect" id="Node000013" href="$class_traffic.html#a98eb2c9bfeab3dac5e746ae8039f7f67" title="Retrieves nearby vehicles for a given agent." alt="" coords="204,578,380,604"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="137,626,220,605,221,611,138,631"/>
+<area shape="rect" id="Node000014" href="$class_vehicle.html#a6e68cca2678f634c31aa952202d504d2" title="Gets a formatted string of the vehicle&#39;s position (for debugging)." alt="" coords="206,781,378,806"/>
+<area shape="poly" id="edge14_Node000001_Node000014" title=" " alt="" coords="94,653,139,704,170,734,205,759,230,772,228,777,202,764,167,738,135,708,90,657"/>
+<area shape="rect" id="Node000015" href="$class_vehicle.html#a6a96a9d417cdecf0c8e606f22eb83ed1" title="Gets the X position of the vehicle." alt="" coords="441,705,540,730"/>
+<area shape="poly" id="edge24_Node000001_Node000015" title=" " alt="" coords="155,653,426,703,425,708,154,658"/>
+<area shape="rect" id="Node000016" href="$class_vehicle.html#a08fc9ca2264227112bd1bcce001bb5cb" title="Gets the Y position of the vehicle." alt="" coords="441,768,540,793"/>
+<area shape="poly" id="edge25_Node000001_Node000016" title=" " alt="" coords="107,653,152,676,205,699,321,737,426,764,425,769,320,742,203,704,149,681,104,657"/>
+<area shape="rect" id="Node000017" href="$class_vehicle.html#a16a6f77788b3090cfc7bbfa47dce1309" title="Gets the Z position of the vehicle." alt="" coords="442,817,540,842"/>
+<area shape="poly" id="edge26_Node000001_Node000017" title=" " alt="" coords="89,654,103,689,127,735,161,781,181,801,205,817,231,829,259,837,318,846,375,846,426,840,426,845,375,851,318,851,258,843,230,834,202,821,178,805,157,784,122,738,98,691,84,656"/>
+<area shape="rect" id="Node000018" href="$class_vehicle.html#adf8060c4f57174f8dc040ba0f21d2a35" title="Gets the sensor range of the vehicle." alt="" coords="207,882,376,908"/>
+<area shape="poly" id="edge18_Node000001_Node000018" title=" " alt="" coords="88,654,101,694,125,749,160,809,181,837,205,861,223,873,221,877,202,865,177,840,155,812,120,752,96,696,83,656"/>
+<area shape="rect" id="Node000019" href="$class_vehicle.html#a3c16056d4a66fd3ae7f59bb8b51a5b4a" title="Gets the steering angle of the vehicle." alt="" coords="223,932,361,957"/>
+<area shape="poly" id="edge19_Node000001_Node000019" title=" " alt="" coords="86,655,96,704,116,776,132,814,152,852,176,888,205,918,211,922,207,927,202,922,172,891,147,855,127,817,111,778,91,706,81,656"/>
+<area shape="rect" id="Node000020" href="$class_vehicle.html#acad119eaae43efc99baa11ad143f87d8" title="Gets the X velocity of the vehicle." alt="" coords="239,981,345,1006"/>
+<area shape="poly" id="edge20_Node000001_Node000020" title=" " alt="" coords="85,655,92,712,110,797,126,843,146,888,173,931,205,968,226,980,223,985,202,972,168,934,142,891,121,845,105,798,87,713,80,655"/>
+<area shape="rect" id="Node000021" href="$class_vehicle.html#a482c3130e20ca1ee8c01244521fdf7a8" title="Gets the Y velocity of the vehicle." alt="" coords="239,1030,344,1056"/>
+<area shape="poly" id="edge21_Node000001_Node000021" title=" " alt="" coords="85,655,89,720,105,817,120,871,141,924,169,974,205,1017,226,1030,223,1035,202,1021,165,977,136,926,115,873,99,818,83,720,79,655"/>
+<area shape="rect" id="Node000022" href="$class_vehicle.html#a2183214687929ebc33a7ff29e4f6c5bf" title="Gets the Z velocity of the vehicle." alt="" coords="239,1080,345,1105"/>
+<area shape="poly" id="edge22_Node000001_Node000022" title=" " alt="" coords="84,655,85,727,90,779,99,838,113,899,135,960,166,1017,205,1066,226,1080,223,1084,202,1070,161,1020,130,962,108,901,94,839,85,780,80,727,79,655"/>
+<area shape="rect" id="Node000023" href="$class_vehicle.html#a3f76d6772a3d970e4d19df106d393831" title="Gets the width of the vehicle." alt="" coords="230,1129,354,1154"/>
+<area shape="poly" id="edge23_Node000001_Node000023" title=" " alt="" coords="86,655,99,747,124,886,141,959,160,1025,182,1079,206,1116,217,1125,214,1129,202,1119,177,1082,155,1027,135,960,119,887,94,747,81,655"/>
+<area shape="rect" id="Node000024" href="$class_traffic.html#a5492795254a235bd18baf84c253d5854" title="Advances the simulation by one time step, updating agent positions and handling actions." alt="" coords="246,1178,338,1204"/>
+<area shape="poly" id="edge27_Node000001_Node000024" title=" " alt="" coords="86,655,97,755,121,909,137,990,157,1064,180,1125,206,1165,218,1175,232,1181,230,1186,215,1179,202,1169,175,1127,152,1065,132,991,116,910,92,756,80,655"/>
+<area shape="poly" id="edge13_Node000013_Node000012" title=" " alt="" coords="381,600,413,604,412,609,380,605"/>
+<area shape="poly" id="edge15_Node000014_Node000015" title=" " alt="" coords="327,778,440,734,442,739,329,783"/>
+<area shape="poly" id="edge16_Node000014_Node000016" title=" " alt="" coords="378,785,425,782,425,787,378,791"/>
+<area shape="poly" id="edge17_Node000014_Node000017" title=" " alt="" coords="367,804,427,815,426,821,366,810"/>
+</map>

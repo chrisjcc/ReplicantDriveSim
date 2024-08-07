@@ -1,0 +1,150 @@
+\doxysection{Perception\+Module Class Reference}
+\hypertarget{class_perception_module}{}\label{class_perception_module}\index{PerceptionModule@{PerceptionModule}}
+
+
+Represents the perception module that handles the detection of nearby vehicles and obstacles in the traffic simulation.  
+
+
+
+
+{\ttfamily \#include $<$perception\+\_\+module.\+h$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_perception_module_a376c5a2da7bf110b01bd2c8ffc158e5b}{Perception\+Module}} (const \mbox{\hyperlink{class_traffic}{Traffic}} \&sim, int num\+\_\+rays=12)
+\begin{DoxyCompactList}\small\item\em Constructs a \doxylink{class_perception_module}{Perception\+Module} object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_perception_module_a52bf1fd6688cd15a6687bc8af69bf116}{\texorpdfstring{$\sim$}{\string~}\+Perception\+Module}} ()
+\begin{DoxyCompactList}\small\item\em Destructor for \doxylink{class_perception_module}{Perception\+Module}. \end{DoxyCompactList}\item 
+const std\+::vector$<$ float $>$ \& \mbox{\hyperlink{class_perception_module_a2a70aab57f7d43eea1210758f1662c24}{get\+Observations}} (const \mbox{\hyperlink{class_vehicle}{Vehicle}} \&agent) const
+\begin{DoxyCompactList}\small\item\em Gets the observation data for a specific agent. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_perception_module_ad04c9dc0a0a3244c4e944703481e8cc3}{set\+Observations}} (const std\+::unordered\+\_\+map$<$ std\+::string, std\+::vector$<$ float $>$ $>$ \&observations)
+\begin{DoxyCompactList}\small\item\em Sets the observation data for all agents. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_perception_module_aafcc08fe2b43589621d6a0a8cdca375d}{update\+Perceptions}} ()
+\begin{DoxyCompactList}\small\item\em Updates the perception data for all agents in the simulation. \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{class_vehicle}{Vehicle}} $>$ \mbox{\hyperlink{class_perception_module_a0f318648d0a6c5dce7dea7a766ddb671}{detect\+Nearby\+Vehicles}} (const \mbox{\hyperlink{class_vehicle}{Vehicle}} \&ego\+\_\+vehicle) const
+\begin{DoxyCompactList}\small\item\em Detects nearby vehicles around the given ego vehicle. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Represents the perception module that handles the detection of nearby vehicles and obstacles in the traffic simulation. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{class_perception_module_a376c5a2da7bf110b01bd2c8ffc158e5b}\index{PerceptionModule@{PerceptionModule}!PerceptionModule@{PerceptionModule}}
+\index{PerceptionModule@{PerceptionModule}!PerceptionModule@{PerceptionModule}}
+\doxysubsubsection{\texorpdfstring{PerceptionModule()}{PerceptionModule()}}
+{\footnotesize\ttfamily \label{class_perception_module_a376c5a2da7bf110b01bd2c8ffc158e5b} 
+Perception\+Module\+::\+Perception\+Module (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{class_traffic}{Traffic}} \&}]{sim}{, }\item[{int}]{num\+\_\+rays}{ = {\ttfamily 12}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+
+
+Constructs a \doxylink{class_perception_module}{Perception\+Module} object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em sim} & Reference to the traffic simulation object. \\
+\hline
+{\em num\+\_\+rays} & Number of rays used for perception. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{class_perception_module_a52bf1fd6688cd15a6687bc8af69bf116}\index{PerceptionModule@{PerceptionModule}!````~PerceptionModule@{\texorpdfstring{$\sim$}{\string~}PerceptionModule}}
+\index{````~PerceptionModule@{\texorpdfstring{$\sim$}{\string~}PerceptionModule}!PerceptionModule@{PerceptionModule}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}PerceptionModule()}{\string~PerceptionModule()}}
+{\footnotesize\ttfamily \label{class_perception_module_a52bf1fd6688cd15a6687bc8af69bf116} 
+Perception\+Module\+::\texorpdfstring{$\sim$}{\string~}\+Perception\+Module (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Destructor for \doxylink{class_perception_module}{Perception\+Module}. 
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_perception_module_a0f318648d0a6c5dce7dea7a766ddb671}\index{PerceptionModule@{PerceptionModule}!detectNearbyVehicles@{detectNearbyVehicles}}
+\index{detectNearbyVehicles@{detectNearbyVehicles}!PerceptionModule@{PerceptionModule}}
+\doxysubsubsection{\texorpdfstring{detectNearbyVehicles()}{detectNearbyVehicles()}}
+{\footnotesize\ttfamily \label{class_perception_module_a0f318648d0a6c5dce7dea7a766ddb671} 
+std\+::vector$<$ \mbox{\hyperlink{class_vehicle}{Vehicle}} $>$ Perception\+Module\+::detect\+Nearby\+Vehicles (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{class_vehicle}{Vehicle}} \&}]{ego\+\_\+vehicle}{}\end{DoxyParamCaption}) const}
+
+
+
+Detects nearby vehicles around the given ego vehicle. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ego\+\_\+vehicle} & The vehicle for which to detect nearby vehicles. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Vector of detected nearby vehicles. 
+\end{DoxyReturn}
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=341pt]{class_perception_module_a0f318648d0a6c5dce7dea7a766ddb671_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_perception_module_a2a70aab57f7d43eea1210758f1662c24}\index{PerceptionModule@{PerceptionModule}!getObservations@{getObservations}}
+\index{getObservations@{getObservations}!PerceptionModule@{PerceptionModule}}
+\doxysubsubsection{\texorpdfstring{getObservations()}{getObservations()}}
+{\footnotesize\ttfamily \label{class_perception_module_a2a70aab57f7d43eea1210758f1662c24} 
+const std\+::vector$<$ float $>$ \& Perception\+Module\+::get\+Observations (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{class_vehicle}{Vehicle}} \&}]{agent}{}\end{DoxyParamCaption}) const}
+
+
+
+Gets the observation data for a specific agent. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em agent} & The vehicle for which to get observations. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Vector of observation data for the agent. 
+\end{DoxyReturn}
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_perception_module_a2a70aab57f7d43eea1210758f1662c24_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_perception_module_ad04c9dc0a0a3244c4e944703481e8cc3}\index{PerceptionModule@{PerceptionModule}!setObservations@{setObservations}}
+\index{setObservations@{setObservations}!PerceptionModule@{PerceptionModule}}
+\doxysubsubsection{\texorpdfstring{setObservations()}{setObservations()}}
+{\footnotesize\ttfamily \label{class_perception_module_ad04c9dc0a0a3244c4e944703481e8cc3} 
+void Perception\+Module\+::set\+Observations (\begin{DoxyParamCaption}\item[{const std\+::unordered\+\_\+map$<$ std\+::string, std\+::vector$<$ float $>$ $>$ \&}]{observations}{}\end{DoxyParamCaption})}
+
+
+
+Sets the observation data for all agents. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em observations} & A map containing observation data for all agents. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{class_perception_module_aafcc08fe2b43589621d6a0a8cdca375d}\index{PerceptionModule@{PerceptionModule}!updatePerceptions@{updatePerceptions}}
+\index{updatePerceptions@{updatePerceptions}!PerceptionModule@{PerceptionModule}}
+\doxysubsubsection{\texorpdfstring{updatePerceptions()}{updatePerceptions()}}
+{\footnotesize\ttfamily \label{class_perception_module_aafcc08fe2b43589621d6a0a8cdca375d} 
+void Perception\+Module\+::update\+Perceptions (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Updates the perception data for all agents in the simulation. 
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_perception_module_aafcc08fe2b43589621d6a0a8cdca375d_cgraph}
+\end{center}
+\end{figure}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+External/include/\mbox{\hyperlink{perception__module_8h}{perception\+\_\+module.\+h}}\item 
+External/src/\mbox{\hyperlink{perception__module_8cpp}{perception\+\_\+module.\+cpp}}\end{DoxyCompactItemize}

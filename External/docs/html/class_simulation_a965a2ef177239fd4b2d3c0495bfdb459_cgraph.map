@@ -1,0 +1,15 @@
+<map id="Simulation::step" name="Simulation::step">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,35,121,60"/>
+<area shape="rect" id="Node000002" href="$class_traffic.html#a5492795254a235bd18baf84c253d5854" title="Advances the simulation by one time step, updating agent positions and handling actions." alt="" coords="209,5,300,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="121,36,194,25,194,30,121,41"/>
+<area shape="rect" id="Node000003" href="$class_perception_module.html#aafcc08fe2b43589621d6a0a8cdca375d" title="Updates the perception data for all agents in the simulation." alt="" coords="169,55,341,96"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="121,53,154,58,153,63,121,59"/>
+<area shape="rect" id="Node000004" href="$class_traffic.html#a92f91cd8ef52c465fabf54dd85e67be8" title="Retrieves all agents currently in the simulation." alt="" coords="438,13,568,39"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="341,56,422,39,423,45,342,61"/>
+<area shape="rect" id="Node000005" href="$class_perception_module.html#a2a70aab57f7d43eea1210758f1662c24" title="Gets the observation data for a specific agent." alt="" coords="389,63,617,88"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="341,73,373,73,373,78,341,78"/>
+<area shape="rect" id="Node000007" href="$class_perception_module.html#ad04c9dc0a0a3244c4e944703481e8cc3" title="Sets the observation data for all agents." alt="" coords="389,112,617,138"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="342,90,421,106,419,111,341,95"/>
+<area shape="rect" id="Node000006" href="$class_vehicle.html#a204b11958e935c6fafb09f4ecac5d91e" title="Gets the name of the vehicle." alt="" coords="665,63,791,88"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="618,73,650,73,650,78,618,78"/>
+</map>

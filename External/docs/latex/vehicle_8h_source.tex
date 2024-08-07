@@ -1,0 +1,90 @@
+\doxysection{vehicle.\+h}
+\hypertarget{vehicle_8h_source}{}\label{vehicle_8h_source}\index{External/include/vehicle.h@{External/include/vehicle.h}}
+\mbox{\hyperlink{vehicle_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ VEHICLE\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ VEHICLE\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00010\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_vehicle}{Vehicle}}\ \{}
+\DoxyCodeLine{00011\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00015\ \ \ \ \ \mbox{\hyperlink{class_vehicle_abaad8187d9f2ede4fb8ea18de0a6764c}{Vehicle}}();}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00025\ \ \ \ \ \mbox{\hyperlink{class_vehicle_abaad8187d9f2ede4fb8ea18de0a6764c}{Vehicle}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{int}\ \textcolor{keywordtype}{id},\ \textcolor{keywordtype}{int}\ lane\_id,\ \textcolor{keywordtype}{float}\ width,\ \textcolor{keywordtype}{float}\ length);}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{comment}{//\ Accessor\ methods}}
+\DoxyCodeLine{00032\ \ \ \ \ std::string\ \mbox{\hyperlink{class_vehicle_a204b11958e935c6fafb09f4ecac5d91e}{getName}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_af0b51c9434c9086ee4164937a3ba9003}{setName}}(\textcolor{keyword}{const}\ std::string\&\ name);}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{class_vehicle_acc208e54e31926eaf2eb5d236ab64d99}{getId}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_a1b48b140672ccf7cda76edecff5f9806}{setId}}(\textcolor{keywordtype}{int}\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{class_vehicle_a222ea65d6c4c8e10b209098c6a771c6a}{getLaneId}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_abdba6bc52c9fcec9bfd7ba2756ce018b}{setLaneId}}(\textcolor{keywordtype}{int}\ lane\_id);}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00068\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a3f76d6772a3d970e4d19df106d393831}{getWidth}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_ab7ad37a7ba4a69b8fadb8da10fc902bf}{setWidth}}(\textcolor{keywordtype}{float}\ width);}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00080\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_aae626a5711ea4c0a65a6b46c8e4003d1}{getLength}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00081\ }
+\DoxyCodeLine{00086\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_aa9cc1884252f49b25ab6cdd1671018a4}{setLength}}(\textcolor{keywordtype}{float}\ length);}
+\DoxyCodeLine{00087\ }
+\DoxyCodeLine{00092\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a3c16056d4a66fd3ae7f59bb8b51a5b4a}{getSteering}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00093\ }
+\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_a26bb001b0f15029f7231e4b79c352fc7}{setSteering}}(\textcolor{keywordtype}{float}\ steering);}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00104\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a6a96a9d417cdecf0c8e606f22eb83ed1}{getX}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00105\ }
+\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_afd77d325f52fca7cd832be01b673d992}{setX}}(\textcolor{keywordtype}{float}\ x);}
+\DoxyCodeLine{00111\ }
+\DoxyCodeLine{00116\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a08fc9ca2264227112bd1bcce001bb5cb}{getY}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_abd75af4af5e44be01b8d5a7fa7346ad1}{setY}}(\textcolor{keywordtype}{float}\ y);}
+\DoxyCodeLine{00123\ }
+\DoxyCodeLine{00128\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a16a6f77788b3090cfc7bbfa47dce1309}{getZ}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00129\ }
+\DoxyCodeLine{00134\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_a361ec0004465013f59f4dafbfd27e952}{setZ}}(\textcolor{keywordtype}{float}\ z);}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_acad119eaae43efc99baa11ad143f87d8}{getVx}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00141\ }
+\DoxyCodeLine{00146\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_af59b18869bdd5524c3f4a6c49c2c8acb}{setVx}}(\textcolor{keywordtype}{float}\ vx);}
+\DoxyCodeLine{00147\ }
+\DoxyCodeLine{00152\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a482c3130e20ca1ee8c01244521fdf7a8}{getVy}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00158\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_a5eec00894c9c5ae398099a86a79da15b}{setVy}}(\textcolor{keywordtype}{float}\ vy);}
+\DoxyCodeLine{00159\ }
+\DoxyCodeLine{00164\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a2183214687929ebc33a7ff29e4f6c5bf}{getVz}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00165\ }
+\DoxyCodeLine{00170\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_a361dcfe26ade26a322f0a186c77bbc95}{setVz}}(\textcolor{keywordtype}{float}\ vz);}
+\DoxyCodeLine{00171\ }
+\DoxyCodeLine{00176\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_a9d354107763969c4096f7425cfd26892}{getAcceleration}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00182\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_aa5bdf18f86a8e631e3100a12528656fc}{setAcceleration}}(\textcolor{keywordtype}{float}\ acceleration);}
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00188\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{class_vehicle_adf8060c4f57174f8dc040ba0f21d2a35}{getSensorRange}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00189\ }
+\DoxyCodeLine{00194\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_vehicle_aa46685ae7cae522f44eb73468484e0c4}{setSensorRange}}(\textcolor{keywordtype}{float}\ sensor\_range);}
+\DoxyCodeLine{00195\ }
+\DoxyCodeLine{00200\ \ \ \ \ std::string\ \mbox{\hyperlink{class_vehicle_a6e68cca2678f634c31aa952202d504d2}{getPositionString}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00201\ }
+\DoxyCodeLine{00202\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00203\ \ \ \ \ std::string\ name\_;\ }
+\DoxyCodeLine{00204\ \ \ \ \ \textcolor{keywordtype}{int}\ id\_;\ }
+\DoxyCodeLine{00205\ \ \ \ \ \textcolor{keywordtype}{int}\ lane\_id\_;\ }
+\DoxyCodeLine{00206\ \ \ \ \ \textcolor{keywordtype}{float}\ width\_;\ }
+\DoxyCodeLine{00207\ \ \ \ \ \textcolor{keywordtype}{float}\ length\_;\ }
+\DoxyCodeLine{00208\ \ \ \ \ \textcolor{keywordtype}{float}\ steering\_;\ }
+\DoxyCodeLine{00209\ \ \ \ \ \textcolor{keywordtype}{float}\ x\_,\ y\_,\ z\_;\ }
+\DoxyCodeLine{00210\ \ \ \ \ \textcolor{keywordtype}{float}\ vx\_,\ vy\_,\ vz\_;\ }
+\DoxyCodeLine{00211\ \ \ \ \ \textcolor{keywordtype}{float}\ acceleration\_;\ }
+\DoxyCodeLine{00212\ \ \ \ \ \textcolor{keywordtype}{float}\ sensor\_range\_;\ }
+\DoxyCodeLine{00213\ \};}
+\DoxyCodeLine{00214\ }
+\DoxyCodeLine{00215\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ VEHICLE\_H}}
+
+\end{DoxyCode}

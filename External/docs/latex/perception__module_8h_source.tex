@@ -1,0 +1,47 @@
+\doxysection{perception\+\_\+module.\+h}
+\hypertarget{perception__module_8h_source}{}\label{perception__module_8h_source}\index{External/include/perception\_module.h@{External/include/perception\_module.h}}
+\mbox{\hyperlink{perception__module_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ PERCEPTION\_MODULE\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ PERCEPTION\_MODULE\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{vehicle_8h}{vehicle.h}}"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{traffic_8h}{traffic.h}}"{}}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <unordered\_map>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \textcolor{comment}{//\ Forward\ declaration\ of\ Traffic}}
+\DoxyCodeLine{00016\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_traffic}{Traffic}};}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00023\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_perception_module}{PerceptionModule}}\ \{}
+\DoxyCodeLine{00024\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{explicit}\ \mbox{\hyperlink{class_perception_module_a376c5a2da7bf110b01bd2c8ffc158e5b}{PerceptionModule}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{class_traffic}{Traffic}}\&\ sim,\ \textcolor{keywordtype}{int}\ num\_rays\ =\ 12);}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00035\ \ \ \ \ \mbox{\hyperlink{class_perception_module_a52bf1fd6688cd15a6687bc8af69bf116}{\string~PerceptionModule}}();}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{const}\ std::vector<float>\&\ \mbox{\hyperlink{class_perception_module_a2a70aab57f7d43eea1210758f1662c24}{getObservations}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{class_vehicle}{Vehicle}}\&\ agent)\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_perception_module_ad04c9dc0a0a3244c4e944703481e8cc3}{setObservations}}(\textcolor{keyword}{const}\ std::unordered\_map<std::string,\ std::vector<float>>\&\ observations);}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_perception_module_aafcc08fe2b43589621d6a0a8cdca375d}{updatePerceptions}}();}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00060\ \ \ \ \ std::vector<Vehicle>\ \mbox{\hyperlink{class_perception_module_a0f318648d0a6c5dce7dea7a766ddb671}{detectNearbyVehicles}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{class_vehicle}{Vehicle}}\&\ ego\_vehicle)\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00062\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{int}\ num\_rays\_;\ }
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{class_traffic}{Traffic}}\&\ simulation\_;\ }
+\DoxyCodeLine{00065\ \ \ \ \ std::unordered\_map<std::string,\ std::vector<float>>\ observation\_map\_;\ }
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00073\ \ \ \ \ std::unordered\_map<std::string,\ std::vector<float>>\ calculateDistanceToObstacles(\textcolor{keyword}{const}\ \mbox{\hyperlink{class_vehicle}{Vehicle}}\&\ agent)\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00074\ \};}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00076\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ PERCEPTION\_MODULE\_H}}
+
+\end{DoxyCode}

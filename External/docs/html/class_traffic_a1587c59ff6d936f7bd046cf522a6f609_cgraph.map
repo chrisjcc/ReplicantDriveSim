@@ -1,0 +1,5 @@
+<map id="Traffic::Traffic" name="Traffic::Traffic">
+<area shape="rect" id="Node000001" title="Constructs a Traffic object with the specified number of agents." alt="" coords="5,5,109,31"/>
+<area shape="rect" id="Node000002" href="$traffic_8cpp.html#a83100694a686c920777a21081dc0db93" title=" " alt="" coords="157,5,213,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,16,141,16,141,21,109,21"/>
+</map>
