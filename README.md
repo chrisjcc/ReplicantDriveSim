@@ -17,3 +17,27 @@ git clone git@github.com:chrisjcc/ReplicantDriveSim.git
 2. Open the project in Unity Hub and select the Unity version 2022.3.39f1.
 3. Let Unity install any necessary packages and dependencies.
 
+## Generate Doxygen Documentation
+To generate the documentation for this project using Doxygen, follow these steps:
+
+### Prerequisites
+Make sure Doxygen is installed on your local machine. You can install it using the following commands:
+
+- **Ubuntu:**
+  ```bash
+  sudo apt-get install doxygen
+  sudo apt-get install graphviz
+  ```
+- **macOS:**
+  ```bash
+  brew install doxygen
+  brew install graphviz
+  ```
+
+### Generate Documentation
+1. Navigate to the root directory of your project where the Doxyfile is located
+2. Run the Doxygen command with your Doxyfile to generate the documentation:
+```bash
+doxygen Doxyfile
+```
+3. The generated HTML files can be found in the directory specified by the OUTPUT_DIRECTORY setting in the Doxyfile (typically docs/html).
