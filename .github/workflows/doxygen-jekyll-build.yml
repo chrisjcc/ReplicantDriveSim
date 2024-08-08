@@ -45,7 +45,7 @@ jobs:
 
       - name: Check Directories
         run: |
-           ls _site/
+           ls _site/External/docs/html/index.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
