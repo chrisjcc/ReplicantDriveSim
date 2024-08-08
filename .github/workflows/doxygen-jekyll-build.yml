@@ -27,6 +27,7 @@ jobs:
             echo "docs/html directory does not exist."
             exit 1
           else
+            echo "Created docs/html/.nojekyll to prevent Jekyll from processing the Doxygen documentation."
             touch docs/html/.nojekyll
           fi
 
