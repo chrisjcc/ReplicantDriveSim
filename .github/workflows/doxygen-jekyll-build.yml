@@ -43,13 +43,8 @@ jobs:
           bundle install
           bundle exec jekyll build
 
-      - name: Check Directories
-        run: |
-           ls _site/External/docs/html/index.html
-
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
-          force_orphan: true
