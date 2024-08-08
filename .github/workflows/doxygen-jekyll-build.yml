@@ -43,9 +43,11 @@ jobs:
           bundle install
           bundle exec jekyll build
 
-      - name: Check Jekyll Build Status
+      - name: Check Directories
         run: |
-          jekyll build --verbose
+           ls
+           ls docs/html
+           ls _site
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
