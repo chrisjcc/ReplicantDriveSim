@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
   build:
@@ -16,11 +16,11 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '2.7' # You can choose the Ruby version that matches your Jekyll setup
+          ruby-version: '2.7'  # Ensure this matches your Ruby version that matches your Jekyll setup
 
       - name: Install dependencies
         run: |
-          gem install bundler
+          gem install bundler -v 2.4.22
           bundle install
 
       - name: Build site
