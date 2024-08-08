@@ -1,4 +1,4 @@
 # Build settings
-theme: jekyll-theme-cayman
+theme: jekyll-theme-minima
 title: Replicant Drive Simulation homepage
 description: This project aims to develop a simulated traffic driver agent using a combination of imitation learning and reinforcement learning techniques.
