@@ -4,6 +4,8 @@ title: "ReplicantDriveSim"
 permalink: /
 ---
 
+![Workflow Status](https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/doxygen-jekyll-build.yml/badge.svg?branch=main)
+
 # ReplicantDriveSim
 
 ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research. It leverages reinforcement learning, imitation learning, and computer vision to create realistic traffic scenarios and synthetic driving data. The simulation environment is built using Pygame for visualization and Miniforge for Python package management, ensuring a seamless development and deployment experience. This Docker image provides a fully configured environment with all necessary dependencies, enabling efficient experimentation and development of autonomous driving algorithms.
