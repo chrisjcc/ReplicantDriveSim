@@ -8,7 +8,8 @@ permalink: /
 
 ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research. It leverages reinforcement learning, imitation learning, and computer vision to create realistic traffic scenarios and synthetic driving data. The simulation environment is built using Pygame for visualization and Miniforge for Python package management, ensuring a seamless development and deployment experience. This Docker image provides a fully configured environment with all necessary dependencies, enabling efficient experimentation and development of autonomous driving algorithms.
 
-[unity_simulation_github pages link](https://chrisjcc.github.io/ReplicantDriveSim/)
+[Traffic Simulation Documentation](https://chrisjcc.github.io/ReplicantDriveSim/)
+[Doxygen Documentation](https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/)
 
 <!-- Try the first image source -->
 ![Jekyll Alt text]({{ site.baseurl }}/External/images/NISSAN-GTR_ReplicantDriveSim.png)
