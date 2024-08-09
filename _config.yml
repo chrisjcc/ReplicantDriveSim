@@ -14,3 +14,8 @@ readme_index:
   with_frontmatter: true
 include:
   - External
+defaults:
+  - scope:
+      path: "External"
+    values:
+      image: true
