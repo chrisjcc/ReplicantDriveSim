@@ -12,7 +12,12 @@ ReplicantDriveSim is an advanced traffic simulation project designed for autonom
 
 [traffic_simulation github pages](https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/)
 
+<!-- Try the first image source -->
 ![Alt text]({{ site.baseurl }}/External/images/NISSAN-GTR_ReplicantDriveSim.png)
+
+<!-- Fallback to the second image source -->
+![Image Alt text](/External/images/NISSAN-GTR_ReplicantDriveSim.png "Optional title")
+
 
 ## Project Setup
 
