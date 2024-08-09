@@ -51,9 +51,6 @@ jobs:
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v3
 
-      - name: List contents of built site
-        run: ls -R ./_site
-
   # Deployment job
   deploy:
     environment:
