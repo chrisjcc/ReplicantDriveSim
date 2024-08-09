@@ -1,10 +1,9 @@
+![Workflow Status](https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/doxygen-jekyll-build.yml/badge.svg?branch=main)
 ---
 layout: default
 title: "ReplicantDriveSim"
 permalink: /
 ---
-
-![Workflow Status](https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/doxygen-jekyll-build.yml/badge.svg?branch=main)
 
 # ReplicantDriveSim
 
