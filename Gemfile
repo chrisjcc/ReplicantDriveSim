@@ -1,16 +1,13 @@
-source 'https://rubygems.org'
-
-gem 'jekyll', '~> 4.2'
-gem 'jekyll-readme-index'
-gem 'jekyll-theme-cayman', '~> 0.2'
-gem 'jekyll-theme-architect', '~> 0.2'
-gem 'kramdown-parser-gfm'
-gem 'base64'
-gem 'bigdecimal'
-
-# If you're using minima, use this instead of the old version:
-gem 'minima', '~> 2.5'
-
-# You might also need to add these dependencies for Jekyll 4.x
-gem 'webrick', '~> 1.7'
-gem 'jekyll-sass-converter', '~> 2.0'
+# Build settings
+theme: jekyll-theme-architect
+title: Replicant Drive Simulation homepage
+description: This project aims to develop a simulated traffic driver agent using a combination of imitation learning and reinforcement learning techniques.
+favicon: /favicon.ico
+plugins:
+  - jekyll-readme-index
+readme_index:
+  enabled: true
+  remove_originals: false
+  with_frontmatter: true
+include:
+  - External
