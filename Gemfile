@@ -1,13 +1,8 @@
-# Build settings
-theme: jekyll-theme-architect
-title: Replicant Drive Simulation homepage
-description: This project aims to develop a simulated traffic driver agent using a combination of imitation learning and reinforcement learning techniques.
-favicon: /favicon.ico
-plugins:
-  - jekyll-readme-index
-readme_index:
-  enabled: true
-  remove_originals: false
-  with_frontmatter: true
-include:
-  - External
+source 'https://rubygems.org'
+
+gem 'jekyll', '>= 4.2.0'
+gem 'jekyll-readme-index'
+gem 'jekyll-theme-architect'
+gem 'kramdown-parser-gfm'
+gem 'base64'
+gem 'bigdecimal'
