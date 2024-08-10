@@ -44,12 +44,12 @@ jobs:
 
       - name: Ensure docs/html Directory Exists and Create .nojekyll
         run: |
-          if [ ! -d "docs/html" ]; then
+          if [ ! -d "External/docs/html" ]; then
             echo "docs/html directory does not exist."
             exit 1
           else
             echo "Created docs/html/.nojekyll to prevent Jekyll from processing the Doxygen documentation."
-            touch docs/html/.nojekyll
+            touch External/docs/html/.nojekyll
           fi
 
       - name: Setup Ruby
