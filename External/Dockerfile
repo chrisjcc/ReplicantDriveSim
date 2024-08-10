@@ -65,7 +65,7 @@ RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda activate drive && \
     pip install --upgrade pip && \
     pip install build && \
-    cd /app/repo && \
+    cd /app/repo/External && \
     python -m build -v"
 
 # Install the traffic simulation wheel
