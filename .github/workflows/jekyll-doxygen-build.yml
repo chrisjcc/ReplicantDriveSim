@@ -35,8 +35,8 @@ jobs:
 
       - name: Prepare deployment
         run: |
-          mkdir -p _site/docs
-          cp -R html _site/docs/doxygen
+          mkdir -p _site/
+          cp -R docs/html _site/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
