@@ -46,6 +46,12 @@ RUN $CONDA_DIR/bin/conda init && \
 # Set the PATH Miniforge environment variables
 ENV PATH=$CONDA_DIR/bin:$PATH
 
+# Update Conda
+RUN $CONDA_DIR/bin/conda update -n base -c defaults conda -y
+
+# Print the environment.yml file for debugging
+RUN cat /app/repo/External/environment.yml
+
 # Create and activate Conda environment
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda env create -f /app/repo/External/environment.yml && \
