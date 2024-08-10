@@ -48,7 +48,7 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 
 # Create and activate Conda environment
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda env create -f /app/repo/environment.yml && \
+    conda env create -f /app/repo/External/environment.yml && \
     echo 'conda activate drive' >> ~/.bashrc"
 
 # Set the PATH to include conda environment
