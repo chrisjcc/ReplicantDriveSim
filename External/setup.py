@@ -63,7 +63,7 @@ class CMakeBuild(build_ext):
 
         self.move_file(lib_path, dest_file)
 
-sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo')
+sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
     name='simulation',
