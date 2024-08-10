@@ -31,9 +31,10 @@ RUN apt-get update && apt-get install -y \
     libxrender1 \
     mercurial
 
-# Install Miniforge (ARM64 version)
+
+# Install Miniforge (x86_64 version) # (ARM64 version aarch64)
 ENV CONDA_DIR=/opt/conda
-RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O ~/miniforge.sh && \
+RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O ~/miniforge.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
     rm ~/miniforge.sh && \
     $CONDA_DIR/bin/conda clean -afy
