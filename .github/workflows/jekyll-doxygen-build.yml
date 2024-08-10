@@ -47,7 +47,7 @@ jobs:
         run: doxygen Doxyfile
 
       - name: Upload Doxygen artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: doxygen-docs
           path: External/docs/html
@@ -62,12 +62,12 @@ jobs:
         env:
           JEKYLL_ENV: production
 
-      - name: Upload Jekyll artifact
+      - name: Upload combined artifact
+        uses: actions/upload-pages-artifact@v4
         # Automatically uploads an artifact from the './_site' directory by default
-        uses: actions/upload-artifact@v3
+        #name: jekyll-site
         with:
-          name: jekyll-site
-          path: ./_site
+          path: _site
 
   # Deployment job
   deploy:
@@ -78,28 +78,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Download Doxygen artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: doxygen-docs
-          path: External/docs/html
-
-      - name: Download Jekyll artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: jekyll-site
-          path: ./_site
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
-          force_orphan: false
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'Deploy Jekyll site and Doxygen docs'
