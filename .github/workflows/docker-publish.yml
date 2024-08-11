@@ -52,7 +52,6 @@ jobs:
           images: chrisjcc/replicantdrivesim
 
       - name: Build and push Docker image
-        #id: push
         id: docker_build
         uses: docker/build-push-action@v6
         with:
