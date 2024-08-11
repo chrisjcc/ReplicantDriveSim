@@ -59,13 +59,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           #ssh: |
           #  default=${{ secrets.SSH_PRIVATE_KEY }}
-      
+
+      - name: Verify Docker Login
+        run: docker info
+      - name: Print digest
+        run: echo ${{ steps.build-and-push.outputs.digest }}
+
       - name: Generate artifact attestation
-        uses: slsa-framework/slsa-github-generator@v1
+        uses: actions/attest-build-provenance@v1
         with:
-          #subject-name: chrisjcc/replicantdrivesim
-          #subject-digest: ${{ steps.push.outputs.digest }}
-          #push-to-registry: true
-          #github-token: ${{ secrets.GITHUB_TOKEN }}
-          base64-subjects: ${{ steps.build-and-push.outputs.digest }}
-          provenance-name: replicantdrivesim-provenance.intoto.jsonl
+          subject-name: chrisjcc/replicantdrivesim
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
