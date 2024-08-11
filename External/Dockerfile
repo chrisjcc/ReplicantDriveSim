@@ -34,7 +34,12 @@ RUN apt-get update && apt-get install -y \
 # Install Miniforge based on your system's architecture: x86_64 (AMD64) or ARM64.
 ARG TARGETARCH
 ENV CONDA_DIR=/opt/conda
-RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${TARGETARCH}.sh -O ~/miniforge.sh && \
+#RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${TARGETARCH}.sh -O ~/miniforge.sh && \
+#    /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
+#    rm ~/miniforge.sh && \
+#    $CONDA_DIR/bin/conda clean -afy
+RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
+    wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
     rm ~/miniforge.sh && \
     $CONDA_DIR/bin/conda clean -afy
