@@ -71,13 +71,10 @@ RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
 # Install the traffic simulation wheel
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda activate drive && \
-    pip install --force-reinstall /app/repo/dist/simulation-*.whl"
+    pip install --force-reinstall /app/repo/External/dist/simulation-*.whl"
 
 # Set up the working directory
-WORKDIR /app/repo
-
-# To ensure the /app/repo/data directory exists
-RUN mkdir -p data
+WORKDIR /app/repo/External
 
 # Set the default command to bash
 CMD ["bash"]
