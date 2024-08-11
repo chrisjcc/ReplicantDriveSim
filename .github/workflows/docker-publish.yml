@@ -37,7 +37,7 @@ jobs:
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         #uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v5
         with:
           images: chrisjcc/replicantdrivesim
 
@@ -50,7 +50,7 @@ jobs:
       - name: Build and push Docker image
         id: push
         #uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: ./External
           file: ./External/Dockerfile
@@ -61,9 +61,11 @@ jobs:
           #  default=${{ secrets.SSH_PRIVATE_KEY }}
       
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
+        uses: slsa-framework/slsa-github-generator@v1
         with:
-          subject-name: chrisjcc/replicantdrivesim
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          #subject-name: chrisjcc/replicantdrivesim
+          #subject-digest: ${{ steps.push.outputs.digest }}
+          #push-to-registry: true
+          #github-token: ${{ secrets.GITHUB_TOKEN }}
+          base64-subjects: ${{ steps.build-and-push.outputs.digest }}
+          provenance-name: replicantdrivesim-provenance.intoto.jsonl
