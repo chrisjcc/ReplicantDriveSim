@@ -32,8 +32,9 @@ jobs:
 
       - name: Log in to Docker Hub
         #uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
+          #username: ${{ vars.DOCKERHUB_USERNAME }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
@@ -54,40 +55,36 @@ jobs:
         #id: push
         id: docker_build
         #uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
+          #platforms: linux/amd64,linux/arm64
           context: ./External
           file: ./External/Dockerfile
-          #push: true
-          push: false
-          #tags: ${{ steps.meta.outputs.tags }}
-          #labels: ${{ steps.meta.outputs.labels }}
-          #outputs: type=registry,push=true
-          load: true
-          tags: fastqc-test
-          cache-from: type=gha
-          cache-to: type=gha
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           #ssh: |
           #  default=${{ secrets.SSH_PRIVATE_KEY }}
+          #tags: user/app:latest
 
-      - name: Verify Docker Login
-        run: docker info
+#      - name: Verify Docker Login
+#        run: docker info
 
-      - name: Print build-and-push outputs
-        run: |
-          echo "Digest: ${{ steps.build-and-push.outputs.digest }}"
-          echo "Metadata: ${{ steps.build-and-push.outputs.metadata }}"
+#      - name: Print build-and-push outputs
+#        run: |
+#          echo "Digest: ${{ steps.build-and-push.outputs.digest }}"
+#          echo "Metadata: ${{ steps.build-and-push.outputs.metadata }}"
 
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: chrisjcc/replicantdrivesim
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          push-to-registry: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Generate artifact attestation
+#        uses: actions/attest-build-provenance@v1
+#        with:
+#          subject-name: chrisjcc/replicantdrivesim
+#          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+#          push-to-registry: true
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Error if digest is empty
-        if: ${{ !steps.build-and-push.outputs.digest }}
-        run: |
-          echo "Error: Docker image digest is empty. Build may have failed."
-          exit 1
+#      - name: Error if digest is empty
+#        if: ${{ !steps.build-and-push.outputs.digest }}
+#        run: |
+#          echo "Error: Docker image digest is empty. Build may have failed."
+#          exit 1
