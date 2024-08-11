@@ -34,10 +34,7 @@ RUN apt-get update && apt-get install -y \
 # Install Miniforge based on your system's architecture: x86_64 (AMD64) or ARM64.
 ARG TARGETARCH
 ENV CONDA_DIR=/opt/conda
-#RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${TARGETARCH}.sh -O ~/miniforge.sh && \
-#    /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
-#    rm ~/miniforge.sh && \
-#    $CONDA_DIR/bin/conda clean -afy
+
 RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
     wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
@@ -57,7 +54,7 @@ RUN $CONDA_DIR/bin/conda update -n base -c defaults conda -y
 # Print the environment.yml file for debugging
 RUN cat /app/repo/External/environment.yml
 
-# Create and activate Conda environment
+# Create and activate the Conda environment
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda env create -f /app/repo/External/environment.yml && \
     echo 'conda activate drive' >> ~/.bashrc"
