@@ -21,7 +21,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      #attestations: write
       id-token: write
     steps:
       - name: Check out the repo
@@ -31,7 +30,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        #uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         uses: docker/login-action@v3
         with:
           #username: ${{ vars.DOCKERHUB_USERNAME }}
@@ -40,21 +38,13 @@ jobs:
       
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        #uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         uses: docker/metadata-action@v5
         with:
           images: chrisjcc/replicantdrivesim
 
-      #- name: Check current directory path
-      #  run: pwd
-
-      #- name: List files in the current directory
-      #  run: ls -larth External/
-
       - name: Build and push Docker image
         #id: push
         id: docker_build
-        #uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
         uses: docker/build-push-action@v6
         with:
           #platforms: linux/amd64,linux/arm64
@@ -63,28 +53,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          #ssh: |
-          #  default=${{ secrets.SSH_PRIVATE_KEY }}
-          #tags: user/app:latest
-
-#      - name: Verify Docker Login
-#        run: docker info
-
-#      - name: Print build-and-push outputs
-#        run: |
-#          echo "Digest: ${{ steps.build-and-push.outputs.digest }}"
-#          echo "Metadata: ${{ steps.build-and-push.outputs.metadata }}"
-
-#      - name: Generate artifact attestation
-#        uses: actions/attest-build-provenance@v1
-#        with:
-#          subject-name: chrisjcc/replicantdrivesim
-#          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-#          push-to-registry: true
-#          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-#      - name: Error if digest is empty
-#        if: ${{ !steps.build-and-push.outputs.digest }}
-#        run: |
-#          echo "Error: Docker image digest is empty. Build may have failed."
-#          exit 1
