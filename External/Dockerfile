@@ -7,7 +7,7 @@ FROM ubuntu as intermediate
 RUN apt-get update && apt-get install -y git
 
 # Clone the repository using HTTPS
-RUN git clone https://github.com/chrisjcc/ReplicantDriveSim.git
+RUN git clone --recurse-submodules https://github.com/chrisjcc/ReplicantDriveSim.git
 
 FROM ubuntu
 
