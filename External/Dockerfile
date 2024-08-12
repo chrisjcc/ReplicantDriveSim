@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.2
 
 # This is our first build stage, it will not persist in the final image
-FROM ubuntu as intermediate
+FROM ubuntu:22.04 as intermediate
 
 # Install git
 RUN apt-get update && apt-get install -y git
@@ -9,16 +9,15 @@ RUN apt-get update && apt-get install -y git
 # Clone the repository using HTTPS
 RUN git clone --recurse-submodules https://github.com/chrisjcc/ReplicantDriveSim.git
 
-FROM ubuntu
+# Final image setup
+FROM ubuntu:22.04
 
-# Install nano text editor
+# Install a nano text editor
 RUN apt-get update && apt-get install -y nano
 
-# Copy the repository from the previous image
-COPY --from=intermediate /ReplicantDriveSim /app/repo
-
-# Install Python and other necessary packages
+# Install necessary packages
 RUN apt-get update && apt-get install -y \
+    nano \
     python3 \
     python3-pip \
     python3-venv \
@@ -29,54 +28,44 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libsm6 \
     libxrender1 \
-    mercurial
+    mercurial \
+    git
 
-# Install Miniforge based on your system's architecture: x86_64 (AMD64) or ARM64.
-ARG TARGETARCH
+# Copy repository from the intermediate image
+COPY --from=intermediate /ReplicantDriveSim /app/repo
+
+# Install Miniforge
+ARG TARGETARCH=x86_64
 ENV CONDA_DIR=/opt/conda
 
 RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
-    wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
+    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
     rm ~/miniforge.sh && \
     $CONDA_DIR/bin/conda clean -afy
 
-# Initialize Conda and set up shell initialization
-RUN $CONDA_DIR/bin/conda init && \
-    echo "conda activate base" >> ~/.bashrc
-
-# Set the PATH Miniforge environment variables
-ENV PATH=$CONDA_DIR/bin:$PATH
-
-# Update Conda
-RUN $CONDA_DIR/bin/conda update -n base -c defaults conda -y
-
-# Print the environment.yml file for debugging
-RUN cat /app/repo/External/environment.yml
-
-# Create and activate the Conda environment
+# Initialize Conda
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda env create -f /app/repo/External/environment.yml && \
-    echo 'conda activate drive' >> ~/.bashrc"
+    conda init bash"
 
-# Set the PATH to include conda environment
-ENV PATH=$CONDA_DIR/envs/drive/bin:$PATH
+# Update Conda and create an environment
+RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
+    conda update -n base -c defaults conda -y && \
+    conda env create -f /app/repo/External/environment.yml"
 
 # Install build tools and build the wheel
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda activate drive && \
+RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
     pip install --upgrade pip && \
     pip install build && \
     cd /app/repo/External && \
     python -m build -v"
 
 # Install the traffic simulation wheel
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda activate drive && \
+RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
     pip install --force-reinstall /app/repo/External/dist/simulation-*.whl"
 
-# Set up the working directory
+# Set working directory
 WORKDIR /app/repo/External
 
-# Set the default command to bash
+# Default command
 CMD ["bash"]
