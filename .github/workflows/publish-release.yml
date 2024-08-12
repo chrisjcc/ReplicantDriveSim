@@ -27,9 +27,22 @@ jobs:
             sha: context.ref,
             per_page: 100
           });
+          
           const commitMessages = commits.map(commit => `- ${commit.commit.message}`).join('\n');
+          
+          // Collect unique contributors
+          const contributors = new Set();
+          commits.forEach(commit => {
+            if (commit.author && commit.author.login) {
+              contributors.add(commit.author.login);
+            }
+          });
+          
+          const contributorsSection = Array.from(contributors).map(contributor => `${contributor}`).join('\n');
+          
           const changelogUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${context.ref}`;
-          const releaseNotes = `## Changes in this Release\n${commitMessages}\n\nFull Changelog: ${changelogUrl}`;
+          const releaseNotes = `## Changes in this Release\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\nFull Changelog: ${changelogUrl}`;
+          
           core.setOutput('releaseNotes', releaseNotes);
 
     - name: Create Release with GitHub CLI
