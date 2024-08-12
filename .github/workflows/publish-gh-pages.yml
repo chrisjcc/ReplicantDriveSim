@@ -4,12 +4,15 @@
 # documentation.
 
 # Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy GitHub Pages & Doxygen
+name: Deploy GitHub Pages & Doxygen Documentation
 
 on:
   # Runs on pushes targeting the default branch
   push:
     branches: [main]
+  # Add this section to listen for the repository dispatch event
+  repository_dispatch:
+    types: [trigger_gh_pages]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
