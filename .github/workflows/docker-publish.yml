@@ -30,9 +30,7 @@ jobs:
       contents: read
       packages: write
       attestations: write
-      # This is required for attestation
       id-token: write
-      # Add this line to allow creating attestations
       actions: write
     steps:
       - name: Check out the repo
@@ -72,10 +70,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
-          subject-digest: ${{ steps.docker_build.outputs.digest }}
-          push-to-registry: true
