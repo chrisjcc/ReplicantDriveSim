@@ -31,14 +31,14 @@ RUN apt-get update && apt-get install -y \
     mercurial \
     git
 
-# Copy repository from the intermediate image
+# Copy the repository from the intermediate image
 COPY --from=intermediate /ReplicantDriveSim /app/repo
 
 # Install Miniforge
-#ARG TARGETARCH=x86_64
-ARG TARGETARCH
+ARG TARGETARCH=x86_64
 ENV CONDA_DIR=/opt/conda
 
+RUN echo "Building for architecture: ${TARGETARCH}"
 RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
     wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
@@ -48,12 +48,6 @@ RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
 # Initialize Conda
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda init bash"
-
-# Set the ARCH variable
-RUN echo "TARGETARCH: ${TARGETARCH}"
-RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/')
-RUN echo "ARCH: ${ARCH}"
-RUN echo "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh"
 
 # Update Conda and create an environment
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
