@@ -35,7 +35,8 @@ RUN apt-get update && apt-get install -y \
 COPY --from=intermediate /ReplicantDriveSim /app/repo
 
 # Install Miniforge
-ARG TARGETARCH=x86_64
+#ARG TARGETARCH=x86_64
+ARG TARGETARCH
 ENV CONDA_DIR=/opt/conda
 
 RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
