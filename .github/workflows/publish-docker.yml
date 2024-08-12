@@ -39,7 +39,7 @@ jobs:
       id-token: write
       actions: write
     steps:
-      - name: Check out the repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
