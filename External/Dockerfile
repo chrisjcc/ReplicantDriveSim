@@ -49,6 +49,12 @@ RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda init bash"
 
+# Set the ARCH variable
+RUN echo "TARGETARCH: ${TARGETARCH}"
+RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/')
+RUN echo "ARCH: ${ARCH}"
+RUN echo "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh"
+
 # Update Conda and create an environment
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda update -n base -c defaults conda -y && \
