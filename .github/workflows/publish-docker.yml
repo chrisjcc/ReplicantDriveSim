@@ -55,6 +55,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
+          tags: |
+            type=semver
+            prefix=v
 
       - name: Build and push Docker image
         id: docker_build
@@ -68,6 +71,6 @@ jobs:
           file: ./External/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ matrix.platform }}
-            ${{ steps.meta.outputs.tags }}
+            ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.tags }}
+            ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:latest
           labels: ${{ steps.meta.outputs.labels }}
