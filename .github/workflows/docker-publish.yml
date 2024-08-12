@@ -26,6 +26,7 @@ jobs:
       packages: write
       contents: read
       id-token: write # This is required for attestation
+      actions: write # Add this line to allow creating attestations
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -74,6 +75,7 @@ jobs:
         uses: actions/attest-build-provenance@v1
         env:
            DOCKER_METADATA_OUTPUT_TAGS: ${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
+           #GITHUB_TOKEN: ${{ secrets.YOUR_PAT_SECRET_NAME }}
         with:
           #subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-name: ${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
