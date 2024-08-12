@@ -45,11 +45,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Debug event
-        run: |
-          echo "Event name: ${{ github.event_name }}"
-          echo "Event payload: ${{ toJson(github.event) }}"
-
       # QEMU emulation, allows building images for different architectures 
       # even if the build machine itself is not of that architecture. 
       # This means you can build ARM64 images on an AMD64 machine and vice versa.
