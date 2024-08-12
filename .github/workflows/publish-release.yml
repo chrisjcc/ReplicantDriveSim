@@ -54,6 +54,10 @@ jobs:
     - name: Get Latest Tag
       id: get_latest_tag
       uses: actions-ecosystem/action-get-latest-tag@v1
+      with:
+        # This option restricts the action to only consider tags that follow Semantic Versioning (SemVer) conventions (e.g., v1.0.0). 
+        # Non-SemVer tags will be ignored.
+        semver_only: true
   
     - name: Trigger Docker Publish Workflow
       env:
