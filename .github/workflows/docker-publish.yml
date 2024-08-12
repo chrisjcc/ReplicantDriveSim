@@ -25,7 +25,7 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
+      id-token: write # This is required for attestation
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
