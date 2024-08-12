@@ -9,7 +9,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -51,6 +51,10 @@ jobs:
       run: |
         gh release create ${{ github.ref }} --title "Release ${{ github.ref }}" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
 
+    - name: Get Latest Tag
+      id: get_latest_tag
+      uses: actions-ecosystem/action-get-latest-tag@v1
+  
     - name: Trigger Docker Publish Workflow
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -59,7 +63,7 @@ jobs:
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d '{"event_type": "trigger_docker_publish", "client_payload": { "ref": "refs/tags/v1.0.0" }}' \
+          -d '{"event_type": "trigger_docker_publish", "client_payload": { "ref": "refs/tags/${latest_tag}\" }}' \
           -w "\n\nResponse code: %{http_code}\n"
 
     - name: Trigger GitHub Pages Workflow
