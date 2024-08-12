@@ -11,10 +11,9 @@
 name: Publish Docker image
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
-#  release:
-#    types: [published]
-
 env:
   DOCKER_NAMESPACE: chrisjcc
   DOCKER_REPOSITORY: replicantdrivesim
