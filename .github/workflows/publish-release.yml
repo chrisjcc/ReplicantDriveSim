@@ -12,7 +12,26 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+
+    - name: Generate Release Notes
+      id: generate_notes
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const { data: commits } = await github.repos.listCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: context.ref,
+            per_page: 100
+          });
+
+          const commitMessages = commits.map(commit => `- ${commit.commit.message}`).join('\n');
+          const changelogUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${context.ref}`;
+
+          return {
+            body: `## Changes in this Release\n${commitMessages}\n\nFull Changelog: ${changelogUrl}`
+          };
 
     - name: Create Release
       id: create_release
@@ -22,9 +41,6 @@ jobs:
       with:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
-        body: |
-          ## Changes in this Release
-          - First Change
-          - Second Change
+        body: ${{ steps.generate_notes.outputs.body }}
         draft: true
         prerelease: false
