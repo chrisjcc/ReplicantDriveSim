@@ -23,10 +23,13 @@ jobs:
       matrix:
         platform: [linux/amd64, linux/arm64]
     permissions:
-      packages: write
       contents: read
-      id-token: write # This is required for attestation
-      actions: write # Add this line to allow creating attestations
+      packages: write
+      attestations: write
+      # This is required for attestation
+      id-token: write
+      # Add this line to allow creating attestations
+      actions: write
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -50,7 +53,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: chrisjcc/replicantdrivesim
+          #images: chrisjcc/replicantdrivesim
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
         id: docker_build
