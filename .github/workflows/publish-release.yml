@@ -41,8 +41,8 @@ jobs:
           const contributorsSection = Array.from(contributors).map(contributor => `${contributor}`).join('\n');
           
           const changelogUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${context.ref}`;
-          const releaseNotes = `## Changes in this Release\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\nFull Changelog: ${changelogUrl}`;
-          
+          const releaseNotes = `## What's Changed\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\n**Full Changelog**: ${changelogUrl}`;
+
           core.setOutput('releaseNotes', releaseNotes);
 
     - name: Create Release with GitHub CLI
