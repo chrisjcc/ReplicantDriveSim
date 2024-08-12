@@ -75,7 +75,7 @@ jobs:
         uses: actions/attest-build-provenance@v1
         env:
            DOCKER_METADATA_OUTPUT_TAGS: ${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
-           #GITHUB_TOKEN: ${{ secrets.YOUR_PAT_SECRET_NAME }}
+           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           #subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-name: ${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
