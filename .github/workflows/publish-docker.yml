@@ -57,8 +57,6 @@ jobs:
           images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
           tags: |
             type=semver,pattern={{version}},prefix=v
-            type=ref,event=branch,pattern={{branch}}
-            type=ref,event=tag,pattern={{tag}}
 
       - name: Build and push Docker image
         id: docker_build
