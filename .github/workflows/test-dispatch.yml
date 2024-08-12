@@ -1,0 +1,16 @@
+name: Test Repository Dispatch
+on:
+  repository_dispatch:
+    types: [trigger_docker_publish]
+
+jobs:
+  test_dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log dispatch event
+        env:
+          EVENT_DATA: ${{ toJson(github.event) }}
+        run: |
+          echo "Repository dispatch event received!"
+          echo "Event type: ${{ github.event.action }}"
+          echo "Event data: $EVENT_DATA"
