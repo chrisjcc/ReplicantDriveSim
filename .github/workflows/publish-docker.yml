@@ -70,6 +70,6 @@ jobs:
           file: ./External/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.tags }}
+            ${{ steps.meta.outputs.tags }}
             ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:latest
           labels: ${{ steps.meta.outputs.labels }}
