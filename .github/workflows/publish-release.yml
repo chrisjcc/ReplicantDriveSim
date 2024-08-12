@@ -56,7 +56,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         curl -v -X POST \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ github.repository }}/dispatches \
-          -d '{"event_type": "trigger_docker_publish", "client_payload": { "ref": "${{ github.ref }}" }}'
+          https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+          -d '{"event_type": "trigger_docker_publish", "client_payload": { "ref": "refs/tags/v1.0.0" }}' \
+          -w "\n\nResponse code: %{http_code}\n"
