@@ -16,7 +16,7 @@ on:
 #    types: [published]
 
 env:
-  REGISTRY: docker.io
+  # Default Docker container registry (docker.io)
   IMAGE_NAME: chrisjcc/replicantdrivesim
 
 jobs:
