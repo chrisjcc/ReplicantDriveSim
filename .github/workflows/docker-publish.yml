@@ -16,7 +16,7 @@ on:
 #    types: [published]
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: docker.io
   IMAGE_NAME: chrisjcc/replicantdrivesim
 
 jobs:
