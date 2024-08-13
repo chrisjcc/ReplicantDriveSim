@@ -169,3 +169,28 @@ curl -X POST \
 - `YOUR_REPOSITORY`: Your repository name.
 - `YOUR_WORKFLOW_FILE.yml`: The filename of your workflow YAML (e.g., publish.yml).
 - `main`: The branch you want the workflow to run against.
+
+## Pulling Docker Images from DockerHub Registry
+This section provides instructions on how to interact with DockerHub to pull Docker images, including steps for accessing private repositories and running containers with shell access.
+
+### Docker Login
+If the Docker image repository is private, you will need to authenticate with Docker before pulling the image. To log in, use the following command:
+```shell
+docker login
+```
+Enter your Docker Hub credentials when prompted. After successfully logging in, you will have access to pull and run the private repository images.
+
+### Running the Container with Port Mapping and Shell Access
+To run the Docker container with port mapping and gain interactive shell access, use the following command:
+```shell
+docker run -it -p 8080:80 chrisjcc/replicantdrivesim /bin/bash
+```
+
+This command will map port 8080 on your host to port 80 in the container and start an interactive Bash shell within the container.
+
+### Running the Container with Shell Access
+If you only need shell access without port mapping, you can run the container interactively using:
+```shell
+docker run -it chrisjcc/replicantdrivesim /bin/bash
+```
+This command starts the container and opens a Bash shell, allowing you to interact directly with the container environment.
