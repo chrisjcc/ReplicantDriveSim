@@ -8,8 +8,8 @@ name: Deploy GitHub Pages & Doxygen Documentation
 
 on:
   # Runs on pushes targeting the default branch
-  push:
-    branches: [main]
+  #push:
+  #  branches: [main]
   # Add this section to listen for the repository dispatch event
   repository_dispatch:
     types: [trigger_gh_pages]
