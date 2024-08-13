@@ -1,72 +1,142 @@
 # syntax=docker/dockerfile:1.2
 
 # This is our first build stage, it will not persist in the final image
-FROM ubuntu:22.04 as intermediate
-
-# Install git
-RUN apt-get update && apt-get install -y git
-
-# Clone the repository using HTTPS
-RUN git clone --recurse-submodules https://github.com/chrisjcc/ReplicantDriveSim.git
-
-# Final image setup
-FROM ubuntu:22.04
-
-# Install a nano text editor
-RUN apt-get update && apt-get install -y nano
+#FROM ubuntu:22.04 as intermediate
+FROM ubuntu:22.04 AS builder
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
-    nano \
+    git \
     python3 \
     python3-pip \
     python3-venv \
     wget \
     bzip2 \
     ca-certificates \
-    libglib2.0-0 \
-    libxext6 \
-    libsm6 \
-    libxrender1 \
-    mercurial \
-    git
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the repository from the intermediate image
-COPY --from=intermediate /ReplicantDriveSim /app/repo
+# Install git
+#RUN apt-get update && apt-get install -y git
+
+# Clone the repository using HTTPS
+#RUN git clone --recurse-submodules https://github.com/chrisjcc/ReplicantDriveSim.git
+
+# Clone the repository using HTTPS
+RUN git clone --recurse-submodules https://github.com/chrisjcc/ReplicantDriveSim.git /app/repo
 
 # Install Miniforge
 ARG TARGETARCH
 ENV CONDA_DIR=/opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
 
-RUN echo "Building for architecture: ${TARGETARCH}"
-RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
-    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
-    /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
-    rm ~/miniforge.sh && \
-    $CONDA_DIR/bin/conda clean -afy
+# Install Miniforge
+ARG TARGETARCH
+ENV CONDA_DIR=/opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
 
-# Initialize Conda
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda init bash"
+RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') \
+    && wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O miniforge.sh \
+    && bash miniforge.sh -b -p $CONDA_DIR \
+    && rm miniforge.sh \
+    && conda clean -afy
 
-# Update Conda and create an environment
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda update -n base -c defaults conda -y && \
-    conda env create -f /app/repo/External/environment.yml"
+# Initialize Conda, update, and create environment
+RUN conda init bash \
+    && . $CONDA_DIR/etc/profile.d/conda.sh \
+    && conda update -n base -c defaults conda -y \
+    && conda env create -f /app/repo/External/environment.yml \
+    && conda clean -afy
 
-# Install build tools and build the wheel
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
-    pip install --upgrade pip && \
-    pip install build && \
-    cd /app/repo/External && \
-    python -m build -v"
+# Build and install the wheel
+RUN . $CONDA_DIR/etc/profile.d/conda.sh \
+    && conda activate drive \
+    && pip install --no-cache-dir --upgrade pip build \
+    && cd /app/repo/External \
+    && python -m build -v \
+    && pip install --no-cache-dir --force-reinstall dist/simulation-*.whl
 
-# Install the traffic simulation wheel
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
-    pip install --force-reinstall /app/repo/External/dist/simulation-*.whl"
+# Final image setup
+FROM ubuntu:22.04
+
+# Install only necessary runtime dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    libglib2.0-0 \
+    libxext6 \
+    libsm6 \
+    libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+# Copy Conda and the built application from the builder stage
+COPY --from=builder /opt/conda /opt/conda
+COPY --from=builder /app/repo /app/repo
+
+# Set environment variables
+ENV CONDA_DIR=/opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
+ENV CONDA_DEFAULT_ENV=drive
 
 # Set working directory
 WORKDIR /app/repo/External
 
 # Default command
 CMD ["bash"]
+
+# Install a nano text editor
+#RUN apt-get update && apt-get install -y nano
+
+# Install necessary packages
+#RUN apt-get update && apt-get install -y \
+#    nano \
+#    python3 \
+#    python3-pip \
+#    python3-venv \
+#    wget \
+#    bzip2 \
+#    ca-certificates \
+#    libglib2.0-0 \
+#    libxext6 \
+#    libsm6 \
+#    libxrender1 \
+#    mercurial \
+#    git
+
+# Copy the repository from the intermediate image
+#COPY --from=intermediate /ReplicantDriveSim /app/repo
+
+# Install Miniforge
+#ARG TARGETARCH
+#ENV CONDA_DIR=/opt/conda
+
+#RUN echo "Building for architecture: ${TARGETARCH}"
+#RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
+#    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
+#    /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
+#    rm ~/miniforge.sh && \
+#    $CONDA_DIR/bin/conda clean -afy
+
+# Initialize Conda
+#RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
+#    conda init bash"
+
+# Update Conda and create an environment
+#RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
+#    conda update -n base -c defaults conda -y && \
+#    conda env create -f /app/repo/External/environment.yml"
+
+# Install build tools and build the wheel
+#RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
+#    pip install --upgrade pip && \
+#    pip install build && \
+#    cd /app/repo/External && \
+#    python -m build -v"
+
+# Install the traffic simulation wheel
+#RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
+#    pip install --force-reinstall /app/repo/External/dist/simulation-*.whl"
+
+# Set working directory
+#WORKDIR /app/repo/External
+
+# Default command
+#CMD ["bash"]
