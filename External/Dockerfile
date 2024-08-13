@@ -27,8 +27,11 @@ RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') \
 # Build stage for the application
 FROM miniforge AS builder
 
-# Install git
-RUN apt-get update && apt-get install -y git \
+# Install git, build tools, and CMake
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    cmake \
     && rm -rf /var/lib/apt/lists/*
 
 # Install git
