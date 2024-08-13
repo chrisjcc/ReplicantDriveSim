@@ -84,7 +84,7 @@ jobs:
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d '{"event_type": "trigger_docker_publish", "client_payload": { "ref": "refs/tags/${latest_tag}\" }}' \
+          -d "{\"event_type\": \"trigger_docker_publish\", \"client_payload\": { \"ref\": \"refs/tags/${latest_tag}\" }}" \
           -w "\n\nResponse code: %{http_code}\n"
 
     - name: Trigger GitHub Pages Workflow
