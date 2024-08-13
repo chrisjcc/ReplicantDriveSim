@@ -4,7 +4,7 @@ title: "ReplicantDriveSim"
 permalink: /
 ---
 
-![Workflow Status](https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/jekyll-doxygen-build.yml/badge.svg?branch=main)
+![Workflow Status](https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/publish-gh-pages.yml/badge.svg?branch=main)
 
 # ReplicantDriveSim
 
