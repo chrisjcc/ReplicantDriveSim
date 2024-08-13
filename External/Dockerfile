@@ -25,7 +25,7 @@ RUN git clone --depth 1 --recurse-submodules --shallow-submodules https://github
 FROM ubuntu:22.04
 
 # Copy the repository from the intermediate image
-COPY --from=intermediate /ReplicantDriveSim /app/repo
+COPY --from=intermediate /app/repo /app/repo
 
 # Install Miniforge
 ARG TARGETARCH
