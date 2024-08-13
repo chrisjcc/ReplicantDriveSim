@@ -24,8 +24,14 @@ RUN git clone --depth 1 --recurse-submodules --shallow-submodules https://github
 # Final stage: Create the final image
 FROM ubuntu:22.04
 
-# Install wget and other necessary dependencies
-RUN apt-get update && apt-get install -y wget bzip2 ca-certificates
+# Install wget, build tools, and other necessary dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    bzip2 \
+    ca-certificates \
+    build-essential \
+    cmake \
+    git
 
 # Copy the repository from the intermediate image
 COPY --from=intermediate /app/repo /app/repo
