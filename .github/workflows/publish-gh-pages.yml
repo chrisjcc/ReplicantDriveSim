@@ -3,13 +3,10 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-# Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy GitHub Pages & Doxygen Documentation
+# Building and deploying a Jekyll site to GitHub Pages & Doxygen Documentation
+name: Deploy GitHub Pages
 
 on:
-  # Runs on pushes targeting the default branch
-  #push:
-  #  branches: [main]
   # Add this section to listen for the repository dispatch event
   repository_dispatch:
     types: [trigger_gh_pages]
