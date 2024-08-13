@@ -41,16 +41,35 @@ RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') \
     && conda clean -afy
 
 # Initialize Conda, update, and create environment
+#RUN conda init bash \
+#    && . $CONDA_DIR/etc/profile.d/conda.sh \
+#    && conda update -n base -c defaults conda -y \
+#    && conda env create -f /app/repo/External/environment.yml \
+#    && conda clean -afy
+
+# Initialize Conda and update base environment
 RUN conda init bash \
     && . $CONDA_DIR/etc/profile.d/conda.sh \
-    && conda update -n base -c defaults conda -y \
-    && conda env create -f /app/repo/External/environment.yml \
-    && conda clean -afy
+    && conda update -n base -c defaults conda -y
+
+# Debug: List contents of /app/repo/External
+RUN ls -la /app/repo/External
+
+# Create Conda environment
+RUN . $CONDA_DIR/etc/profile.d/conda.sh \
+    && conda env create -f /app/repo/External/environment.yml
+
+# Clean Conda
+RUN conda clean -afy
+
+# Activate environment and install additional packages
+RUN . $CONDA_DIR/etc/profile.d/conda.sh \
+    && conda activate drive \
+    && pip install --no-cache-dir --upgrade pip build
 
 # Build and install the wheel
 RUN . $CONDA_DIR/etc/profile.d/conda.sh \
     && conda activate drive \
-    && pip install --no-cache-dir --upgrade pip build \
     && cd /app/repo/External \
     && python -m build -v \
     && pip install --no-cache-dir --force-reinstall dist/simulation-*.whl
@@ -67,6 +86,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxrender1 \
     && rm -rf /var/lib/apt/lists/*
+
 # Copy Conda and the built application from the builder stage
 COPY --from=builder /opt/conda /opt/conda
 COPY --from=builder /app/repo /app/repo
