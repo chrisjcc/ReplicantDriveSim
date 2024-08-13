@@ -21,8 +21,11 @@ RUN apt-get update && apt-get install -y \
 # Clone the repository using HTTPS
 RUN git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/chrisjcc/ReplicantDriveSim.git /app/repo
 
-# Final image setup
+# Final stage: Create the final image
 FROM ubuntu:22.04
+
+# Install wget and other necessary dependencies
+RUN apt-get update && apt-get install -y wget bzip2 ca-certificates
 
 # Copy the repository from the intermediate image
 COPY --from=intermediate /app/repo /app/repo
