@@ -84,9 +84,17 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        latest_tag=${{ steps.get_latest_tag.outputs.tag }}
         curl -v -X POST \
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d '{"event_type": "trigger_gh_pages", "client_payload": { "ref": "${{ github.ref }}" }}' \
-          -w "\n\nResponse code: %{http_code}\n"
+          -d @- << EOF
+        {
+          "event_type": "trigger_docker_publish",
+          "client_payload": {
+          "ref": "refs/tags/${latest_tag}"
+         }
+        }
+        EOF \
+        -w "\n\nResponse code: %{http_code}\n"
