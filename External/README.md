@@ -173,6 +173,9 @@ curl -X POST \
 ## Pulling Docker Images from DockerHub Registry
 This section provides instructions on how to interact with DockerHub to pull Docker images, including steps for accessing private repositories and running containers with shell access.
 
+[DockerHub Registry](https://hub.docker.com/repository/docker/chrisjcc/replicantdrivesim/general)
+
+
 ### Docker Login
 If the Docker image repository is private, you will need to authenticate with Docker before pulling the image. To log in, use the following command:
 ```shell
