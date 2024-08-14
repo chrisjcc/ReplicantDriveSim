@@ -1,4 +1,10 @@
-# Build and Install Traffic Simulation Library
+---
+layout: default
+title: "Traffic Simulation"
+permalink: /External/
+---
+
+# Build and Install the Traffic Simulation Library
 
 ## Verifying Git LFS Installation
 
@@ -128,4 +134,66 @@ mlflow ui --backend-store-uri file:mlruns
 ./build/tests/traffic_simulation_test
 ./build/tests/perception_module_test
 ```
+
 Google Test provides robust features for writing and organizing unit tests in C++. Customize your test structure (TEST_F, TEST, etc.) as per your project requirements.
+
+
+## Steps to Create a Git Tag and Push It to a Remote Repository
+### Create a New Tag Locally
+To create an annotated tag, use the following command. Replace `v1.0.0` with your desired tag name and customize the message as needed:
+```shell
+git tag -a v1.0.0 -m "Release version 1.0.0"
+```
+- -a `v1.0.0`: This option creates an annotated tag with the name `v1.0.0`.
+- -m "Release version 1.0.0": This option adds a message to the tag, which is stored with it.
+
+### Push the Tag to the Remote Repository
+Once the tag is created locally, push it to the remote repository:
+```shell
+git push origin v1.0.0
+```
+- `origin`: The name of the remote repository (typically `origin` by default).
+- `v1.0.0`: The name of the tag you created.
+
+## Triggering the Workflow Manually via the Command Line
+Trigger the Workflow Using curl:
+```shell
+curl -X POST \
+  -H "Authorization: token GITHUB_PERSONAL_ACCESS_TOKEN" \
+  -H "Accept: application/vnd.github.v3+json" \
+  https://api.github.com/repos/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/YOUR_WORKFLOW_FILE.yml/dispatches \
+  -d '{"ref":"main"}'
+```
+- `GITHUB_PERSONAL_ACCESS_TOKEN`: Your personal access token.
+- `YOUR_USERNAME`: Your GitHub username.
+- `YOUR_REPOSITORY`: Your repository name.
+- `YOUR_WORKFLOW_FILE.yml`: The filename of your workflow YAML (e.g., publish.yml).
+- `main`: The branch you want the workflow to run against.
+
+## Pulling Docker Images from DockerHub Registry
+This section provides instructions on how to interact with DockerHub to pull Docker images, including steps for accessing private repositories and running containers with shell access.
+
+[DockerHub Registry](https://hub.docker.com/repository/docker/chrisjcc/replicantdrivesim/general)
+
+
+### Docker Login
+If the Docker image repository is private, you will need to authenticate with Docker before pulling the image. To log in, use the following command:
+```shell
+docker login
+```
+Enter your Docker Hub credentials when prompted. After successfully logging in, you will have access to pull and run the private repository images.
+
+### Running the Container with Port Mapping and Shell Access
+To run the Docker container with port mapping and gain interactive shell access, use the following command:
+```shell
+docker run -it -p 8080:80 chrisjcc/replicantdrivesim /bin/bash
+```
+
+This command will map port 8080 on your host to port 80 in the container and start an interactive Bash shell within the container.
+
+### Running the Container with Shell Access
+If you only need shell access without port mapping, you can run the container interactively using:
+```shell
+docker run -it chrisjcc/replicantdrivesim /bin/bash
+```
+This command starts the container and opens a Bash shell, allowing you to interact directly with the container environment.

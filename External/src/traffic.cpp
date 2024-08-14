@@ -69,6 +69,9 @@ double radiansToDegrees(double radians) {
  */
 Traffic::Traffic(const int& num_agents, const std::string& map_file, const unsigned& seed=314)
     : time_step(0.04f), num_agents(num_agents), generator(seed) {
+    std::cout << "Traffic simulation initialized with seed: " << seed << std::endl;
+
+    // Initialize vehicle and perception related data
     odr_map = std::make_shared<odr::OpenDriveMap>(map_file);
     perception_module = std::make_unique<PerceptionModule>(*this); // Initialize the pointer
 

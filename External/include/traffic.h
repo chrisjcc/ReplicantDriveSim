@@ -7,7 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
-#include <memory>
+#include <memory> // for std::shared_ptr
 #include <random>
 #include <tuple>
 
@@ -18,6 +18,7 @@
 #include "OpenDriveMap.h"
 #include "RoadNetworkMesh.h"
 #include "Road.h"
+
 
 // Forward declaration of PerceptionModule
 class PerceptionModule;
@@ -230,11 +231,16 @@ private:
 
     /**
      * @brief Generates a random float following a normal (Gaussian) distribution.
+     *
+     * This function uses a normal distribution characterized by the given mean
+     * and standard deviation to generate a random floating-point number.
+     *
      * @param mean The mean (average) of the normal distribution.
      * @param stddev The standard deviation of the normal distribution.
      * @return Random float following the specified normal distribution.
      */
     float randNormal(float mean, float stddev);
 };
+
 
 #endif // TRAFFIC_H

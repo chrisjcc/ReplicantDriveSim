@@ -1,33 +1,9 @@
 # syntax=docker/dockerfile:1.2
 
-# Use BuildKit's support for SSH forwarding
 # This is our first build stage, it will not persist in the final image
-FROM ubuntu as intermediate
+FROM ubuntu:22.04 as intermediate
 
-# Install git and openssh-client
-RUN apt-get update && apt-get install -y git openssh-client
-
-# Use the forwarded SSH key for git clone
-# Make sure your domain is accepted
-RUN mkdir -p /root/.ssh && \
-    ssh-keyscan -H github.com >> /root/.ssh/known_hosts
-
-# Check container whether the right keys are loaded and SSH_AUTH_SOCK is accessible
-RUN echo $(ssh-add -l) && echo $SSH_AUTH_SOCK
-
-# Clone the repository using SSH agent forwarding
-# Use the --mount=type=ssh to forward the SSH key
-RUN --mount=type=ssh git clone git@github.com:chrisjcc/ReplicantDriveSim.git
-
-FROM ubuntu
-
-# Install nano text editor
-RUN apt-get update && apt-get install -y nano
-
-# Copy the repository from the previous image
-COPY --from=intermediate /ReplicantDriveSim /app/repo
-
-# Install Python and other necessary packages
+# Install necessary packages
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -39,48 +15,61 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libsm6 \
     libxrender1 \
-    mercurial
+    mercurial \
+    git
 
-# Install Miniforge (ARM64 version)
+# Clone the repository using HTTPS
+RUN git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/chrisjcc/ReplicantDriveSim.git /app/repo
+
+# Final stage: Create the final image
+FROM ubuntu:22.04
+
+# Install wget, build tools, and other necessary dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    bzip2 \
+    ca-certificates \
+    build-essential \
+    cmake \
+    git
+
+# Copy the repository from the intermediate image
+COPY --from=intermediate /app/repo /app/repo
+
+# Install Miniforge
+ARG TARGETARCH
 ENV CONDA_DIR=/opt/conda
-RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O ~/miniforge.sh && \
+
+RUN echo "Building for architecture: ${TARGETARCH}"
+RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
+    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh -O ~/miniforge.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
     rm ~/miniforge.sh && \
     $CONDA_DIR/bin/conda clean -afy
 
-# Initialize Conda and set up shell initialization
-RUN $CONDA_DIR/bin/conda init && \
-    echo "conda activate base" >> ~/.bashrc
-
-# Set the PATH Miniforge environment variables
-ENV PATH=$CONDA_DIR/bin:$PATH
-
-# Create and activate Conda environment
+# Initialize Conda
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda env create -f /app/repo/environment.yml && \
-    echo 'conda activate drive' >> ~/.bashrc"
+    conda init bash"
 
-# Set the PATH to include conda environment
-ENV PATH=$CONDA_DIR/envs/drive/bin:$PATH
+# Update Conda and create an environment
+RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
+    conda update -n base -c defaults conda -y && \
+    conda env create -f /app/repo/External/environment.yml \
+    && conda clean -afy"
 
 # Install build tools and build the wheel
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda activate drive && \
+RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
     pip install --upgrade pip && \
     pip install build && \
-    cd /app/repo && \
+    cd /app/repo/External && \
     python -m build -v"
 
 # Install the traffic simulation wheel
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda activate drive && \
-    pip install --force-reinstall /app/repo/dist/traffic_simulation-*.whl"
+RUN /bin/bash -c "source $CONDA_DIR/bin/activate drive && \
+    pip install --force-reinstall /app/repo/External/dist/simulation-*.whl"
 
-# Set up the working directory
-WORKDIR /app/repo
+# Set working directory
+WORKDIR /app/repo/External
 
-# To ensure the /app/repo/data directory exists
-RUN mkdir -p data
-
-# Set the default command to bash
+# Default command
 CMD ["bash"]
