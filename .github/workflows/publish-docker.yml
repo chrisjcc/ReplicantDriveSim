@@ -76,7 +76,7 @@ jobs:
           if [[ ${{ github.event_name }} == 'release' ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
-            echo "VERSION=${GITHUB_EVENT_CLIENT_PAYLOAD_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "VERSION=${{ github.event.client_payload.ref }}" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             echo "VERSION=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
           else
