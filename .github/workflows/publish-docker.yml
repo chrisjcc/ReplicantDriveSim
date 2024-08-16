@@ -89,7 +89,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=raw,value=${{ steps.get_version.outputs.VERSION }}
+            type=raw,value=${{ steps.meta.outputs.version }}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Free disk space
@@ -121,8 +121,7 @@ jobs:
 
       - name: Inspect image
         run: |
-          #docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.version }}
-          docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
+          docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.version }}
       - name: Clean up
         if: always()
         run: |
