@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+
 jobs:
   release:
     name: Create GitHub Release
@@ -13,6 +14,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch all history and tags
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -74,11 +76,11 @@ jobs:
         {
           "event_type": "trigger_docker_publish",
           "client_payload": {
-          "ref": "refs/tags/${latest_tag}"
+            "ref": "refs/tags/${latest_tag}"
           }
         }
-        EOF
-          -w "\n\nResponse code: %{http_code}\n"
+        EOF \
+        -w "\n\nResponse code: %{http_code}\n"
 
     - name: Trigger GitHub Pages Workflow
       env:
@@ -91,10 +93,10 @@ jobs:
           https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
           -d @- << EOF
         {
-          "event_type": "trigger_docker_publish",
+          "event_type": "trigger_gh_pages",
           "client_payload": {
-          "ref": "refs/tags/${latest_tag}"
-         }
+            "ref": "${{ github.ref }}"
+          }
         }
         EOF \
         -w "\n\nResponse code: %{http_code}\n"
