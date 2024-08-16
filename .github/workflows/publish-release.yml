@@ -72,14 +72,14 @@ jobs:
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d @- << EOF
+          -d @- <<EOF
         {
-          "event_type": "trigger_docker_publish",
+          "event_type": "trigger_gh_pages",
           "client_payload": {
-            "ref": "refs/tags/${latest_tag}"
+            "ref": "refs/tags/v0.1.0"
           }
         }
-        EOF \
+        EOF
         -w "\n\nResponse code: %{http_code}\n"
 
     - name: Trigger GitHub Pages Workflow
@@ -99,4 +99,18 @@ jobs:
           }
         }
         EOF \
+
+        curl -v -X POST \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
+          https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+          -d @- <<EOF
+        {
+          "event_type": "trigger_gh_pages",
+          "client_payload": {
+            "ref": "refs/tags/v0.1.0"
+          }
+        }
+        EOF
         -w "\n\nResponse code: %{http_code}\n"
