@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-
 jobs:
   release:
     name: Create GitHub Release
@@ -14,7 +13,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch all history and tags
-
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -46,41 +44,37 @@ jobs:
           
           const changelogUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${context.ref}`;
           const releaseNotes = `## What's Changed\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\n**Full Changelog**: ${changelogUrl}`;
-
           core.setOutput('releaseNotes', releaseNotes);
-
     - name: Create Release with GitHub CLI
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create ${{ github.ref }} --title "Release ${{ github.ref }}" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
-
     - name: Get the latest repository tag
       id: get_latest_tag
       run: |
         latest_tag=$(git tag --sort=-creatordate | head -n 1)
         echo "Latest semver tag: $latest_tag"
         echo "tag=$latest_tag" >> $GITHUB_OUTPUT
-    
+
+
     - name: Trigger Docker Publish Workflow
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Use heredoc for the JSON payload
       run: |
         latest_tag=${{ steps.get_latest_tag.outputs.tag }}
         curl -v -X POST \
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
           https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d @- <<EOF
-        {
-          "event_type": "trigger_gh_pages",
-          "client_payload": {
-            "ref": "refs/tags/v0.1.0"
-          }
-        }
-        EOF
-        -w "\n\nResponse code: %{http_code}\n"
+          -d '{
+            "event_type": "trigger_gh_pages",
+            "client_payload": {
+              "ref": "'"$latest_tag"'"
+            }
+          }'
+          #-w "\n\nResponse code: %{http_code}\n"
 
     - name: Trigger GitHub Pages Workflow
       env:
@@ -91,12 +85,10 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           -H "Content-Type: application/json" \
           https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d @- <<EOF
-        {
-          "event_type": "trigger_gh_pages",
-          "client_payload": {
-          "ref": "refs/tags/v0.1.0"
-          }
-        }
-        EOF
-        -w "\n\nResponse code: %{http_code}\n"
+          -d '{
+            "event_type": "trigger_gh_pages",
+            "client_payload": {
+              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
+            }
+          }'
+        #-w "\n\nResponse code: %{http_code}\n"
