@@ -6,6 +6,8 @@ permalink: /External/
 
 # Build and Install the Traffic Simulation Library
 
+![Nissan GTR](https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim_Raycasting.png)
+
 ## Verifying Git LFS Installation
 
 To check if Git LFS is correctly installed and initialized, you can run:
