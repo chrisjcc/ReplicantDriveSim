@@ -80,6 +80,34 @@ EXPORT const char* Vehicle_getPositionString(const Vehicle* vehicle) {
     return createCString(vehicle->getPositionString());
 }
 
+EXPORT void Vehicle_setSteering(Vehicle* vehicle, float angle) {
+    vehicle->setSteering(angle);
+}
+EXPORT void Vehicle_setX(Vehicle* vehicle, float x) {
+    vehicle->setX(x);
+}
+EXPORT void Vehicle_setY(Vehicle* vehicle, float y) {
+    vehicle->setY(y);
+}
+EXPORT void Vehicle_setZ(Vehicle* vehicle, float z) {
+    vehicle->setZ(z);
+}
+EXPORT void Vehicle_setVx(Vehicle* vehicle, float vx) {
+    vehicle->setVx(vx);
+}
+EXPORT void Vehicle_setVy(Vehicle* vehicle, float vy) {
+    vehicle->setVy(vy);
+}
+EXPORT void Vehicle_setVz(Vehicle* vehicle, float vz) {
+   vehicle->setVz(vz);
+}
+EXPORT void Vehicle_setAcceleration(Vehicle* vehicle, float acceleration) {
+    vehicle->setAcceleration(acceleration);
+}
+EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance) {
+    vehicle->setSteering(distance);
+}
+
 // Traffic functions
 EXPORT Traffic* Traffic_create(int num_agents, unsigned seed) {
     return new Traffic(num_agents, seed);
@@ -89,13 +117,8 @@ EXPORT void Traffic_destroy(Traffic* traffic) {
     delete traffic;
 }
 
-EXPORT void Traffic_step(Traffic* traffic, const int* high_level_actions, const float* low_level_actions, int num_actions) {
-    std::vector<int> high_level(high_level_actions, high_level_actions + num_actions);
-    std::vector<std::vector<float>> low_level;
-    for (int i = 0; i < num_actions; ++i) {
-        low_level.push_back(std::vector<float>(low_level_actions + i * 3, low_level_actions + (i + 1) * 3));
-    }
-    traffic->step(high_level, low_level);
+EXPORT void Traffic_step(Traffic* traffic, const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
+    traffic->step(high_level_actions, low_level_actions);
 }
 
 EXPORT const VehiclePtrVector* Traffic_get_agents(const Traffic* traffic) {
@@ -109,6 +132,21 @@ EXPORT const Vehicle* Traffic_get_agent_by_name(const Traffic* traffic, const ch
 EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic) {
     return reinterpret_cast<StringFloatVectorMap*>(new std::unordered_map<std::string, std::vector<float>>(traffic->get_agent_positions()));
 }
+
+/*
+EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic) {
+    // Get the agent positions from the Traffic class
+    std::unordered_map<std::string, std::vector<float>> agent_positions = traffic->get_agent_positions();
+
+    // Create a new StringFloatVectorMap and populate it with the agent positions
+    StringFloatVectorMap* map = new StringFloatVectorMap();
+    for (const auto& pair : agent_positions) {
+        (*map)[pair.first] = pair.second;
+    }
+
+    return map;
+}
+*/
 
 EXPORT StringFloatVectorMap* Traffic_get_agent_velocities(const Traffic* traffic) {
     return reinterpret_cast<StringFloatVectorMap*>(new std::unordered_map<std::string, std::vector<float>>(traffic->get_agent_velocities()));
@@ -131,25 +169,12 @@ EXPORT int VehiclePtrVector_size(const VehiclePtrVector* vector) {
     return static_cast<int>(reinterpret_cast<const std::vector<Vehicle>*>(vector)->size());
 }
 
-EXPORT Vehicle* VehiclePtrVector_get(const VehiclePtrVector* vector, int index) {
+EXPORT const Vehicle* VehiclePtrVector_get(const VehiclePtrVector* vector, int index) {
     return const_cast<Vehicle*>(&reinterpret_cast<const std::vector<Vehicle>*>(vector)->at(index));
 }
 
 EXPORT void VehiclePtrVector_destroy(VehiclePtrVector* vector) {
     delete reinterpret_cast<std::vector<Vehicle>*>(vector);
-}
-
-// FloatVector functions
-EXPORT int FloatVector_size(const FloatVector* vector) {
-    return static_cast<int>(reinterpret_cast<const std::vector<float>*>(vector)->size());
-}
-
-EXPORT float FloatVector_get(const FloatVector* vector, int index) {
-    return reinterpret_cast<const std::vector<float>*>(vector)->at(index);
-}
-
-EXPORT void FloatVector_destroy(FloatVector* vector) {
-    delete reinterpret_cast<std::vector<float>*>(vector);
 }
 
 // StringFloatVectorMap functions
@@ -174,4 +199,16 @@ EXPORT const FloatVector* StringFloatVectorMap_get_value(const StringFloatVector
 
 EXPORT void StringFloatVectorMap_destroy(StringFloatVectorMap* map) {
     delete reinterpret_cast<std::unordered_map<std::string, std::vector<float>>*>(map);
+}
+
+EXPORT int FloatVector_size(const FloatVector* vector) {
+    return static_cast<int>(vector->data.size());
+}
+
+EXPORT float FloatVector_get(const FloatVector* vector, int index) {
+    return vector->data[index];
+}
+
+EXPORT void FloatVector_destroy(FloatVector* vector) {
+    delete vector;
 }
