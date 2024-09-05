@@ -228,6 +228,11 @@ public class TrafficAgent : Agent
         Debug.LogError("Heuristic method called. Continuous Actions: " +
                   string.Join(", ", continuousActions) +
                   " Discrete Actions: " + string.Join(", ", discreteActions));
+
+        //Rigidbody rb = GetComponent<Rigidbody>();
+        //sensor.AddObservation(rb.velocity);
+
+        //Debug.Log($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
     }
 
     // Execute the actions decided by the ML model
