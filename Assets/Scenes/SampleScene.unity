@@ -177,14 +177,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 257869386}
-<<<<<<< Updated upstream
   - component: {fileID: 257869387}
-=======
-  - component: {fileID: 257869385}
-  - component: {fileID: 257869387}
-  - component: {fileID: 257869389}
-  - component: {fileID: 257869388}
->>>>>>> Stashed changes
   m_Layer: 0
   m_Name: TrafficSimulationManager
   m_TagString: Untagged
@@ -216,89 +209,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 257869384}
   m_Enabled: 1
   m_EditorHideFlags: 0
-<<<<<<< Updated upstream
-  m_Script: {fileID: 11500000, guid: 4201e298a77444c8296aced3ddb1da08, type: 3}
+  m_Script: {fileID: 11500000, guid: e8da003c9931b4f77b883c61899dd4e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentPrefab: {fileID: 209315156134922338, guid: ceb542d1443614b7da0172231391a64c, type: 3}
+  agentPrefab: {fileID: 7393828277960429041, guid: f7686729df0f34f41b47333dcdbf4ad0, type: 3}
   initialAgentCount: 2
   seed: 42
   numberOfRays: 15
   rayLength: 200
   raycastAngle: 90
+  debugVisualization: 0
   spawnAreaSize: 100
   spawnHeight: 0.5
-=======
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 6
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 01000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: TrafficAgentBehavior
-  TeamId: 0
-  m_UseChildSensors: 1
-  m_UseChildActuators: 1
-  m_ObservableAttributeHandling: 0
---- !u!65 &257869388
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 257869384}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 3, y: 2, z: 5}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!54 &257869389
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 257869384}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
->>>>>>> Stashed changes
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -405,7 +327,7 @@ GameObject:
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
   - component: {fileID: 963194229}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Main Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -495,20 +417,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 963194225}
   m_Enabled: 1
   m_EditorHideFlags: 0
-<<<<<<< Updated upstream
-  m_Script: {fileID: 11500000, guid: 1884071f29b8242d7b18c66602566bc3, type: 3}
+  m_Script: {fileID: 11500000, guid: f7e71308e7cf34842a05b4963535099a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   fixedPosition: {x: 10, y: 120, z: 0}
   lookAtPoint: {x: 0, y: 0, z: 0}
-=======
-  m_Script: {fileID: 11500000, guid: d41ab866331aa48ca9ce0ca890e17526, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  targetTag: Player
-  height: 10
-  smoothSpeed: 0.125
->>>>>>> Stashed changes
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

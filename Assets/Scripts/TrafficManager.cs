@@ -94,7 +94,7 @@ public class TrafficManager : MonoBehaviour
     public int numberOfRays = 15;
 
     [SerializeField]
-    public float rayLength = 20f;
+    public float rayLength = 200f;
 
     [SerializeField]
     public float raycastAngle = 90f;
@@ -361,9 +361,9 @@ public class TrafficManager : MonoBehaviour
 
                 // Step the simulation with the received actions
                 Debug.Log($"highLevelActions: {agent.highLevelActions}");
-                Debug.Log($"lowLevelActions steer: {agent.lowLevelActions[0]}");
-                Debug.Log($"lowLevelActions accelerate: {agent.lowLevelActions[1]}");
-                Debug.Log($"lowLevelActions brake: {agent.lowLevelActions[2]}");
+                //Debug.Log($"lowLevelActions steer: {agent.lowLevelActions[0]}");
+                //Debug.Log($"lowLevelActions accelerate: {agent.lowLevelActions[1]}");
+                //Debug.Log($"lowLevelActions brake: {agent.lowLevelActions[2]}");
                 //TrafficManager.Traffic_step(trafficSimulationPtr, agent.highLevelActions, agent.lowLevelActions);
 
                 // Check for Rigidbody and modify if present
