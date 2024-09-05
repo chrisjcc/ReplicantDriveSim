@@ -6,6 +6,8 @@ permalink: /External/
 
 # Build and Install the Traffic Simulation Library
 
+<img src="https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim_Raycasting.png" alt="Nissan GTR" width="800" height="600"/>
+
 ## Verifying Git LFS Installation
 
 To check if Git LFS is correctly installed and initialized, you can run:
@@ -197,3 +199,15 @@ If you only need shell access without port mapping, you can run the container in
 docker run -it chrisjcc/replicantdrivesim /bin/bash
 ```
 This command starts the container and opens a Bash shell, allowing you to interact directly with the container environment.
+
+
+### Create a Release
+Follow the instructions below to generate a Git tag, which will trigger a software release.
+
+```shell
+git fetch --tags  # Retrieve all tags from the remote repository
+git tag -a v0.1.0 -m "Version 0.1.0"  # Create a new annotated tag for version 0.1.0
+git push origin v0.1.0  # Push the newly created tag to the remote repository
+git fetch --tags  # Refresh the local tags list
+git tag -l  # List all tags to verify the new tag is present
+```
