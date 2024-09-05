@@ -6,9 +6,9 @@
 #include <cmath>
 #include <random>
 
-const int SCREEN_WIDTH = 900;
-const int VEHICLE_WIDTH = 130;
-const int LANE_WIDTH = 25;
+const int SCREEN_WIDTH = 500;
+const int VEHICLE_WIDTH = 2;
+const int LANE_WIDTH = 5;
 
 // Custom clamp function for C++11
 template <typename T>

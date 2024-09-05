@@ -9,79 +9,10 @@ using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 
 
-
-//private TrafficManager trafficManager;
-
 public class TrafficAgent : Agent
 {
-    // Constants
-    private const string DllName = "ReplicantDriveSim";
-
-    // DllImport Declarations
-    [DllImport(DllName)]
-    public static extern int FloatVector_size(IntPtr vector);
-
-    [DllImport(DllName)]
-    public static extern float FloatVector_get(IntPtr vector, int index);
-
-    [DllImport(DllName)]
-    public static extern void FloatVector_destroy(IntPtr vector);
-
-    [DllImport(DllName)]
-    public static extern int StringFloatVectorMap_size(IntPtr map);
-
-    [DllImport(DllName)]
-    public static extern IntPtr StringFloatVectorMap_get_key(IntPtr map, int index);
-
-    [DllImport(DllName)]
-    public static extern IntPtr StringFloatVectorMap_get_value(IntPtr map, IntPtr key);
-
-    [DllImport(DllName)]
-    public static extern void StringFloatVectorMap_destroy(IntPtr map);
-
-    [DllImport(DllName)]
-    private static extern IntPtr Traffic_create(int num_agents, uint seed);
-
-    [DllImport(DllName)]
-    private static extern void Traffic_destroy(IntPtr traffic);
-
-    [DllImport(DllName)]
-    private static extern void Traffic_step(IntPtr traffic, int[] high_level_actions, float[] low_level_actions);
-
-    [DllImport(DllName)]
-    private static extern IntPtr Traffic_get_agent_positions(IntPtr traffic);
-
-    [DllImport(DllName)]
-    private static extern IntPtr Traffic_get_agent_velocities(IntPtr traffic);
-
-    [DllImport(DllName)]
-    private static extern IntPtr Traffic_get_agent_orientations(IntPtr traffic);
-
-    [DllImport(DllName)]
-    private static extern IntPtr Traffic_get_previous_positions(IntPtr traffic);
-
-    // Private Fields
-    private IntPtr trafficSimulationPtr;
-    private IntPtr agentPositionsMap;
-    private IntPtr agentVelocitiesMap;
-    private IntPtr agentOrientationsMap;
-    private IntPtr agentPreviousPositionsMap;
-
-    private int[] highLevelActions;
-    private float[] lowLevelActions;
-
-    private Dictionary<string, GameObject> agentInstances = new Dictionary<string, GameObject>();
-    private Dictionary<string, Collider> agentColliders = new Dictionary<string, Collider>();
-
-    // Serialized Fields
-    [SerializeField]
-    private int numberOfRays = 15;
-
-    [SerializeField]
-    private float rayLength = 20f;
-
-    [SerializeField]
-    private float raycastAngle = 90f;
+    public int[] highLevelActions;
+    public float[] lowLevelActions;
 
     [SerializeField]
     private Color hitColor = Color.red;
@@ -89,226 +20,226 @@ public class TrafficAgent : Agent
     [SerializeField]
     private Color missColor = Color.green;
 
+    [SerializeField]
+    private bool debugVisualization = false;
+
     // Properties
+    private TrafficManager trafficManager;
     private float AngleStep;
 
-    private bool hasNewActions = false;
+    private Rigidbody rb;
+    private bool isGrounded;
+    public float moveSpeed = 5f;
 
-    // Public Fields
-    public GameObject agentPrefab;  // Reference to the agent prefab (e.g., a car model such as Mercedes-Benz AMG GT-R)
 
-    // Add this line at the class level
-    private TrafficManager trafficManager;
-
+    // Awake is called when the script instance is being loaded
+    /*
+     * This is called when the script instance is being loaded, before any Start() method is called.
+     * It is often used for initializing references to other objects that are already present in the scene.
+     */
     private void Awake()
     {
-        AngleStep = raycastAngle / (numberOfRays - 1);
-
-        // Clear existing agents and colliders
-        if (agentInstances != null)
+        Debug.Log("=== TrafficAgent::Awake Start START ===");
+        if (trafficManager == null)
         {
-            foreach (var agent in agentInstances.Values)
+            trafficManager = FindObjectOfType<TrafficManager>();
+
+            if (trafficManager == null)
             {
-                if (agent != null)
-                {
-                    Destroy(agent);
-                }
+                Debug.LogError("TrafficManager not found in the scene. Please add a TrafficManager to the scene.");
+                return;
             }
-            agentInstances.Clear();
-        }
-        else
-        {
-            agentInstances = new Dictionary<string, GameObject>();
         }
 
-        if (agentColliders != null)
-        {
-            agentColliders.Clear();
-        }
-        else
-        {
-            agentColliders = new Dictionary<string, Collider>();
-        }
+        AngleStep = trafficManager.raycastAngle / (trafficManager.numberOfRays - 1);
 
-        Debug.Log("=== Awake End ===");
+
+        rb = GetComponent<Rigidbody>();
+
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+        }
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+        // Assign to "Agent" layer (create this layer in Unity)
+        gameObject.layer = LayerMask.NameToLayer("Road");
+
+        Debug.Log("=== TrafficAgent::Awake END ===");
     }
 
-    // Initialize - ML-Agents specific initialization
+    // Initialize is part of the ML-Agents specific setup
     // Initialize the agent and the traffic simulation
+    /*
+     * This is an ML-Agents-specific method that is used to initialize the agent.
+     * It is called once when the agent is first created.
+     * This is a good place to initialize variables and set up the environment specific to the ML-Agents framework.
+     */
     public override void Initialize()
     {
-        Debug.Log("=== Initialize ===");
+        Debug.Log("=== TrafficAgent::Initialize START ===");
 
         base.Initialize();
 
-        // Find the TrafficManager in the scene
-        trafficManager = FindObjectOfType<TrafficManager>();
-        if (trafficManager == null)
-        {
-            Debug.LogError("TrafficManager not found in the scene. Please add a TrafficManager to your scene.");
-        }
-
-        // Assuming you have a reference to the Traffic_create and Traffic_destroy functions from the C API
-        trafficSimulationPtr = Traffic_create(2, 12345); // Create simulation with 2 agents and seed 12345
-
         // Get the initial agent positions and create agent instances
-        UpdateAgentPositions();
-        Debug.Log("=== Initialize End ===");
+        Debug.Log($"TrafficAgent Initialize called on {gameObject.name}");
+        Debug.Log("=== TrafficAgent::Initialize END ===");
     }
 
-    // Add this method to allow TrafficManager to set itself
-    public void SetTrafficManager(TrafficManager manager)
+    // Modify other methods to use trafficManager as needed
+    /*
+     *  If you want to reset or randomize agent positions at the start of each episode,
+     *  this is the ideal place to do so. It ensures that the agents start each episode in a fresh state,
+     *  which is often a requirement in reinforcement learning to provide diverse training experiences.
+     */
+    public override void OnEpisodeBegin()
     {
-        trafficManager = manager;
-    }
+        Debug.Log("=== OnEpisodeBegin START ===");
+        base.OnEpisodeBegin();
 
-    private void FixedUpdate()
-    {
-        Debug.Log("^^^ FixedUpdate ^^^");
-
-        // Optionally, if you step the simulation every fixed update
-        // int[] highLevelActions = ...;
-        // float[] lowLevelActions = ...;
-        //Traffic_step(trafficSimulationPtr, highLevelActions, lowLevelActions);
-
-        // Update agent positions
-        //UpdateAgentPositions();
-
-        if (hasNewActions)
+        if (trafficManager.agentPrefab == null)
         {
-            // Step the traffic simulation with the most recent actions
-            Traffic_step(trafficSimulationPtr, highLevelActions, lowLevelActions);
-            hasNewActions = false;
-
-            // Update agent positions after stepping the simulation
-            UpdateAgentPositions();
-
-            // Request a new decision for the next step
-            RequestDecision();
+            Debug.LogError("agentPrefab is null at the end of OnEpisodeBegin");
+            return;
         }
 
+        IntPtr vehiclePtrVectorHandle = TrafficManager.Traffic_get_agents(trafficManager.trafficSimulationPtr);
+
+        if (vehiclePtrVectorHandle == IntPtr.Zero)
+        {
+            Debug.LogError("Failed to get vehicle vector handle");
+            return;
+        }
+
+        int vectorSize = TrafficManager.VehiclePtrVector_size(vehiclePtrVectorHandle);
+        int indexValue = 0;
+
+        // Loop through existing agents and respawn them at new random locations
+        foreach (var agent in trafficManager.agentInstances.Values)
+        {
+            if (agent != null && indexValue < vectorSize)
+            {
+                // Generate new random positions
+                float x = UnityEngine.Random.Range(-10f, 10f); // Example range, adjust as needed
+                float y = 0f; // Assuming Y is constant, adjust as needed
+                float z = UnityEngine.Random.Range(-50f, 50f); // Example range, adjust as needed
+
+                IntPtr vehiclePtr = TrafficManager.VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
+
+                // Set new position using the provided Vehicle_setX, Y, Z functions
+                if (vehiclePtr != IntPtr.Zero)
+                {
+                    TrafficManager.Vehicle_setX(vehiclePtr, x);
+                    TrafficManager.Vehicle_setY(vehiclePtr, y);
+                    TrafficManager.Vehicle_setZ(vehiclePtr, z);
+
+                    // Update Unity GameObject position
+                    agent.transform.position = new Vector3(x, y, z);
+
+                    // Optionally reset agent state if needed, e.g., velocity, rotation, etc.
+                }
+                else
+                {
+                    Debug.LogWarning($"Failed to retrieve vehicle at index {indexValue}");
+                }
+                indexValue++;
+            }
+            Debug.Log($"Repositioned agents. Count: {indexValue}");
+        }
+        Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
+
+        // Ensure all agents are properly initialized with their new positions
+        //trafficManager.UpdateAgentPositions();
+
+        Debug.Log("=== OnEpisodeBegin END ===");
     }
 
     // Collect observations from the environment
     public override void CollectObservations(VectorSensor sensor)
     {
         Debug.Log("=== CollectObservations Start ===");
-        Debug.Log($"Number of agent colliders: {agentColliders.Count}");
 
-        int totalObservations = 0;
+        Debug.Log($"CollectObservations called. trafficManager null? {trafficManager == null}");
+        Debug.Log($"trafficManager.agentColliders null? {trafficManager.agentColliders == null}");
+        Debug.Log($"trafficManager.agentColliders count: {trafficManager.agentColliders?.Count ?? 0}");
+        Debug.Log($"Number of agent colliders: {trafficManager.agentColliders.Count}");
+        Debug.Log($"Collected {sensor.ObservationSize()} observations");
 
-        if (agentColliders.Count == 0)
+        if (trafficManager == null)
+        {
+            Debug.LogError("TrafficManager not properly initialized");
+            return;
+        }
+        Debug.Log($"Number of agent colliders: {trafficManager.agentColliders.Count}");
+
+        if (trafficManager.agentColliders.Count == 0)
         {
             Debug.LogWarning("No agent colliders available for observations.");
             return;
         }
 
-        foreach (var agentEntry in agentColliders)
+        Collider agentCollider = GetComponent<Collider>();
+        if (agentCollider == null)
         {
-            string agentId = agentEntry.Key;
-            Collider agentCollider = agentEntry.Value;
-
-            if (agentCollider == null || agentCollider.gameObject == null)
-            {
-                Debug.LogError($"Null collider or gameObject for Agent ID: {agentId}");
-                continue;
-            }
-
-            Vector3 rayStart = GetRayStartPosition(agentCollider);
-            Debug.Log($"Processing agent: {agentId}, Ray start position: {rayStart}");
-
-            int rayHits = 0;
-            int rayMisses = 0;
-
-            // Reset the ray counter for each agent
-            for (int i = 0; i < numberOfRays; i++)
-            {
-                float angle = AngleStep * i;
-                Vector3 direction = agentCollider.transform.TransformDirection(Quaternion.Euler(0, angle - raycastAngle / 2, 0) * Vector3.forward);
-
-                if (Physics.Raycast(rayStart, direction, out RaycastHit hit, rayLength))
-                {
-                    sensor.AddObservation(hit.distance / rayLength);
-                    rayHits++;
-                    Debug.Log($"Agent {agentId} - Ray {i}: Hit at distance {hit.distance}");
-
-                }
-                else
-                {
-                    sensor.AddObservation(1.0f);
-                    rayMisses++;
-                    Debug.Log($"Agent {agentId} - Ray {i}: No hit, added 1.0");
-                }
-                totalObservations++;
-
-                // Visualize the ray for debugging
-                Debug.DrawRay(rayStart, direction * rayLength, hit.collider != null ? hitColor : missColor, 0.1f);
-            }
-
-            Debug.Log($"Agent {agentId} - Rays: {numberOfRays}, Hits: {rayHits}, Misses: {rayMisses}");
-
-            // Add agent's position and rotation as observations
-            sensor.AddObservation(agentCollider.transform.position);
-            totalObservations += 3;
-            Debug.Log($"Agent {agentId} - Added position: {agentCollider.transform.position}");
-
-            sensor.AddObservation(agentCollider.transform.rotation.eulerAngles.y);
-            totalObservations++;
-            Debug.Log($"Agent {agentId} - Added rotation Y: {agentCollider.transform.rotation.eulerAngles.y}");
+            Debug.LogError("Agent colliders not properly initialized");
+            return;
         }
 
-        Debug.Log($"Total observations added: {totalObservations}");
-        Debug.Log($"Sensor observation size: {sensor.ObservationSize()}");
+        Vector3 rayStart = GetRayStartPosition(agentCollider);
+
+        for (int i = 0; i < trafficManager.numberOfRays; i++)
+        {
+            float angle = trafficManager.raycastAngle / (trafficManager.numberOfRays - 1) * i;
+            Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raycastAngle / 2, 0) * Vector3.forward);
+
+            if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
+            {
+                sensor.AddObservation(hit.distance / trafficManager.rayLength);
+            }
+            else
+            {
+                sensor.AddObservation(1.0f); // Normalized max distance for missed raycasts
+            }
+        }
+
+        // Add agent's position and rotation as observations
+        sensor.AddObservation(transform.position);
+        //sensor.AddObservation(transform.rotation.eulerAngles.y);
+        sensor.AddObservation(transform.rotation);
+
         Debug.Log("=== CollectObservations End ===");
     }
 
-    // Modify other methods to use trafficManager as needed
-    // For example, in OnEpisodeBegin:
-    public override void OnEpisodeBegin()
+    public override void Heuristic(in ActionBuffers actionsOut)
     {
-        Debug.Log("=== OnEpisodeBegin ===");
+        Debug.Log("-- TrafficAgent::Heuristic called --");
 
-        // Clear existing agents and colliders
-        foreach (var agent in agentInstances.Values)
-        {
-            if (agent != null)
-            {
-                Destroy(agent);
-            }
-        }
-        agentInstances.Clear();
-        agentColliders.Clear();
+        var continuousActions = actionsOut.ContinuousActions;
+        var discreteActions = actionsOut.DiscreteActions;
 
-        Debug.Log($"Cleared agents. agentInstances count: {agentInstances.Count}, agentColliders count: {agentColliders.Count}");
+        // Continuous actions
+        continuousActions[0] = 0.0f; // Steering
+        continuousActions[1] = 4.0f; // Acceleration
+        continuousActions[2] = -1.5f; //Braking
 
-        // Reset the traffic simulation
-        if (trafficSimulationPtr != IntPtr.Zero)
-        {
-            Traffic_destroy(trafficSimulationPtr);
-            trafficSimulationPtr = IntPtr.Zero;
-        }
+        // Discrete actions
+        discreteActions[0] = 0; // Default to 0
 
-        // Recreate the traffic simulation with a new seed or reset it as required
-        trafficSimulationPtr = Traffic_create(2, 12345); // Adjust the number of agents and seed if needed
-        Debug.Log($"Created new traffic simulation. Pointer: {trafficSimulationPtr}");
-
-        // Update the agent positions and recreate agent instances
-        UpdateAgentPositions();
-
-        Debug.Log($"After UpdateAgentPositions. agentInstances count: {agentInstances.Count}, agentColliders count: {agentColliders.Count}");
-
-        Debug.Log("=== OnEpisodeBegin End ===");
+        Debug.LogError("Heuristic method called. Continuous Actions: " +
+                  string.Join(", ", continuousActions) +
+                  " Discrete Actions: " + string.Join(", ", discreteActions));
     }
 
     // Execute the actions decided by the ML model
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-        Debug.Log("+++ OnActionReceived +++");
-        hasNewActions = true;
+        Debug.Log("-- TrafficAgent::OnActionReceived --");
+        Debug.Log($"Discrete actions: {string.Join(", ", actionBuffers.DiscreteActions)}");
+        Debug.Log($"Continuous actions: {string.Join(", ", actionBuffers.ContinuousActions)}");
 
         // Process Discrete (High-Level) Actions
         int highLevelActionCount = actionBuffers.DiscreteActions.Length;
-        int[] highLevelActions = new int[highLevelActionCount];
+        highLevelActions = new int[highLevelActionCount];
 
         for (int i = 0; i < highLevelActionCount; i++)
         {
@@ -318,7 +249,7 @@ public class TrafficAgent : Agent
 
         // Process Continuous (Low-Level) Actions
         int lowLevelActionCount = actionBuffers.ContinuousActions.Length;
-        float[] lowLevelActions = new float[lowLevelActionCount];
+        lowLevelActions = new float[lowLevelActionCount];
 
         for (int i = 0; i < lowLevelActionCount; i++)
         {
@@ -327,19 +258,92 @@ public class TrafficAgent : Agent
         }
 
         // Step the simulation with the received actions
-        Traffic_step(trafficSimulationPtr, highLevelActions, lowLevelActions);
+        TrafficManager.Traffic_step(trafficManager.trafficSimulationPtr, highLevelActions, lowLevelActions);
 
         // Update agent positions based on the simulation step
-        UpdateAgentPositions();
+        //trafficManager.UpdateAgentPositions();  // This line is commented out
 
         // Calculate reward and determine if the episode should end
         float reward = CalculateReward();  // Implement your actual reward calculation logic
         bool done = CheckIfEpisodeIsDone();  // Implement your actual done condition logic
 
         SetReward(reward);
+        /*
         if (done)
         {
             EndEpisode();
+        }
+        */
+    }
+
+    // Method used for handling tasks that need to be executed in sync with the frame rate
+    private void Update()
+    {
+    /*
+     * In Unity, the Update() method is called once per frame and is primarily used for handling tasks
+     * that need to be executed in sync with the frame rate, such as processing user input,
+     * updating non-physics game logic, and rendering-related updates.
+     */
+        Debug.Log("-- TrafficAgent::Update called --");
+
+        // Existing Update logic
+        if (isGrounded)
+        {
+            // Set veriticle axis position (y-axis) to zero to not go below road geometry
+            // Actually change the agent's position
+            Vector3 position = new Vector3(this.transform.position.x, 0.0f, this.transform.position.z);
+            this.transform.position = position;
+            rb.MovePosition(this.transform.position);
+            isGrounded = false;
+            Debug.Log($"isGrounded GameObject Position: X={this.transform.position.x:F2}, Y={this.transform.position.y:F2}, Z={this.transform.position.z:F2}");
+        }
+        else
+        {
+            rb.MovePosition(this.transform.position);
+            Debug.Log($"GameObject Position: X={this.transform.position.x:F2}, Y={this.transform.position.y:F2}, Z={this.transform.position.z:F2}");
+
+        }
+        // Only draw debug rays if visualization is enabled
+        if (debugVisualization || trafficManager.debugVisualization)
+        {
+            DrawDebugRays();
+        }
+    }
+
+    private void DrawDebugRays()
+    {
+        if (trafficManager == null)
+        {
+            Debug.LogError("TrafficManager is null in DrawDebugRays");
+            return;
+        }
+
+        Collider agentCollider = GetComponent<Collider>();
+        if (agentCollider == null)
+        {
+            Debug.LogError("Agent Collider is null in DrawDebugRays");
+            return;
+        }
+
+        Vector3 rayStart = GetRayStartPosition(agentCollider);
+
+        float delta_angle = trafficManager.raycastAngle / (trafficManager.numberOfRays - 1);
+
+        for (int i = 0; i < trafficManager.numberOfRays; i++)
+        {
+            float angle = delta_angle * i;
+            Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raycastAngle / 2, 0) * Vector3.forward);
+
+            if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
+            {
+                Debug.DrawRay(rayStart, direction * hit.distance, hitColor, 0.0f);
+                Debug.Log($"Ray {i} hit at distance: {hit.distance}");
+            }
+            else
+            {
+                Debug.DrawRay(rayStart, direction * trafficManager.rayLength, missColor, 0.0f);
+                Debug.Log($"Ray {i} did not hit");
+            }
         }
     }
 
@@ -355,137 +359,6 @@ public class TrafficAgent : Agent
         return false;  // Placeholder
     }
 
-    public override void Heuristic(in ActionBuffers actionsOut)
-    {
-        var continuousActions = actionsOut.ContinuousActions;
-        var discreteActions = actionsOut.DiscreteActions;
-
-        // Continuous actions
-        continuousActions[0] = Input.GetAxis("Horizontal"); // Steering
-        continuousActions[1] = Input.GetAxis("Vertical"); // Acceleration/Braking
-
-        // Discrete actions
-        for (int i = 0; i < discreteActions.Length; i++)
-        {
-            discreteActions[i] = 0; // Default to 0
-        }
-
-        // Example: Set a discrete action based on a condition
-        if (Input.GetKey(KeyCode.Space))
-        {
-            discreteActions[0] = 1;
-        }
-
-        Debug.Log("Heuristic method called. Continuous Actions: " +
-                  string.Join(", ", continuousActions) +
-                  " Discrete Actions: " + string.Join(", ", discreteActions));
-    }
-
-    // Update the positions of agents based on the simulation results
-    private void UpdateAgentPositions()
-    {
-        Debug.Log("*** UpdateAgentPositions ***");
-
-        // Get the initial state of agent
-        agentPositionsMap = Traffic_get_agent_positions(trafficSimulationPtr);
-        agentVelocitiesMap = Traffic_get_agent_velocities(trafficSimulationPtr);
-        agentOrientationsMap = Traffic_get_agent_orientations(trafficSimulationPtr);
-        agentPreviousPositionsMap = Traffic_get_previous_positions(trafficSimulationPtr);
-
-        // Process the agent positions
-        for (int i = 0; i < StringFloatVectorMap_size(agentPositionsMap); i++)
-        {
-            IntPtr agentIdPtr = StringFloatVectorMap_get_key(agentPositionsMap, i);
-            string agentId = Marshal.PtrToStringAnsi(agentIdPtr);
-
-            IntPtr positionPtr = StringFloatVectorMap_get_value(agentPositionsMap, agentIdPtr);
-            IntPtr orientionPtr = StringFloatVectorMap_get_value(agentOrientationsMap, agentIdPtr);
-
-            if (positionPtr != IntPtr.Zero && orientionPtr != IntPtr.Zero)
-            {
-                int positionVectorSize = FloatVector_size(positionPtr);
-                int orientionVectorSize = FloatVector_size(orientionPtr);
-
-                if (positionVectorSize > 0 && orientionVectorSize > 0)
-                {
-                    float x = FloatVector_get(positionPtr, 0);
-                    float y = FloatVector_get(positionPtr, 1);
-                    float z = FloatVector_get(positionPtr, 2);
-                    Debug.Log($"Agent ID: {agentId}, Position: ({x}, {y}, {z})");
-
-                    float roll = FloatVector_get(orientionPtr, 0);
-                    float pitch = FloatVector_get(orientionPtr, 1);
-                    float yaw = FloatVector_get(orientionPtr, 2);
-                    Debug.Log($"Agent ID: {agentId}, Orientation: ({roll}, {pitch}, {yaw})");
-
-                    Vector3 position = new Vector3(x, y, z);
-
-                    // Convert Euler angles to Quaternion, Euler angles (roll, pitch, yaw)
-                    Quaternion rotation = Quaternion.Euler(roll * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg, pitch * Mathf.Rad2Deg);
-
-                    // Create a new agent instance if it doesn't exist
-                    if (!agentInstances.ContainsKey(agentId))
-                    {
-                        Debug.Log($"Instantiating agentPrefab for Agent ID: {agentId}");
-
-                        // Instantiate the new GameObject with the specified position and orientation
-                        GameObject newAgent = Instantiate(agentPrefab, position, rotation);
-
-                        newAgent.transform.SetParent(this.transform);  // Use 'this.transform' to refer to the TrafficSimulationManager's transform
-                        agentInstances.Add(agentId, newAgent);
-
-                        // Get the collider component from the instantiated agent
-                        Collider agentCollider = newAgent.GetComponent<Collider>();
-                        if (agentCollider != null)
-                        {
-                            Debug.Log($"Agent ID: {agentId}");
-
-                            if (!agentColliders.ContainsKey(agentId))  // Add this check
-                            {
-                                agentColliders.Add(agentId, agentCollider);
-                                Debug.Log($"Added collider for Agent ID: {agentId}");
-                            }
-                            else
-                            {
-                                Debug.LogWarning($"Collider for Agent ID: {agentId} already exists. Skipping addition.");
-                            }
-                        }
-                        else
-                        {
-                            Debug.LogError($"No Collider found on the instantiated agent {agentId}. Please add a Collider to the agent prefab.");
-                        }
-                    }
-
-                    else
-                    {
-                        Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
-                        GameObject existingAgent = agentInstances[agentId];
-                        existingAgent.transform.position = position;
-                        existingAgent.transform.rotation = rotation;
-                    }
-                }
-                else
-                {
-                    Debug.Log($"Agent ID: {agentId}, Position vector is empty.");
-                }
-
-            }
-            else
-            {
-                Debug.Log($"Agent ID: {agentId} already exists. Skipping instantiation.");
-            }
-        }
-
-        // Clean up the resources
-        /*
-        StringFloatVectorMap_destroy(agentPositionsMap);
-        StringFloatVectorMap_destroy(agentVelocitiesMap);
-        StringFloatVectorMap_destroy(agentVelocitiesMap);
-        StringFloatVectorMap_destroy(agentOrientationsMap);
-        StringFloatVectorMap_destroy(agentPreviousPositionsMap);
-        */
-    }
-
     // Helper method to get the ray start position (center of the bounding box)
     private Vector3 GetRayStartPosition(Collider collider)
     {
@@ -493,48 +366,45 @@ public class TrafficAgent : Agent
     }
 
     // Clean up the simulation on destroy
-    void OnDestroy()
+    private void OnDestroy()
     {
-        Debug.Log("-- OnDestroy --");
+        Debug.Log("-- TrafficAgent::OnDestroy --");
 
-        if (trafficSimulationPtr != IntPtr.Zero)
+        if (trafficManager != null)
         {
-            // Since there is no Traffic_destroy function, directly delete the trafficSimulationPtr
-            Marshal.FreeHGlobal(trafficSimulationPtr);
-            //Traffic_destroy(trafficSimulationPtr);
-            trafficSimulationPtr = IntPtr.Zero;
+            if (trafficManager.agentInstances != null && trafficManager.agentInstances.ContainsKey(gameObject.name))
+            {
+                trafficManager.agentInstances.Remove(gameObject.name);
+            }
+            if (trafficManager.agentColliders != null && trafficManager.agentColliders.ContainsKey(gameObject.name))
+            {
+                trafficManager.agentColliders.Remove(gameObject.name);
+            }
         }
 
-        // Clean up any other resources, such as agent instances
-        foreach (var agentInstance in agentInstances.Values)
+        // Remove DecisionRequester first
+        var decisionRequester = GetComponent<DecisionRequester>();
+        if (decisionRequester != null)
         {
-            Destroy(agentInstance);
+            Destroy(decisionRequester);
         }
-        agentInstances.Clear();
+    }
 
-        // Clean up the map references
-        if (agentPositionsMap != IntPtr.Zero)
+    void OnCollisionStay(Collision collision)
+    {
+        // Check if we're colliding with the road
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
         {
-            StringFloatVectorMap_destroy(agentPositionsMap);
-            agentPositionsMap = IntPtr.Zero;
+            isGrounded = true;
         }
+    }
 
-        if (agentVelocitiesMap != IntPtr.Zero)
+    void OnCollisionExit(Collision collision)
+    {
+        // Check if we've left the road
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
         {
-            StringFloatVectorMap_destroy(agentVelocitiesMap);
-            agentVelocitiesMap = IntPtr.Zero;
-        }
-
-        if (agentOrientationsMap != IntPtr.Zero)
-        {
-            StringFloatVectorMap_destroy(agentOrientationsMap);
-            agentOrientationsMap = IntPtr.Zero;
-        }
-
-        if (agentPreviousPositionsMap != IntPtr.Zero)
-        {
-            StringFloatVectorMap_destroy(agentPreviousPositionsMap);
-            agentPreviousPositionsMap = IntPtr.Zero;
+            isGrounded = false;
         }
     }
 }
