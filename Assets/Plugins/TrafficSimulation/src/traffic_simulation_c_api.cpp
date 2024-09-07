@@ -1,5 +1,6 @@
 #include "traffic_simulation_c_api.h"
 #include "traffic.h"
+#include <array>
 #include <vector>
 #include <unordered_map>
 #include <cstring>
@@ -117,8 +118,46 @@ EXPORT void Traffic_destroy(Traffic* traffic) {
     delete traffic;
 }
 
+/*
 EXPORT void Traffic_step(Traffic* traffic, const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
     traffic->step(high_level_actions, low_level_actions);
+}
+*/
+
+/*
+EXPORT void Traffic_step(Traffic* traffic,
+                         const std::array<int, 1>& high_level_actions_array,
+                         const std::array<float, 3>& low_level_actions_array) {
+    // Convert std::array<int, N> to std::vector<int>
+    std::vector<int> high_level_actions(high_level_actions_array.begin(), high_level_actions_array.end());
+
+    // Convert std::array<float, M> to std::vector<std::vector<float>>
+    std::vector<std::vector<float>> low_level_actions;
+
+    // Ensure M is a multiple of 3 for correct partitioning
+    //static_assert(M % 3 == 0, "The size of low_level_actions_array must be a multiple of 3");
+
+    for (size_t i = 0; i < 3; i += 3) {
+        std::vector<float> sublist(low_level_actions_array.begin() + i, low_level_actions_array.begin() + i + 3);
+        low_level_actions.push_back(sublist);
+    }
+
+    // Call the original step function with the converted vectors
+    traffic->step(high_level_actions, low_level_actions);
+}
+*/
+
+/*
+EXPORT void Traffic_step(Traffic* traffic, std::vector<int> high_level_actions, std::vector<std::vector<float>> low_level_actions) {
+    // Call the original step function with the converted vectors
+    traffic->step(high_level_actions, low_level_actions);
+}
+*/
+
+EXPORT void Traffic_step(Traffic* traffic) {
+     std::vector<int> high_level_actions{1};
+     std::vector<std::vector<float>> low_level_actions{{0.1f, 4.0f, 0.0f}};
+     traffic->step(high_level_actions, low_level_actions);
 }
 
 EXPORT const VehiclePtrVector* Traffic_get_agents(const Traffic* traffic) {

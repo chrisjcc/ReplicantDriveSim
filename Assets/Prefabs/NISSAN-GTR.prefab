@@ -65,6 +65,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 57863acd86f454d73a440f50192f8102, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5485862081834970441}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 57863acd86f454d73a440f50192f8102, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6911950100345939106}
   m_SourcePrefab: {fileID: 100100000, guid: 57863acd86f454d73a440f50192f8102, type: 3}
 --- !u!1 &7393828277960429041 stripped
 GameObject:
@@ -95,7 +98,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 1
   m_BehaviorName: TrafficAgentBehavior
   TeamId: 0
   m_UseChildSensors: 1
@@ -116,13 +119,12 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  highLevelActions: 
+  MaxStep: 100
+  highLevelActions: 0
   lowLevelActions: []
   hitColor: {r: 1, g: 0, b: 0, a: 1}
   missColor: {r: 0, g: 1, b: 0, a: 1}
   debugVisualization: 0
-  moveSpeed: 5
 --- !u!65 &5485862081834970441
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -144,3 +146,17 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 5, y: 3, z: 12}
   m_Center: {x: 2, y: 2, z: -2}
+--- !u!114 &6911950100345939106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7393828277960429041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  DecisionPeriod: 5
+  TakeActionsBetweenDecisions: 1

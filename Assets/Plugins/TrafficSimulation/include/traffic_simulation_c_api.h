@@ -11,6 +11,7 @@
     #define EXPORT __attribute__((visibility("default")))
 #endif
 
+#include <array>
 #include <vector>
 #include <cstddef>
 
@@ -60,7 +61,13 @@ EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance);
 // Traffic functions
 EXPORT Traffic* Traffic_create(int num_agents, unsigned seed);
 EXPORT void Traffic_destroy(Traffic* traffic);
-EXPORT void Traffic_step(Traffic* traffic, const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions);
+
+//EXPORT void Traffic_step(Traffic* traffic, const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions);
+//EXPORT void Traffic_step(Traffic* traffic, const std::array<int, 1>& high_level_actions_array, const std::array<float, 3>& low_level_actions_array);
+EXPORT void Traffic_step(Traffic* traffic);
+//EXPORT void Traffic_step(Traffic* traffic, std::vector<int> high_level_actions, std::vector<std::vector<float>> low_level_actions);
+//EXPORT void Traffic_step(Traffic* traffic, std::vector<int> high_level_actions);
+
 EXPORT const VehiclePtrVector* Traffic_get_agents(const Traffic* traffic);
 EXPORT const Vehicle* Traffic_get_agent_by_name(const Traffic* traffic, const char* name);
 EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic);
