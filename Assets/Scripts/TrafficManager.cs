@@ -242,6 +242,9 @@ public class TrafficManager : MonoBehaviour
         Vector3 position = GetVector3FromFloatVector(positionPtr);
         Quaternion rotation = GetQuaternionFromFloatVector(orientationPtr);
 
+        Debug.Log($"Agent {agentId}: Position = {position}, Rotation = {rotation.eulerAngles}");
+        Debug.Log($"Euler angles: Pitch={rotation.eulerAngles.x}, Yaw={rotation.eulerAngles.y}, Roll={rotation.eulerAngles.z}");
+
         if (agentInstances.ContainsKey(agentId))
         {
             // Agent already exists, update its position and rotation
@@ -250,6 +253,7 @@ public class TrafficManager : MonoBehaviour
             var existingAgent = agentInstances[agentId]; // type TrafficAgent
             existingAgent.transform.position = position;
             existingAgent.transform.rotation = rotation;
+            existingAgent.transform.hasChanged = true;
             Debug.Log($"Updated agent: {agentId} to position: {position} and rotation: {rotation}");
 
             // Ensure the collider is updated if it's not part of the main GameObject
@@ -315,7 +319,13 @@ public class TrafficManager : MonoBehaviour
         float yaw   = FloatVector_get(vectorPtr, 2);
 
         // Convert Euler angles to Quaternion, Euler angles (roll, pitch, yaw)
-        return Quaternion.Euler(roll * Mathf.Rad2Deg, pitch * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg);
+        Quaternion rotation = Quaternion.Euler(
+            roll * Mathf.Rad2Deg,  // X-axis rotation (roll)
+            pitch * Mathf.Rad2Deg, // Y-axis rotation (pitch)
+            yaw * Mathf.Rad2Deg    // Z-axis rotation (yaw)
+        );
+
+        return rotation;
     }
 
     private void UpdateColliderForExistingAgent(GameObject agentObject, string agentId)
@@ -385,9 +395,6 @@ public class TrafficManager : MonoBehaviour
         Debug.Log("=== TrafficManager::FixedUpdate START ===");
         #endif
 
-        //Debug.Log($"Time.timeScale: {Time.timeScale}");
-
-
         if (agentInstances == null || agentColliders == null)
         {
             Debug.LogError("Agent instances or colliders are null. Make sure they are properly initialized.");
@@ -442,7 +449,7 @@ public class TrafficManager : MonoBehaviour
                 Debug.Log($"Agent {agentId} - High-level actions: {string.Join(", ", agent.highLevelActions)}");
                 Debug.Log($"Agent {agentId} - Low-level actions: {string.Join(", ", agent.lowLevelActions)}");
 
-                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles.y}");
+                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
             }
         }
 
@@ -454,10 +461,7 @@ public class TrafficManager : MonoBehaviour
 
         if (resultPtr != IntPtr.Zero)
         {
-            string result = Marshal.PtrToStringAnsi(resultPtr);
-            //string result = Marshal.PtrToStringUTF8(resultPtr);
-            Debug.Log($"Marshalled string length: {result.Length}");
-            Debug.Log($"Marshalled string bytes: {string.Join(", ", System.Text.Encoding.ASCII.GetBytes(result))}");
+            string result = Marshal.PtrToStringAnsi(resultPtr); // PtrToStringUTF8
             Debug.Log($"Traffic_step result {resultPtr}:\n" + result);
             FreeString(resultPtr); // Don't forget to free the allocated memory
         }
@@ -482,7 +486,7 @@ public class TrafficManager : MonoBehaviour
                 IntPtr vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
                 IntPtr vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
 
-                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles.y}");
+                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
                 indexValue++;
             }
         }
@@ -519,6 +523,12 @@ public class TrafficManager : MonoBehaviour
 
             Vector3 position = GetVector3FromFloatVector(positionPtr);
             Quaternion rotation = GetQuaternionFromFloatVector(orientationPtr);
+            Debug.Log($"++ UpdateAgentPositions: Agent {agentId}: Position = {position}, Rotation = {rotation.eulerAngles}");
+
+            // Assuming currentSteeringAngle is updated elsewhere
+            //Quaternion targetRotation = Quaternion.Euler(0, 0.64f * Mathf.Rad2Deg, 0);
+            //transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+
 
             if (agentInstances.ContainsKey(agentId))
             {
@@ -528,7 +538,8 @@ public class TrafficManager : MonoBehaviour
                 var existingAgent = agentInstances[agentId]; // type TrafficAgent
                 existingAgent.transform.position = position;
                 existingAgent.transform.rotation = rotation;
-                Debug.Log($"Updated agent: {agentId} Position: {position}, Rotation: {rotation.eulerAngles.y}");
+                existingAgent.transform.hasChanged = true;
+                Debug.Log($"Updated agent: {agentId} Position: {position}, Rotation: {rotation.eulerAngles}");
 
                 // Ensure the collider is updated if it's not part of the main GameObject
                 if (agentColliders.TryGetValue(agentId, out Collider existingCollider))

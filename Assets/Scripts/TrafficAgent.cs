@@ -20,7 +20,7 @@ public class TrafficAgent : Agent
     [HideInInspector]
     public int highLevelActions;
 
-    [HideInInspector]
+    //[HideInInspector]
     public float[] lowLevelActions;
 
     [SerializeField]
@@ -80,10 +80,17 @@ public class TrafficAgent : Agent
         gameObject.layer = LayerMask.NameToLayer("Road");
         */
 
+        float minAngleRad = -0.610865f; // -35 degrees in radians
+        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+
+        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
+
         Debug.Log("--- TrafficAgent::Awake END ---");
     }
 
-    // Initialize is part of the ML-Agents specific setup
+    // Initialize is part of the ML-Agents specific setup details
     // Initialize the agent and the traffic simulation
     /*
      * This is an ML-Agents-specific method that is used to initialize the agent.
@@ -101,7 +108,8 @@ public class TrafficAgent : Agent
 
         // Initialize your agent-specific variables here
         base.Initialize();
- 
+
+
         Debug.Log("--- TrafficAgent::Initialize END ---");
 
     }
@@ -125,6 +133,13 @@ public class TrafficAgent : Agent
             Debug.LogError("agentPrefab is null at the end of OnEpisodeBegin");
             return;
         }
+
+        float minAngleRad = -0.610865f; // -35 degrees in radians
+        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+
+        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
 
         /*
         IntPtr vehiclePtrVectorHandle = TrafficManager.Traffic_get_agents(trafficManager.trafficSimulationPtr);
@@ -217,6 +232,8 @@ public class TrafficAgent : Agent
 
         Vector3 rayStart = GetRayStartPosition(agentCollider);
 
+        Debug.Log($"{transform.rotation.eulerAngles}");
+
         for (int i = 0; i < trafficManager.numberOfRays; i++)
         {
             float angle = trafficManager.AngleStep * i;
@@ -232,11 +249,13 @@ public class TrafficAgent : Agent
             }
         }
 
+        Debug.Log($"CollectObservations: Euler angles: Pitch={transform.rotation.eulerAngles.x}, Yaw={transform.rotation.eulerAngles.y}, Roll={transform.rotation.eulerAngles.z}");
+
         // Add agent's position and rotation as observations
         sensor.AddObservation(transform.position);
-        sensor.AddObservation(transform.rotation.eulerAngles.y);
         //sensor.AddObservation(transform.rotation);
         //sensor.AddObservation(transform.rotation.eulerAngles);
+        sensor.AddObservation(transform.rotation.eulerAngles.y);
 
         //Rigidbody rb = GetComponent<Rigidbody>();
         //sensor.AddObservation(rb.velocity);
@@ -349,6 +368,11 @@ public class TrafficAgent : Agent
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::FixedUpdate END --");
         #endif
+    }
+
+    void Update()
+    {
+        Debug.Log($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
     }
 
     private void DrawDebugRays()

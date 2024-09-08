@@ -138,11 +138,14 @@ EXPORT const char* Traffic_step(Traffic* traffic, int* high_level_actions, int h
     // Prepare a string with all agent positions
     std::string result = "Traffic_step ";
     for (const auto& agent : traffic->agents) {
-        result += "Agent " + std::to_string(agent.getId()) + " position: ("
-               + std::to_string(agent.getX()) + ", "
-               + std::to_string(agent.getY()) + ", "
-               + std::to_string(agent.getZ()) + ")\n";
+        oss << "Agent " << agent.getId() << " position: ("
+            << std::fixed << std::setprecision(6)
+            << agent.getX() << ", "
+            << agent.getY() << ", "
+            << agent.getZ() << ") rotation: "
+            << agent.getSteering() << "\n";
     }
+    result += oss.str();
 
     if (result.empty()) {
         result = "No agents found";
@@ -170,21 +173,6 @@ EXPORT const Vehicle* Traffic_get_agent_by_name(const Traffic* traffic, const ch
 EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic) {
     return reinterpret_cast<StringFloatVectorMap*>(new std::unordered_map<std::string, std::vector<float>>(traffic->get_agent_positions()));
 }
-
-/*
-EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic) {
-    // Get the agent positions from the Traffic class
-    std::unordered_map<std::string, std::vector<float>> agent_positions = traffic->get_agent_positions();
-
-    // Create a new StringFloatVectorMap and populate it with the agent positions
-    StringFloatVectorMap* map = new StringFloatVectorMap();
-    for (const auto& pair : agent_positions) {
-        (*map)[pair.first] = pair.second;
-    }
-
-    return map;
-}
-*/
 
 EXPORT StringFloatVectorMap* Traffic_get_agent_velocities(const Traffic* traffic) {
     return reinterpret_cast<StringFloatVectorMap*>(new std::unordered_map<std::string, std::vector<float>>(traffic->get_agent_velocities()));

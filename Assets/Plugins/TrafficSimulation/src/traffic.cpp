@@ -151,8 +151,12 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_orientati
     std::unordered_map<std::string, std::vector<float>> orientations;
     for (int i = 0; i < num_agents; ++i) {
         // Euler angles (roll, pitch, yaw)
-        orientations["agent_" + std::to_string(i)] = {0.0, 0.0, agents[i].getSteering()};
+        float roll = 0.0;    // Replace with actual roll if available
+        float pitch = 0.0;   // Replace with actual pitch if available
+        float yaw = agents[i].getSteering(); // Assuming steering represents yaw
+        orientations["agent_" + std::to_string(i)] = {roll, pitch, yaw};
     }
+
     return orientations;
 }
 

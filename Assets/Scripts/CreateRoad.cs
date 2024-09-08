@@ -31,7 +31,7 @@ public class CreateRoad : MonoBehaviour
         roadMaterial.mainTextureScale = new Vector2(1, 10);
 
         // Position the road
-        road.transform.position = new Vector3(0, 0.15f, 0);
+        road.transform.position = new Vector3(0, 0.15f, 1400);
 
         // Add or get the existing MeshCollider
         MeshCollider roadCollider = road.GetComponent<MeshCollider>();

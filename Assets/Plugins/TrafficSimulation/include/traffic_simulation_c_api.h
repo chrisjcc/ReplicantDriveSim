@@ -14,6 +14,8 @@
 #include <array>
 #include <vector>
 #include <cstddef>
+#include <iomanip>  // Required for std::setprecision
+#include <sstream>  // Required for std::ostringstream
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,6 +91,8 @@ EXPORT void VehiclePtrVector_destroy(VehiclePtrVector* vector);
 
 // Utility function
 EXPORT void FreeString(const char* str);
+
+EXPORT std::ostringstream oss;
 
 #ifdef __cplusplus
 }
