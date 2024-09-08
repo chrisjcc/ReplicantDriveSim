@@ -118,46 +118,45 @@ EXPORT void Traffic_destroy(Traffic* traffic) {
     delete traffic;
 }
 
-/*
-EXPORT void Traffic_step(Traffic* traffic, const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
-    traffic->step(high_level_actions, low_level_actions);
-}
-*/
+EXPORT const char* Traffic_step(Traffic* traffic, int* high_level_actions, int high_level_actions_count,
+                                float** low_level_actions, int low_level_actions_count) {
 
-/*
-EXPORT void Traffic_step(Traffic* traffic,
-                         const std::array<int, 1>& high_level_actions_array,
-                         const std::array<float, 3>& low_level_actions_array) {
-    // Convert std::array<int, N> to std::vector<int>
-    std::vector<int> high_level_actions(high_level_actions_array.begin(), high_level_actions_array.end());
+    // Construct std::vector from the high_level_actions input array
+    std::vector<int> high_level_actions_vec(high_level_actions, high_level_actions + high_level_actions_count);
 
-    // Convert std::array<float, M> to std::vector<std::vector<float>>
-    std::vector<std::vector<float>> low_level_actions;
-
-    // Ensure M is a multiple of 3 for correct partitioning
-    //static_assert(M % 3 == 0, "The size of low_level_actions_array must be a multiple of 3");
-
-    for (size_t i = 0; i < 3; i += 3) {
-        std::vector<float> sublist(low_level_actions_array.begin() + i, low_level_actions_array.begin() + i + 3);
-        low_level_actions.push_back(sublist);
+    // Construct std::vector<std::vector<float>> from the low_level_actions input array
+    std::vector<std::vector<float>> low_level_actions_vec;
+    for (int i = 0; i < low_level_actions_count; ++i) {
+        // Assuming each inner array has 3 elements (x, y, z)
+        std::vector<float> action(low_level_actions[i], low_level_actions[i] + 3);
+        low_level_actions_vec.push_back(action);
     }
 
-    // Call the original step function with the converted vectors
-    traffic->step(high_level_actions, low_level_actions);
-}
-*/
+    // Call the step function with the constructed vectors
+    traffic->step(high_level_actions_vec, low_level_actions_vec);
 
-/*
-EXPORT void Traffic_step(Traffic* traffic, std::vector<int> high_level_actions, std::vector<std::vector<float>> low_level_actions) {
-    // Call the original step function with the converted vectors
-    traffic->step(high_level_actions, low_level_actions);
-}
-*/
+    // Prepare a string with all agent positions
+    std::string result = "Traffic_step ";
+    for (const auto& agent : traffic->agents) {
+        result += "Agent " + std::to_string(agent.getId()) + " position: ("
+               + std::to_string(agent.getX()) + ", "
+               + std::to_string(agent.getY()) + ", "
+               + std::to_string(agent.getZ()) + ")\n";
+    }
 
-EXPORT void Traffic_step(Traffic* traffic) {
-     std::vector<int> high_level_actions{1};
-     std::vector<std::vector<float>> low_level_actions{{0.1f, 4.0f, 0.0f}};
-     traffic->step(high_level_actions, low_level_actions);
+    if (result.empty()) {
+        result = "No agents found";
+    }
+
+    // Convert std::string to const char* that will persist after function returns
+    char* cstr = new char[result.length() + 1];
+    strcpy(cstr, result.c_str());
+    return cstr;
+}
+
+// Add a function to free the memory allocated for the string
+EXPORT void FreeString(const char* str) {
+    delete[] str;
 }
 
 EXPORT const VehiclePtrVector* Traffic_get_agents(const Traffic* traffic) {

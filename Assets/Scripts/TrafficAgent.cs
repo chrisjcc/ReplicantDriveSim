@@ -13,12 +13,15 @@ using System.Linq;
 // Responsible for ML-Agents specific behaviors (collecting observations, receiving actions, etc.)
 public class TrafficAgent : Agent
 {
-    // Ensure the arrays have the correct size
-    public int highLevelActions;
-    public float[] lowLevelActions;
+    // Properties
+    [HideInInspector]
+    private TrafficManager trafficManager;
 
-    private int highLevelActionCount = 1;
-    private int lowLevelActionCount = 3;
+    [HideInInspector]
+    public int highLevelActions;
+
+    [HideInInspector]
+    public float[] lowLevelActions;
 
     [SerializeField]
     private Color hitColor = Color.red;
@@ -29,12 +32,9 @@ public class TrafficAgent : Agent
     [SerializeField]
     private bool debugVisualization = false;
 
-    // Properties
-    private TrafficManager trafficManager;
-    private float AngleStep;
-
-    //private Rigidbody rb;
+    [HideInInspector]
     private bool isGrounded;
+    //private Rigidbody rb;
 
     /*
     public float positiveReward = 1.0f;
@@ -52,12 +52,6 @@ public class TrafficAgent : Agent
         Debug.Log("--- TrafficAgent::Awake Start START ---");
         #endif
 
-        if (lowLevelActions == null || lowLevelActions.Length != lowLevelActionCount)
-        {
-            lowLevelActions = new float[lowLevelActionCount];
-            Debug.Log($"Initialized lowLevelActions with length: {lowLevelActions.Length}");
-        }
-
         if (trafficManager == null)
         {
             trafficManager = FindObjectOfType<TrafficManager>();
@@ -72,8 +66,6 @@ public class TrafficAgent : Agent
                 Debug.Log("TrafficManager found successfully.");
             }
         }
-
-        AngleStep = trafficManager.raycastAngle / (trafficManager.numberOfRays - 1);
 
         /*
         rb = GetComponent<Rigidbody>();
@@ -134,6 +126,7 @@ public class TrafficAgent : Agent
             return;
         }
 
+        /*
         IntPtr vehiclePtrVectorHandle = TrafficManager.Traffic_get_agents(trafficManager.trafficSimulationPtr);
 
         if (vehiclePtrVectorHandle == IntPtr.Zero)
@@ -142,33 +135,36 @@ public class TrafficAgent : Agent
             return;
         }
 
-        int vectorSize = TrafficManager.VehiclePtrVector_size(vehiclePtrVectorHandle);
+        //int vectorSize = TrafficManager.VehiclePtrVector_size(vehiclePtrVectorHandle);
+        var agentValues = trafficManager.agentInstances.Values;
         int indexValue = 0;
 
         // Loop through existing agents and respawn them at new random locations
-        foreach (var agent in trafficManager.agentInstances.Values)
+        foreach (var agent in agentValues)
         {
-            if (agent != null && indexValue < vectorSize)
+            //if (agent != null && indexValue < vectorSize)
+            if (agent != null)
             {
-                // Generate new random positions
-                float x = UnityEngine.Random.Range(-10f, 10f); // Example range, adjust as needed
-                float y = 0f; // Assuming Y is constant, adjust as needed
-                float z = UnityEngine.Random.Range(-50f, 50f); // Example range, adjust as needed
+                var vehiclePtr = TrafficManager.VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
 
-                IntPtr vehiclePtr = TrafficManager.VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
+                // Generate new random positions
+                //float x = TrafficManager.Vehicle_getX(vehiclePtr); // UnityEngine.Random.Range(-10f, 10f); // Example range, adjust as needed
+                //float y = TrafficManager.Vehicle_getY(vehiclePtr); // 0f; // Assuming Y is constant, adjust as needed
+                //float z = TrafficManager.Vehicle_getZ(vehiclePtr); // UnityEngine.Random.Range(-50f, 50f); // Example range, adjust as needed
 
                 // Set new position using the provided Vehicle_setX, Y, Z functions
+
                 if (vehiclePtr != IntPtr.Zero)
                 {
-                    TrafficManager.Vehicle_setX(vehiclePtr, x);
-                    //Debug.Log($"X-position: {TrafficManager.Vehicle_getX(vehiclePtr)}");
-                    TrafficManager.Vehicle_setY(vehiclePtr, y);
-                    //Debug.Log($"Y-position: {TrafficManager.Vehicle_getY(vehiclePtr)}");
-                    TrafficManager.Vehicle_setZ(vehiclePtr, z);
-                    //Debug.Log($"Z-position: {TrafficManager.Vehicle_getZ(vehiclePtr)}");
+                    //TrafficManager.Vehicle_setX(vehiclePtr, x);
+                    Debug.Log($"X-position: {TrafficManager.Vehicle_getX(vehiclePtr)}");
+                    //TrafficManager.Vehicle_setY(vehiclePtr, y);
+                    Debug.Log($"Y-position: {TrafficManager.Vehicle_getY(vehiclePtr)}");
+                    //TrafficManager.Vehicle_setZ(vehiclePtr, z);
+                    Debug.Log($"Z-position: {TrafficManager.Vehicle_getZ(vehiclePtr)}");
 
                     // Update Unity GameObject position
-                    agent.transform.position = new Vector3(x, y, z);
+                    //agent.transform.position = new Vector3(x, y, z);
 
                     // Optionally reset agent state if needed, e.g., velocity, rotation, etc.
                 }
@@ -180,6 +176,7 @@ public class TrafficAgent : Agent
             }
             Debug.Log($"Repositioned agents. Count: {indexValue}");
         }
+        */
         Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
 
         Debug.Log("--- OnEpisodeBegin END ---");
@@ -222,7 +219,7 @@ public class TrafficAgent : Agent
 
         for (int i = 0; i < trafficManager.numberOfRays; i++)
         {
-            float angle = trafficManager.raycastAngle / (trafficManager.numberOfRays - 1) * i;
+            float angle = trafficManager.AngleStep * i;
             Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raycastAngle / 2, 0) * Vector3.forward);
 
             if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
@@ -237,9 +234,9 @@ public class TrafficAgent : Agent
 
         // Add agent's position and rotation as observations
         sensor.AddObservation(transform.position);
-        //sensor.AddObservation(transform.rotation.eulerAngles.y);
+        sensor.AddObservation(transform.rotation.eulerAngles.y);
         //sensor.AddObservation(transform.rotation);
-        sensor.AddObservation(transform.rotation.eulerAngles);
+        //sensor.AddObservation(transform.rotation.eulerAngles);
 
         //Rigidbody rb = GetComponent<Rigidbody>();
         //sensor.AddObservation(rb.velocity);
@@ -258,16 +255,22 @@ public class TrafficAgent : Agent
 
         // Get discrete actions array from ActionBuffers
         var discreteActions = actionsOut.DiscreteActions;
-        discreteActions[0] = 1;
+        discreteActions[0] = UnityEngine.Random.Range(0, 5); // This will give a random integer from 0 to 4 inclusive
 
-        //float minAngleRad = Mathf.Deg2Rad * -35f; // Convert -35 degrees to radians
-        //float maxAngleRad = Mathf.Deg2Rad * 35f;  // Convert 35 degrees to radians
+        float minAngleRad = -0.610865f; // -35 degrees in radians
+        float maxAngleRad = 0.610865f;  // 35 degrees in radians
 
         // For continuous actions, assuming index 0 is steering and 1 is acceleration and 2 is braking:
         var continuousActions = actionsOut.ContinuousActions;
-        continuousActions[0] = 0.1f; // UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Steering
-        continuousActions[1] = 3.0f; // UnityEngine.Random.Range(0.0f, 4.5f); // Acceleration
-        continuousActions[2] = 0.0f; // UnityEngine.Random.Range(-4.0f, 0.0f); // Braking
+
+        // Sample a random angle between -35 and 35 degrees and convert to radians for steering
+        continuousActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Steering
+
+        // Sample a random value for acceleration
+        continuousActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Acceleration
+
+        // Sample a random value for braking
+        continuousActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Braking
 
         Debug.Log("Heuristic method called. Discrete Actions: " +
                   string.Join(", ", discreteActions) +

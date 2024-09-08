@@ -20,6 +20,8 @@ class PerceptionModule;
  */
 class Traffic {
 public:
+    std::vector<Vehicle> agents; ///< Vector of all agents in the simulation.
+
     /**
      * @brief Constructs a Traffic object with the specified number of agents.
      * @param num_agents Number of agents (vehicles) in the simulation.
@@ -87,7 +89,6 @@ public:
 
 private:
     int num_agents; ///< Number of agents in the simulation.
-    std::vector<Vehicle> agents; ///< Vector of all agents in the simulation.
     std::vector<Vehicle> previous_positions; ///< Vector of previous positions of all agents.
     std::unique_ptr<PerceptionModule> perceptionModule; ///< Pointer to the PerceptionModule for perception calculations.
     unsigned int seed;  ///< Seed value used in generator engine

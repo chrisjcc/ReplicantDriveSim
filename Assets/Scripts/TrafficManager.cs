@@ -17,43 +17,17 @@ public class TrafficManager : MonoBehaviour
 
     // DllImport Declarations
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int FloatVector_size(IntPtr vector);
-
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float FloatVector_get(IntPtr vector, int index);
-
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void FloatVector_destroy(IntPtr vector);
-
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int StringFloatVectorMap_size(IntPtr map);
-
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr StringFloatVectorMap_get_key(IntPtr map, int index);
-
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr StringFloatVectorMap_get_value(IntPtr map, IntPtr key);
-
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void StringFloatVectorMap_destroy(IntPtr map);
-
-    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr Traffic_create(int num_agents, uint seed);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void Traffic_destroy(IntPtr traffic);
 
-    //[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    //public static extern void Traffic_step(IntPtr traffic, int[] high_level_actions, float[] low_level_actions);
-    //public static extern void Traffic_step(IntPtr traffic, int[] high_level_actions, LowLevelAction low_level_actions);
-    //public static extern void Traffic_step(IntPtr traffic,
-    //                                       [In, MarshalAs(UnmanagedType.LPArray, SizeConst = 1)] int[] high_level_actions,
-    //                                       [In, MarshalAs(UnmanagedType.LPArray, SizeConst = 3)] float[] low_level_actions);
-
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Traffic_step(IntPtr traffic);
-    //public static extern void Traffic_step(IntPtr traffic, int[] high_level_actions, float[][] low_level_actions);
-    //public static extern void Traffic_step(IntPtr traffic, int[] high_level_action);
+    public static extern IntPtr Traffic_step(IntPtr traffic,
+                                         [In] int[] high_level_actions,
+                                         int high_level_actions_count,
+                                         [In] float[][] low_level_actions,
+                                         int low_level_actions_count);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr Traffic_get_agent_positions(IntPtr traffic);
@@ -89,10 +63,37 @@ public class TrafficManager : MonoBehaviour
     public static extern float Vehicle_getZ(IntPtr vehicle);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern float Vehicle_getSteering(IntPtr vehicle);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr VehiclePtrVector_get(IntPtr vector, int index);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern int VehiclePtrVector_size(IntPtr vector);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void FreeString(IntPtr str);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int FloatVector_size(IntPtr vector);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern float FloatVector_get(IntPtr vector, int index);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void FloatVector_destroy(IntPtr vector);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int StringFloatVectorMap_size(IntPtr map);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr StringFloatVectorMap_get_key(IntPtr map, int index);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr StringFloatVectorMap_get_value(IntPtr map, IntPtr key);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void StringFloatVectorMap_destroy(IntPtr map);
 
     // Public Fields
     public IntPtr trafficSimulationPtr;
@@ -132,6 +133,12 @@ public class TrafficManager : MonoBehaviour
     public Dictionary<string, TrafficAgent> agentInstances = new Dictionary<string, TrafficAgent>();
     public Dictionary<string, Collider> agentColliders = new Dictionary<string, Collider>();
 
+    List<int> highLevelActions;
+    List<float[]> lowLevelActions;
+
+    [HideInInspector]
+    public float AngleStep;
+
     void Awake()
     {
         #if UNITY_EDITOR
@@ -152,6 +159,12 @@ public class TrafficManager : MonoBehaviour
             enabled = false;
             return;
         }
+
+        AngleStep = raycastAngle / (numberOfRays - 1);
+
+        highLevelActions = new List<int>();
+        lowLevelActions = new List<float[]>();
+
         Debug.Log("=== TrafficManager::Awake END ===");
     }
 
@@ -233,10 +246,11 @@ public class TrafficManager : MonoBehaviour
         {
             // Agent already exists, update its position and rotation
             Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
-            TrafficAgent existingAgent = agentInstances[agentId];
+            //TrafficAgent existingAgent = agentInstances[agentId];
+            var existingAgent = agentInstances[agentId]; // type TrafficAgent
             existingAgent.transform.position = position;
             existingAgent.transform.rotation = rotation;
-            Debug.Log($"Updated agent: {agentId} to position: {position}");
+            Debug.Log($"Updated agent: {agentId} to position: {position} and rotation: {rotation}");
 
             // Ensure the collider is updated if it's not part of the main GameObject
             if (agentColliders.TryGetValue(agentId, out Collider existingCollider))
@@ -271,20 +285,10 @@ public class TrafficManager : MonoBehaviour
             }
 
             agent.Initialize();
-            agentInstances[agentId] = agent;
-            //agentInstances.Add(agentId, agent);
+            agentInstances.Add(agentId, agent);
 
             UpdateColliderForExistingAgent(agentObject, agentId);
         }
-
-        // Clean up the resources
-        /*
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentPositionsMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentVelocitiesMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentVelocitiesMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentOrientationsMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentPreviousPositionsMap);
-        */
     }
 
     private Vector3 GetVector3FromFloatVector(IntPtr vectorPtr)
@@ -311,7 +315,7 @@ public class TrafficManager : MonoBehaviour
         float yaw   = FloatVector_get(vectorPtr, 2);
 
         // Convert Euler angles to Quaternion, Euler angles (roll, pitch, yaw)
-        return Quaternion.Euler(roll * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg, pitch * Mathf.Rad2Deg);
+        return Quaternion.Euler(roll * Mathf.Rad2Deg, pitch * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg);
     }
 
     private void UpdateColliderForExistingAgent(GameObject agentObject, string agentId)
@@ -396,10 +400,6 @@ public class TrafficManager : MonoBehaviour
             return;
         }
 
-        // Prepare arrays for high-level and low-level actions
-        List<int> highLevelActions = new List<int>();
-        List<float[]> lowLevelActions = new List<float[]>();
-
         Debug.Log("***** BEFORE *****");
 
         // After stepping the simulation, log the positions and actions for each agent
@@ -411,8 +411,14 @@ public class TrafficManager : MonoBehaviour
 
             if (agent != null)
             {
+                Debug.Log($"Agent {agentId} - High-level actions: {string.Join(", ", agent.highLevelActions)}");
+                Debug.Log($"Agent {agentId} - Low-level actions: {string.Join(", ", agent.lowLevelActions)}");
+
                 IntPtr vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
                 IntPtr vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
+
+                Debug.Log($"Steering angle: {Vehicle_getSteering(vehiclePtr)}");
+
                 Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
                 indexValue++;
             }
@@ -420,21 +426,15 @@ public class TrafficManager : MonoBehaviour
 
         Debug.Log("***** UPDATE *****");
 
-        // Additional logging or processing if needed
+        // Additional logging or processing if needed (REMOVE LATER ON)
         foreach (var kvp in agentInstances)
         {
             string agentId = kvp.Key;
-            TrafficAgent agent = kvp.Value;
+            //TrafficAgent agent = kvp.Value;
+            var agent = kvp.Value; // type TrafficAgent
 
             if (agent != null)
             {
-
-                // If actions are still 0, try setting some default values for testing
-                //agent.highLevelActions = 1;
-                //agent.lowLevelActions[0] = 0.1f;  // Small steering angle
-                //agent.lowLevelActions[1] = 1.0f;  // Some forward acceleration
-                //agent.lowLevelActions[2] = 0.0f;  // no baking
-
                 // Collect the high-level and low-level actions for each agent
                 highLevelActions.Add(agent.highLevelActions);
                 lowLevelActions.Add(agent.lowLevelActions);
@@ -442,21 +442,36 @@ public class TrafficManager : MonoBehaviour
                 Debug.Log($"Agent {agentId} - High-level actions: {string.Join(", ", agent.highLevelActions)}");
                 Debug.Log($"Agent {agentId} - Low-level actions: {string.Join(", ", agent.lowLevelActions)}");
 
-                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
+                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles.y}");
             }
         }
 
         // Step the simulation once for all agents with the gathered actions
-        //Traffic_step(trafficSimulationPtr, highLevelActions.ToArray(), lowLevelActions.ToArray());
-        //Traffic_step(trafficSimulationPtr, highLevelActions.ToArray());
-        //Traffic_step(trafficSimulationPtr);
+        IntPtr resultPtr = Traffic_step(trafficSimulationPtr,
+            highLevelActions.ToArray(), highLevelActions.Count,
+            lowLevelActions.ToArray(), lowLevelActions.Count
+            );
+
+        if (resultPtr != IntPtr.Zero)
+        {
+            string result = Marshal.PtrToStringAnsi(resultPtr);
+            //string result = Marshal.PtrToStringUTF8(resultPtr);
+            Debug.Log($"Marshalled string length: {result.Length}");
+            Debug.Log($"Marshalled string bytes: {string.Join(", ", System.Text.Encoding.ASCII.GetBytes(result))}");
+            Debug.Log($"Traffic_step result {resultPtr}:\n" + result);
+            FreeString(resultPtr); // Don't forget to free the allocated memory
+        }
+        else
+        {
+            Debug.LogError("Traffic_step returned null pointer");
+        }
 
         // Update agent positions based on the simulation step
         UpdateAgentPositions();
         Debug.Log("***** AFTER *****");
 
         indexValue = 0;
-
+        //  (REMOVE LATER ON)
         foreach (var kvp in agentInstances)
         {
             string agentId = kvp.Key;
@@ -466,7 +481,8 @@ public class TrafficManager : MonoBehaviour
             {
                 IntPtr vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
                 IntPtr vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
-                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
+
+                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles.y}");
                 indexValue++;
             }
         }
@@ -508,10 +524,11 @@ public class TrafficManager : MonoBehaviour
             {
                 // Agent already exists, update its position and rotation
                 Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
-                TrafficAgent existingAgent = agentInstances[agentId];
+                //TrafficAgent existingAgent = agentInstances[agentId];
+                var existingAgent = agentInstances[agentId]; // type TrafficAgent
                 existingAgent.transform.position = position;
                 existingAgent.transform.rotation = rotation;
-                Debug.Log($"Updated agent: {agentId} to position: {position} and rotation to: {rotation}");
+                Debug.Log($"Updated agent: {agentId} Position: {position}, Rotation: {rotation.eulerAngles.y}");
 
                 // Ensure the collider is updated if it's not part of the main GameObject
                 if (agentColliders.TryGetValue(agentId, out Collider existingCollider))
@@ -537,7 +554,8 @@ public class TrafficManager : MonoBehaviour
                 agentObject.transform.SetParent(this.transform); // Use 'this.transform' to refer to the TrafficSimulationManager's transform
                 Debug.Log($"Instantiated agent: {agentId}, Prefab name: {agentPrefab.name}");
 
-                TrafficAgent agent = agentObject.GetComponent<TrafficAgent>();
+                //TrafficAgent agent = agentObject.GetComponent<TrafficAgent>();
+                var agent = agentObject.GetComponent<TrafficAgent>(); // type TrafficAgent
 
                 if (agent == null)
                 {
@@ -546,22 +564,12 @@ public class TrafficManager : MonoBehaviour
                 }
 
                 agent.Initialize();
-                agentInstances[agentId] = agent;
-                //agentInstances.Add(agentId, agent);
+                agentInstances.Add(agentId, agent);
 
                 UpdateColliderForExistingAgent(agentObject, agentId);
             }
 
         }
-
-        // Clean up the resources
-        /*
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentPositionsMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentVelocitiesMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentVelocitiesMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentOrientationsMap);
-        TrafficManager.StringFloatVectorMap_destroy(trafficManager.agentPreviousPositionsMap);
-        */
         Debug.Log("=== TrafficManager::UpdateAgentPositions END ===");
     }
 
