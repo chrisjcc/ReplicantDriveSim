@@ -119,7 +119,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 5000
+  MaxStep: 1000
   highLevelActions: 1
   lowLevelActions: []
   hitColor: {r: 1, g: 0, b: 0, a: 1}

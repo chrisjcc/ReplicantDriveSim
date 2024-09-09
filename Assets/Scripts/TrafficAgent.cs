@@ -143,57 +143,6 @@ public class TrafficAgent : Agent
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
 
-        /*
-        IntPtr vehiclePtrVectorHandle = TrafficManager.Traffic_get_agents(trafficManager.trafficSimulationPtr);
-
-        if (vehiclePtrVectorHandle == IntPtr.Zero)
-        {
-            Debug.LogError("Failed to get vehicle vector handle");
-            return;
-        }
-
-        //int vectorSize = TrafficManager.VehiclePtrVector_size(vehiclePtrVectorHandle);
-        var agentValues = trafficManager.agentInstances.Values;
-        int indexValue = 0;
-
-        // Loop through existing agents and respawn them at new random locations
-        foreach (var agent in agentValues)
-        {
-            //if (agent != null && indexValue < vectorSize)
-            if (agent != null)
-            {
-                var vehiclePtr = TrafficManager.VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
-
-                // Generate new random positions
-                //float x = TrafficManager.Vehicle_getX(vehiclePtr); // UnityEngine.Random.Range(-10f, 10f); // Example range, adjust as needed
-                //float y = TrafficManager.Vehicle_getY(vehiclePtr); // 0f; // Assuming Y is constant, adjust as needed
-                //float z = TrafficManager.Vehicle_getZ(vehiclePtr); // UnityEngine.Random.Range(-50f, 50f); // Example range, adjust as needed
-
-                // Set new position using the provided Vehicle_setX, Y, Z functions
-
-                if (vehiclePtr != IntPtr.Zero)
-                {
-                    //TrafficManager.Vehicle_setX(vehiclePtr, x);
-                    Debug.Log($"X-position: {TrafficManager.Vehicle_getX(vehiclePtr)}");
-                    //TrafficManager.Vehicle_setY(vehiclePtr, y);
-                    Debug.Log($"Y-position: {TrafficManager.Vehicle_getY(vehiclePtr)}");
-                    //TrafficManager.Vehicle_setZ(vehiclePtr, z);
-                    Debug.Log($"Z-position: {TrafficManager.Vehicle_getZ(vehiclePtr)}");
-
-                    // Update Unity GameObject position
-                    //agent.transform.position = new Vector3(x, y, z);
-
-                    // Optionally reset agent state if needed, e.g., velocity, rotation, etc.
-                }
-                else
-                {
-                    Debug.LogWarning($"Failed to retrieve vehicle at index {indexValue}");
-                }
-                indexValue++;
-            }
-            Debug.Log($"Repositioned agents. Count: {indexValue}");
-        }
-        */
         Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
 
         Debug.Log("--- OnEpisodeBegin END ---");
@@ -234,8 +183,6 @@ public class TrafficAgent : Agent
 
         Vector3 rayStart = GetRayStartPosition(agentCollider);
 
-        Debug.Log($"{transform.rotation.eulerAngles}");
-
         for (int i = 0; i < trafficManager.numberOfRays; i++)
         {
             float angle = trafficManager.AngleStep * i;
@@ -261,7 +208,6 @@ public class TrafficAgent : Agent
 
         //Rigidbody rb = GetComponent<Rigidbody>();
         //sensor.AddObservation(rb.velocity);
-
         //Debug.Log($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
 
         Debug.Log("--- CollectObservations End ---");
@@ -325,9 +271,6 @@ public class TrafficAgent : Agent
             lowLevelActions[i] = actionBuffers.ContinuousActions[i];
         }
 
-        Debug.Log($"High-level actions: {string.Join(", ", highLevelActions)}");
-        Debug.Log($"Low-level actions: {string.Join(", ", lowLevelActions)}");
-
         // Calculate reward and determine if the episode should end
         float reward = CalculateReward();  // Implement your actual reward calculation logic
         bool done = CheckIfEpisodeIsDone();  // Implement your actual done condition logic
@@ -346,7 +289,9 @@ public class TrafficAgent : Agent
         // rb.MovePosition(transform.position + transform.forward * lowLevelActions[1] * Time.fixedDeltaTime);
         // transform.Rotate(Vector3.up, lowLevelActions[0] * Time.fixedDeltaTime);
 
+        #if UNITY_EDITOR
         Debug.Log("-- OnActionReceived END --");
+        #endif
     }
 
     // This method is only for visualization and doesn't affect agent movement.
@@ -484,6 +429,16 @@ public class TrafficAgent : Agent
         }
     }
     */
+
+    void GetRandomActions()
+    {
+        float minAngleRad = -0.610865f; // -35 degrees in radians
+        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+
+        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
+    }
 
     // Clean up the simulation on destroy
     private void OnDestroy()

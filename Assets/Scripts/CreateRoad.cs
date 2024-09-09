@@ -20,7 +20,7 @@ public class CreateRoad : MonoBehaviour
         road.name = "Road";
 
         // Scale the Plane to make it a long road
-        road.transform.localScale = new Vector3(3, 10, 300);
+        road.transform.localScale = new Vector3(3, 10, 325);
 
         // Create a new material and apply the road texture
         Material roadMaterial = new Material(Shader.Find("Standard"));
@@ -31,7 +31,7 @@ public class CreateRoad : MonoBehaviour
         roadMaterial.mainTextureScale = new Vector2(1, 10);
 
         // Position the road
-        road.transform.position = new Vector3(0, 0.15f, 1400);
+        road.transform.position = new Vector3(0, 0.15f, 1475);
 
         // Add or get the existing MeshCollider
         MeshCollider roadCollider = road.GetComponent<MeshCollider>();

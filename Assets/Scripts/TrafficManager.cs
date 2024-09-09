@@ -169,7 +169,9 @@ public class TrafficManager : MonoBehaviour
         highLevelActions = new List<int>();
         lowLevelActions = new List<float[]>();
 
+        #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Awake END ===");
+        #endif
     }
 
     void Start()
@@ -196,7 +198,9 @@ public class TrafficManager : MonoBehaviour
 
         InitializeAgents();
 
+        #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Start END ===");
+        #endif
     }
 
     public void InitializeAgents()
@@ -219,9 +223,9 @@ public class TrafficManager : MonoBehaviour
         #if UNITY_EDITOR
         Debug.Log($"Number of agents: {agentInstances.Count}");
         Debug.Log($"Number of collider boxes: {agentColliders.Count}");
-        #endif
 
         Debug.Log("=== TrafficManager::InitializeAgents END ===");
+        #endif
     }
 
     void SpawnAgent(int i)
@@ -246,8 +250,10 @@ public class TrafficManager : MonoBehaviour
         Vector3 position = GetVector3FromFloatVector(positionPtr);
         Quaternion rotation = GetQuaternionFromFloatVector(orientationPtr);
 
+        #if UNITY_EDITOR
         Debug.Log($"Agent {agentId}: Position = {position}, Rotation = {rotation.eulerAngles}");
         Debug.Log($"Euler angles: Pitch={rotation.eulerAngles.x}, Yaw={rotation.eulerAngles.y}, Roll={rotation.eulerAngles.z}");
+        #endif
 
         if (agentInstances.ContainsKey(agentId))
         {
@@ -336,7 +342,10 @@ public class TrafficManager : MonoBehaviour
     {
         // Get the collider component from the instantiated agent or its children recursively
         Collider agentCollider = FindColliderRecursively(agentObject);
+
+        #if UNITY_EDITOR
         Debug.Log($"agentCollider: {(agentCollider != null ? agentCollider.GetType().Name : "Not found")}");
+        #endif
 
         if (agentCollider == null)
         {
@@ -346,7 +355,10 @@ public class TrafficManager : MonoBehaviour
 
         agentColliders[agentId] = agentCollider;
         // agentColliders.Add(agentId, agentCollider);
+
+        #if UNITY_EDITOR
         Debug.Log($"Updated collider for Agent ID: {agentId}");
+        #endif
     }
 
     // Helper method to find collider recursively
@@ -411,34 +423,10 @@ public class TrafficManager : MonoBehaviour
             return;
         }
 
-        Debug.Log("***** BEFORE *****");
-
-        IntPtr vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
-        IntPtr vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 0);
-        Debug.Log($"0: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
-
-        vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 1);
-        Debug.Log($"1: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
-
-        // After stepping the simulation, log the positions and actions for each agent
-        foreach (var kvp in agentInstances)
-        {
-            string agentId = kvp.Key;
-            TrafficAgent agent = kvp.Value;
-
-            if (agent != null)
-            {
-                Debug.Log($"Agent {agentId} - High-level actions: {string.Join(", ", agent.highLevelActions)}");
-                Debug.Log($"Agent {agentId} - Low-level actions: {string.Join(", ", agent.lowLevelActions)}");
-                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
-            }
-        }
-
         // Additional logging or processing if needed (REMOVE LATER ON)
         foreach (var kvp in agentInstances)
         {
             string agentId = kvp.Key;
-            //TrafficAgent agent = kvp.Value;
             var agent = kvp.Value; // type TrafficAgent
 
             if (agent != null)
@@ -448,8 +436,6 @@ public class TrafficManager : MonoBehaviour
                 lowLevelActions.Add(agent.lowLevelActions);
             }
         }
-
-        Debug.Log("***** UPDATE *****");
 
         // Step the simulation once for all agents with the gathered actions
         float[] flattenedLowLevelActions = lowLevelActions.SelectMany(a => a).ToArray();
@@ -464,7 +450,7 @@ public class TrafficManager : MonoBehaviour
         if (resultPtr != IntPtr.Zero)
         {
             string result = Marshal.PtrToStringAnsi(resultPtr); // PtrToStringUTF8
-            Debug.Log($"Traffic_step result {resultPtr}:\n" + result);
+            //Debug.Log($"Traffic_step result {resultPtr}:\n" + result);
             FreeString(resultPtr); // Don't forget to free the allocated memory
         }
         else
@@ -472,31 +458,11 @@ public class TrafficManager : MonoBehaviour
             Debug.LogError("Traffic_step returned null pointer");
         }
 
-        // Update agent positions based on the simulation step
-        vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
-        vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 0);
-        Debug.Log($"0: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
-
-        vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 1);
-        Debug.Log($"1: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
-
         UpdateAgentPositions();
 
-        Debug.Log("***** AFTER *****");
-
-        //  (REMOVE LATER ON)
-        foreach (var kvp in agentInstances)
-        {
-            string agentId = kvp.Key;
-            TrafficAgent agent = kvp.Value;
-
-            if (agent != null)
-            {
-                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
-            }
-        }
-
+        #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::FixedUpdate END ===");
+        #endif
     }
 
     // Update the positions of agents based on the simulation results
@@ -528,7 +494,6 @@ public class TrafficManager : MonoBehaviour
 
             Vector3 position = GetVector3FromFloatVector(positionPtr);
             Quaternion rotation = GetQuaternionFromFloatVector(orientationPtr);
-            Debug.Log($"++ UpdateAgentPositions: Agent {agentId}: Position = {position}, Rotation = {rotation.eulerAngles}");
 
             // Assuming currentSteeringAngle is updated elsewhere
             //Quaternion targetRotation = Quaternion.Euler(0, 0.64f * Mathf.Rad2Deg, 0);
@@ -539,7 +504,7 @@ public class TrafficManager : MonoBehaviour
             {
                 // Agent already exists, update its position and rotation
                 Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
-                //TrafficAgent existingAgent = agentInstances[agentId];
+
                 var existingAgent = agentInstances[agentId]; // type TrafficAgent
                 existingAgent.transform.position = position;
                 existingAgent.transform.rotation = rotation;
@@ -568,9 +533,8 @@ public class TrafficManager : MonoBehaviour
                 GameObject agentObject = Instantiate(agentPrefab, position, rotation);
                 agentObject.name = agentId; // Set the name of the instantiated object to the agent ID
                 agentObject.transform.SetParent(this.transform); // Use 'this.transform' to refer to the TrafficSimulationManager's transform
-                Debug.Log($"Instantiated agent: {agentId}, Prefab name: {agentPrefab.name}");
+                //Debug.Log($"Instantiated agent: {agentId}, Prefab name: {agentPrefab.name}");
 
-                //TrafficAgent agent = agentObject.GetComponent<TrafficAgent>();
                 var agent = agentObject.GetComponent<TrafficAgent>(); // type TrafficAgent
 
                 if (agent == null)
@@ -586,15 +550,10 @@ public class TrafficManager : MonoBehaviour
             }
 
         }
+
+        #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::UpdateAgentPositions END ===");
-    }
-
-    Vector3 GetRandomSpawnPosition()
-    {
-        float x = UnityEngine.Random.Range(-spawnAreaSize / 2, spawnAreaSize / 2);
-        float z = UnityEngine.Random.Range(-spawnAreaSize / 2, spawnAreaSize / 2);
-
-        return new Vector3(x, spawnHeight, z);
+        #endif
     }
 
     private void OnDestroy()
