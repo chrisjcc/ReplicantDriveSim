@@ -118,17 +118,21 @@ EXPORT void Traffic_destroy(Traffic* traffic) {
     delete traffic;
 }
 
-EXPORT const char* Traffic_step(Traffic* traffic, int* high_level_actions, int high_level_actions_count,
-                                float** low_level_actions, int low_level_actions_count) {
+EXPORT const char* Traffic_step(Traffic* traffic,
+    int* high_level_actions,
+    int high_level_actions_count,
+    float* low_level_actions,
+    int low_level_actions_count
+    ) {
 
     // Construct std::vector from the high_level_actions input array
     std::vector<int> high_level_actions_vec(high_level_actions, high_level_actions + high_level_actions_count);
 
     // Construct std::vector<std::vector<float>> from the low_level_actions input array
     std::vector<std::vector<float>> low_level_actions_vec;
-    for (int i = 0; i < low_level_actions_count; ++i) {
-        // Assuming each inner array has 3 elements (x, y, z)
-        std::vector<float> action(low_level_actions[i], low_level_actions[i] + 3);
+
+    for (int i = 0; i < low_level_actions_count; i += 3) {
+        std::vector<float> action(low_level_actions + i, low_level_actions + i + 3);
         low_level_actions_vec.push_back(action);
     }
 
@@ -137,6 +141,8 @@ EXPORT const char* Traffic_step(Traffic* traffic, int* high_level_actions, int h
 
     // Prepare a string with all agent positions
     std::string result = "Traffic_step ";
+
+    /*
     for (auto& agent : traffic->agents) {
         //float randomSteering = dis(gen); // Sample a random value within the range
         //agent.setSteering(randomSteering); // Explicitly set the steering
@@ -145,14 +151,20 @@ EXPORT const char* Traffic_step(Traffic* traffic, int* high_level_actions, int h
             << std::fixed << std::setprecision(6)
             << agent.getX() << ", "
             << agent.getY() << ", "
-            << agent.getZ() << ") rotation: "
-            << agent.getSteering() << "\n";
+            << agent.getZ() << ") " << high_level_actions_vec[0] << "\nrotation: "
+            << agent.getSteering();
+
+        for (size_t i = 0; i < low_level_actions_vec.size(); ++i) {
+            oss << ", " << low_level_actions_vec[i][0] << ", " << low_level_actions_vec[i][1] << ", " << low_level_actions_vec[i][2];
+        }
+        oss << "\n";
     }
     result += oss.str();
 
     if (result.empty()) {
         result = "No agents found";
     }
+    */
 
     // Convert std::string to const char* that will persist after function returns
     char* cstr = new char[result.length() + 1];

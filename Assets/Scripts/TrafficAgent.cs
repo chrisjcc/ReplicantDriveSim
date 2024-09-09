@@ -20,7 +20,7 @@ public class TrafficAgent : Agent
     [HideInInspector]
     public int highLevelActions;
 
-    //[HideInInspector]
+    [HideInInspector]
     public float[] lowLevelActions;
 
     [SerializeField]
@@ -80,12 +80,8 @@ public class TrafficAgent : Agent
         gameObject.layer = LayerMask.NameToLayer("Road");
         */
 
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
-
-        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
+        // Initialize lowLevelActions array with appropriate size (e.g., 3 for steering, acceleration, and braking)
+        lowLevelActions = new float[3];
 
         Debug.Log("--- TrafficAgent::Awake END ---");
     }
@@ -109,6 +105,12 @@ public class TrafficAgent : Agent
         // Initialize your agent-specific variables here
         base.Initialize();
 
+        float minAngleRad = -0.610865f; // -35 degrees in radians
+        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+
+        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
 
         Debug.Log("--- TrafficAgent::Initialize END ---");
 

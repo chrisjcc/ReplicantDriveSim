@@ -7,6 +7,7 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
+using System.Linq;
 
 
 // Responsible for stepping the traffic simulation and updating all agents
@@ -22,11 +23,14 @@ public class TrafficManager : MonoBehaviour
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void Traffic_destroy(IntPtr traffic);
 
+    // Note: Below SizeParamIndex is set 4, since it's the 4th parameter,
+    // int low_level_actions_count, is the one that contains the size of the low_level_actions array.
+    // This information is used by the .NET runtime to properly marshal the float[] array from the managed C# code to the unmanaged C++ code.
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr Traffic_step(IntPtr traffic,
                                          [In] int[] high_level_actions,
                                          int high_level_actions_count,
-                                         [In] float[][] low_level_actions,
+                                         [In, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 4)] float[] low_level_actions,
                                          int low_level_actions_count);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -448,9 +452,13 @@ public class TrafficManager : MonoBehaviour
         Debug.Log("***** UPDATE *****");
 
         // Step the simulation once for all agents with the gathered actions
+        float[] flattenedLowLevelActions = lowLevelActions.SelectMany(a => a).ToArray();
+
         IntPtr resultPtr = Traffic_step(trafficSimulationPtr,
-            highLevelActions.ToArray(), highLevelActions.Count,
-            lowLevelActions.ToArray(), lowLevelActions.Count
+            highLevelActions.ToArray(),
+            highLevelActions.Count,
+            flattenedLowLevelActions,
+            lowLevelActions.Count * 3 // Assuming each inner array has 3 elements (e.g., steering, throttle, braking)
             );
 
         if (resultPtr != IntPtr.Zero)

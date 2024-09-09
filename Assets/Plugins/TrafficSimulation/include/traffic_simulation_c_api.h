@@ -66,8 +66,12 @@ EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance);
 // Traffic functions
 EXPORT Traffic* Traffic_create(int num_agents, unsigned seed);
 EXPORT void Traffic_destroy(Traffic* traffic);
-EXPORT const char* Traffic_step(Traffic* traffic, int* high_level_actions, int high_level_actions_count,
-                                float** low_level_actions, int low_level_actions_count);
+EXPORT const char* Traffic_step(Traffic* traffic,
+    int* high_level_actions,
+    int high_level_actions_count,
+    float* low_level_actions,
+    int low_level_actions_count
+);
 EXPORT const VehiclePtrVector* Traffic_get_agents(const Traffic* traffic);
 EXPORT const Vehicle* Traffic_get_agent_by_name(const Traffic* traffic, const char* name);
 EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic);
