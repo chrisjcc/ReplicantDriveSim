@@ -321,8 +321,8 @@ public class TrafficManager : MonoBehaviour
         // Convert Euler angles to Quaternion, Euler angles (roll, pitch, yaw)
         Quaternion rotation = Quaternion.Euler(
             roll * Mathf.Rad2Deg,  // X-axis rotation (roll)
-            pitch * Mathf.Rad2Deg, // Y-axis rotation (pitch)
-            yaw * Mathf.Rad2Deg    // Z-axis rotation (yaw)
+            yaw * Mathf.Rad2Deg,   // Z-axis rotation (yaw)
+            pitch * Mathf.Rad2Deg  // Y-axis rotation (pitch)
         );
 
         return rotation;
@@ -409,8 +409,14 @@ public class TrafficManager : MonoBehaviour
 
         Debug.Log("***** BEFORE *****");
 
+        IntPtr vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
+        IntPtr vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 0);
+        Debug.Log($"0: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
+
+        vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 1);
+        Debug.Log($"1: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
+
         // After stepping the simulation, log the positions and actions for each agent
-        int indexValue = 0;  // Reset indexValue to loop through agents again if needed
         foreach (var kvp in agentInstances)
         {
             string agentId = kvp.Key;
@@ -420,18 +426,9 @@ public class TrafficManager : MonoBehaviour
             {
                 Debug.Log($"Agent {agentId} - High-level actions: {string.Join(", ", agent.highLevelActions)}");
                 Debug.Log($"Agent {agentId} - Low-level actions: {string.Join(", ", agent.lowLevelActions)}");
-
-                IntPtr vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
-                IntPtr vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
-
-                Debug.Log($"Steering angle: {Vehicle_getSteering(vehiclePtr)}");
-
                 Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
-                indexValue++;
             }
         }
-
-        Debug.Log("***** UPDATE *****");
 
         // Additional logging or processing if needed (REMOVE LATER ON)
         foreach (var kvp in agentInstances)
@@ -445,13 +442,10 @@ public class TrafficManager : MonoBehaviour
                 // Collect the high-level and low-level actions for each agent
                 highLevelActions.Add(agent.highLevelActions);
                 lowLevelActions.Add(agent.lowLevelActions);
-
-                Debug.Log($"Agent {agentId} - High-level actions: {string.Join(", ", agent.highLevelActions)}");
-                Debug.Log($"Agent {agentId} - Low-level actions: {string.Join(", ", agent.lowLevelActions)}");
-
-                Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
             }
         }
+
+        Debug.Log("***** UPDATE *****");
 
         // Step the simulation once for all agents with the gathered actions
         IntPtr resultPtr = Traffic_step(trafficSimulationPtr,
@@ -471,10 +465,17 @@ public class TrafficManager : MonoBehaviour
         }
 
         // Update agent positions based on the simulation step
+        vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
+        vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 0);
+        Debug.Log($"0: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
+
+        vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, 1);
+        Debug.Log($"1: Steering angle: {Vehicle_getSteering(vehiclePtr)}");
+
         UpdateAgentPositions();
+
         Debug.Log("***** AFTER *****");
 
-        indexValue = 0;
         //  (REMOVE LATER ON)
         foreach (var kvp in agentInstances)
         {
@@ -483,11 +484,7 @@ public class TrafficManager : MonoBehaviour
 
             if (agent != null)
             {
-                IntPtr vehiclePtrVectorHandle = Traffic_get_agents(trafficSimulationPtr);
-                IntPtr vehiclePtr = VehiclePtrVector_get(vehiclePtrVectorHandle, indexValue);
-
                 Debug.Log($"Agent {agentId} Position: {agent.transform.position}, Rotation: {agent.transform.rotation.eulerAngles}");
-                indexValue++;
             }
         }
 

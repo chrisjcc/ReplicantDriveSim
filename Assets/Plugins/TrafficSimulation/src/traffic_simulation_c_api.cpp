@@ -137,7 +137,10 @@ EXPORT const char* Traffic_step(Traffic* traffic, int* high_level_actions, int h
 
     // Prepare a string with all agent positions
     std::string result = "Traffic_step ";
-    for (const auto& agent : traffic->agents) {
+    for (auto& agent : traffic->agents) {
+        //float randomSteering = dis(gen); // Sample a random value within the range
+        //agent.setSteering(randomSteering); // Explicitly set the steering
+
         oss << "Agent " << agent.getId() << " position: ("
             << std::fixed << std::setprecision(6)
             << agent.getX() << ", "

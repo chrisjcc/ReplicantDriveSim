@@ -6,7 +6,7 @@
 #include <cmath>
 #include <random>
 
-const int SCREEN_WIDTH = 500;
+const int SCREEN_WIDTH = 8000;
 const int VEHICLE_WIDTH = 2;
 const int LANE_WIDTH = 5;
 

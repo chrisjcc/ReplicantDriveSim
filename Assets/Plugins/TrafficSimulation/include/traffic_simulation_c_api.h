@@ -17,6 +17,9 @@
 #include <iomanip>  // Required for std::setprecision
 #include <sstream>  // Required for std::ostringstream
 
+#include <random> // Include the random library
+#include <cmath>  // Include the cmath library for degree to radian conversion
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -93,6 +96,11 @@ EXPORT void VehiclePtrVector_destroy(VehiclePtrVector* vector);
 EXPORT void FreeString(const char* str);
 
 EXPORT std::ostringstream oss;
+
+// Create a random number generator
+EXPORT std::random_device rd; // Seed for the random number engine
+EXPORT std::mt19937 gen(rd()); // Mersenne Twister engine
+EXPORT std::uniform_real_distribution<float> dis(-35.0f * M_PI / 180.0f, 35.0f * M_PI / 180.0f); // Uniform distribution between -35 and 35 degrees in radians
 
 #ifdef __cplusplus
 }
