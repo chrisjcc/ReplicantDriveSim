@@ -58,6 +58,10 @@ for episode in range(num_episodes):
 
         num_agents = len(decision_steps)
 
+        # Print rewards for current decision steps
+        rewards = decision_steps.reward
+        print(f"Rewards for this step: {rewards}")
+
         # Create the discrete action
         discrete_action = np.random.randint(0, action_spec.discrete_branches[0], size=(num_agents, 1), dtype=np.int32)
         print(f"Discrete action: {discrete_action}")
