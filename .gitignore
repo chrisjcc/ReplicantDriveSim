@@ -170,6 +170,10 @@ cython_debug/
 [Bb]uilds/
 [Ll]ogs/
 
+# Compiled Dynamic Library
+*.dll
+*.dylib
+
 # Unity auto-generated user-specific settings
 UserSettings/
 .vscode/
