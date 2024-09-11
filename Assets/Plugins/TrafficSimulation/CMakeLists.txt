@@ -45,6 +45,9 @@ if (NOT pybind11_FOUND)
     message(FATAL_ERROR "pybind11 not found")
 endif()
 
+# Find Python3 development libraries
+find_package(Python3 REQUIRED COMPONENTS Development)
+
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${pybind11_INCLUDE_DIRS})
 
@@ -56,7 +59,7 @@ file(GLOB_RECURSE HEADERS "include/*.h")
 add_library(ReplicantDriveSim SHARED ${SOURCES} ${HEADERS})
 
 # Link against pybind11
-target_link_libraries(ReplicantDriveSim PRIVATE pybind11::module)
+target_link_libraries(ReplicantDriveSim PRIVATE pybind11::module Python3::Python)
 
 # Set output directory
 set_target_properties(ReplicantDriveSim PROPERTIES
@@ -71,4 +74,10 @@ if(APPLE)
         MACOSX_RPATH ON
         INSTALL_NAME_DIR "@rpath"
     )
+
+    # Find and link against Python framework
+    find_library(PYTHON_LIBRARY NAMES Python PATHS ${Python3_LIBRARY_DIRS})
+    if(PYTHON_LIBRARY)
+        target_link_libraries(ReplicantDriveSim PRIVATE ${PYTHON_LIBRARY})
+    endif()
 endif()

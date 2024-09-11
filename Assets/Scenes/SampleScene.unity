@@ -148,7 +148,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 102826273}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 25af27d65608145b4aee85621465c82e, type: 3}
+  m_Script: {fileID: 11500000, guid: f3fe7e814b8184579959d5a8a7467ad8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
@@ -162,7 +162,7 @@ Transform:
   m_GameObject: {fileID: 102826273}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 1500}
   m_LocalScale: {x: 1, y: 1, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -209,17 +209,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 257869384}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4201e298a77444c8296aced3ddb1da08, type: 3}
+  m_Script: {fileID: 11500000, guid: 1bd63a84cb8ab439ba5a902a73f51f97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentPrefab: {fileID: 209315156134922338, guid: ceb542d1443614b7da0172231391a64c, type: 3}
+  moveSpeed: 5
+  rotationSpeed: 100
+  agentPrefab: {fileID: 4109849008543767089, guid: d82982a893aaf4a29b195b5d5b95b7fb, type: 3}
   initialAgentCount: 2
   seed: 42
   numberOfRays: 15
   rayLength: 200
   raycastAngle: 90
+  debugVisualization: 1
   spawnAreaSize: 100
   spawnHeight: 0.5
+  AngleStep: 0
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -325,8 +329,8 @@ GameObject:
   - component: {fileID: 963194228}
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
-  - component: {fileID: 963194229}
-  m_Layer: 0
+  - component: {fileID: 963194230}
+  m_Layer: 3
   m_Name: Main Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -401,13 +405,13 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 1, z: 200}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &963194229
+--- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -416,11 +420,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 963194225}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1884071f29b8242d7b18c66602566bc3, type: 3}
+  m_Script: {fileID: 11500000, guid: 6688afc185d9f4971966791d65412c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fixedPosition: {x: 10, y: 120, z: 0}
-  lookAtPoint: {x: 0, y: 0, z: 0}
+  targetObject: {fileID: 0}
+  cameraHeight: 150
+  cameraDistance: 5
+  smoothSpeed: 5
+  cameraXPosition: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

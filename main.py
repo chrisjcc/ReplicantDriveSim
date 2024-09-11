@@ -2,6 +2,9 @@ from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 import mlagents_envs
+from mlagents_envs.base_env import ActionTuple
+import time
+import numpy as np
 
 # Increase timeout to 60 seconds
 mlagents_envs.env_utils.DEFAULT_EDITOR_PORT_TIMEOUT = 60
@@ -11,32 +14,12 @@ engine_configuration_channel = EngineConfigurationChannel()
 float_properties_channel = FloatPropertiesChannel()
 
 # Initialize the environment
-env = UnityEnvironment(file_name="libReplicantDriveSim.app", 
+env = UnityEnvironment(file_name="libReplicantDriveSim.app",
                        side_channels=[engine_configuration_channel, float_properties_channel])
 
 # Wait for agents to spawn
 print("Waiting for agents to spawn...")
-time.sleep(5)  # Adjust this delay as needed
-
-# Get the behavior names
-behavior_names = list(env.behavior_specs.keys())
-print("Behavior names:", behavior_names)
-
-max_attempts = 5
-attempt = 0
-
-while not behavior_names and attempt < max_attempts:
-    print(f"No behaviors found. Retrying... (Attempt {attempt + 1}/{max_attempts})")
-    time.sleep(2)
-    env.reset()
-    behavior_names = list(env.behavior_specs.keys())
-    attempt += 1
-
-if not behavior_names:
-    raise ValueError("No behaviors found in the environment after multiple attempts")
-
-# Use the first behavior name (you may need to adjust this based on your specific environment)
-behavior_name = behavior_names[0]
+time.sleep(1)  # Adjust this delay as needed
 
 num_episodes = 5
 
@@ -47,12 +30,24 @@ for episode in range(num_episodes):
     try:
         # Reset the environment
         env.reset()
+
+        # Get the behavior names
+        behavior_names = list(env.behavior_specs.keys())
+        print("Behavior names:", behavior_names)
+
+        behavior_name = behavior_names[0]
+        print("Using behavior name:", behavior_name)
+
+        # Get the action spec
+        action_spec = env.behavior_specs[behavior_name].action_spec
+
     except mlagents_envs.exception.UnityCommunicatorStoppedException as e:
         print(f"Unity communicator stopped: {e}")
         print(f"Last known communicator status: {env._communicator.worker_id}")
         break
 
     episode_steps = 0
+
     while True:
         # Get the current state
         decision_steps, terminal_steps = env.get_steps(behavior_name)
@@ -61,9 +56,18 @@ for episode in range(num_episodes):
             print(f"Episode finished after {episode_steps} steps")
             break
 
-        # Your agent's decision-making logic here
-        # For now, we'll just use a dummy action (adjust based on your action space)
-        action = [0] * env.behavior_specs[behavior_name].action_spec.continuous_size
+        num_agents = len(decision_steps)
+
+        # Create the discrete action
+        discrete_action = np.random.randint(0, action_spec.discrete_branches[0], size=(num_agents, 1), dtype=np.int32)
+        print(f"Discrete action: {discrete_action}")
+
+        # Create the continuous action
+        continuous_action = np.random.uniform(-1, 1, size=(num_agents, action_spec.continuous_size))
+        print(f"Continuous action: {continuous_action}")
+
+        # Combine them into an ActionTuple
+        action = ActionTuple(continuous=continuous_action, discrete=discrete_action)
 
         # Take a step in the environment
         env.set_actions(behavior_name, action)
