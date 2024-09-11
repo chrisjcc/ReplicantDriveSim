@@ -1,5 +1,6 @@
 #include "traffic_simulation_c_api.h"
 #include "traffic.h"
+#include <array>
 #include <vector>
 #include <unordered_map>
 #include <cstring>
@@ -117,8 +118,63 @@ EXPORT void Traffic_destroy(Traffic* traffic) {
     delete traffic;
 }
 
-EXPORT void Traffic_step(Traffic* traffic, const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
-    traffic->step(high_level_actions, low_level_actions);
+EXPORT const char* Traffic_step(Traffic* traffic,
+    int* high_level_actions,
+    int high_level_actions_count,
+    float* low_level_actions,
+    int low_level_actions_count
+    ) {
+
+    // Construct std::vector from the high_level_actions input array
+    std::vector<int> high_level_actions_vec(high_level_actions, high_level_actions + high_level_actions_count);
+
+    // Construct std::vector<std::vector<float>> from the low_level_actions input array
+    std::vector<std::vector<float>> low_level_actions_vec;
+
+    for (int i = 0; i < low_level_actions_count; i += 3) {
+        std::vector<float> action(low_level_actions + i, low_level_actions + i + 3);
+        low_level_actions_vec.push_back(action);
+    }
+
+    // Call the step function with the constructed vectors
+    traffic->step(high_level_actions_vec, low_level_actions_vec);
+
+    // Prepare a string with all agent positions
+    std::string result = "Traffic_step ";
+
+    /*
+    for (auto& agent : traffic->agents) {
+        //float randomSteering = dis(gen); // Sample a random value within the range
+        //agent.setSteering(randomSteering); // Explicitly set the steering
+
+        oss << "Agent " << agent.getId() << " position: ("
+            << std::fixed << std::setprecision(6)
+            << agent.getX() << ", "
+            << agent.getY() << ", "
+            << agent.getZ() << ") " << high_level_actions_vec[0] << "\nrotation: "
+            << agent.getSteering();
+
+        for (size_t i = 0; i < low_level_actions_vec.size(); ++i) {
+            oss << ", " << low_level_actions_vec[i][0] << ", " << low_level_actions_vec[i][1] << ", " << low_level_actions_vec[i][2];
+        }
+        oss << "\n";
+    }
+    result += oss.str();
+
+    if (result.empty()) {
+        result = "No agents found";
+    }
+    */
+
+    // Convert std::string to const char* that will persist after function returns
+    char* cstr = new char[result.length() + 1];
+    strcpy(cstr, result.c_str());
+    return cstr;
+}
+
+// Add a function to free the memory allocated for the string
+EXPORT void FreeString(const char* str) {
+    delete[] str;
 }
 
 EXPORT const VehiclePtrVector* Traffic_get_agents(const Traffic* traffic) {
@@ -132,21 +188,6 @@ EXPORT const Vehicle* Traffic_get_agent_by_name(const Traffic* traffic, const ch
 EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic) {
     return reinterpret_cast<StringFloatVectorMap*>(new std::unordered_map<std::string, std::vector<float>>(traffic->get_agent_positions()));
 }
-
-/*
-EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic) {
-    // Get the agent positions from the Traffic class
-    std::unordered_map<std::string, std::vector<float>> agent_positions = traffic->get_agent_positions();
-
-    // Create a new StringFloatVectorMap and populate it with the agent positions
-    StringFloatVectorMap* map = new StringFloatVectorMap();
-    for (const auto& pair : agent_positions) {
-        (*map)[pair.first] = pair.second;
-    }
-
-    return map;
-}
-*/
 
 EXPORT StringFloatVectorMap* Traffic_get_agent_velocities(const Traffic* traffic) {
     return reinterpret_cast<StringFloatVectorMap*>(new std::unordered_map<std::string, std::vector<float>>(traffic->get_agent_velocities()));
