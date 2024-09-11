@@ -180,23 +180,32 @@ public class TrafficManager : MonoBehaviour
         Debug.Log("=== TrafficManager::Start START ===");
         #endif
 
-        // Assuming you have a reference to the Traffic_create and Traffic_destroy functions from the C API
-        trafficSimulationPtr = Traffic_create(initialAgentCount, seed); // Create simulation with 2 agents and seed 12345
-
-        if (trafficSimulationPtr == IntPtr.Zero)
+        try
         {
-            Debug.LogError("Failed to create traffic simulation.");
-            enabled = false;
-            return;
+            Debug.Log("Attempting to create traffic simulation");
+            // Assuming you have a reference to the Traffic_create and Traffic_destroy functions from the C API
+            trafficSimulationPtr = Traffic_create(initialAgentCount, seed); // Create simulation with 2 agents and seed 12345
+            Debug.Log($"Traffic simulation created: {trafficSimulationPtr != IntPtr.Zero}");
+
+            if (trafficSimulationPtr == IntPtr.Zero)
+            {
+                Debug.LogError("Failed to create traffic simulation.");
+                enabled = false;
+                return;
+            }
+
+            // Get the initial state of agent
+            agentPositionsMap = Traffic_get_agent_positions(trafficSimulationPtr);
+            agentVelocitiesMap = Traffic_get_agent_velocities(trafficSimulationPtr);
+            agentOrientationsMap = Traffic_get_agent_orientations(trafficSimulationPtr);
+            agentPreviousPositionsMap = Traffic_get_previous_positions(trafficSimulationPtr);
+
+            InitializeAgents();
         }
-
-        // Get the initial state of agent
-        agentPositionsMap = Traffic_get_agent_positions(trafficSimulationPtr);
-        agentVelocitiesMap = Traffic_get_agent_velocities(trafficSimulationPtr);
-        agentOrientationsMap = Traffic_get_agent_orientations(trafficSimulationPtr);
-        agentPreviousPositionsMap = Traffic_get_previous_positions(trafficSimulationPtr);
-
-        InitializeAgents();
+        catch (Exception e)
+        {
+            Debug.LogError($"Error in TrafficManager Start: {e.Message}\n{e.StackTrace}");
+        }
 
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Start END ===");

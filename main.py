@@ -2,6 +2,7 @@ from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 import mlagents_envs
+import time
 
 # Increase timeout to 60 seconds
 mlagents_envs.env_utils.DEFAULT_EDITOR_PORT_TIMEOUT = 60
