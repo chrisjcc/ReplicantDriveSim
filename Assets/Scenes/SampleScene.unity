@@ -148,7 +148,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 102826273}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 25af27d65608145b4aee85621465c82e, type: 3}
+  m_Script: {fileID: 11500000, guid: f3fe7e814b8184579959d5a8a7467ad8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
@@ -209,12 +209,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 257869384}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8da003c9931b4f77b883c61899dd4e8, type: 3}
+  m_Script: {fileID: 11500000, guid: 1bd63a84cb8ab439ba5a902a73f51f97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
   rotationSpeed: 100
-  agentPrefab: {fileID: 7393828277960429041, guid: f7686729df0f34f41b47333dcdbf4ad0, type: 3}
+  agentPrefab: {fileID: 4109849008543767089, guid: d82982a893aaf4a29b195b5d5b95b7fb, type: 3}
   initialAgentCount: 2
   seed: 42
   numberOfRays: 15
@@ -420,11 +420,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 963194225}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c16281a4f62bd495d97c8cdc83c57932, type: 3}
+  m_Script: {fileID: 11500000, guid: 6688afc185d9f4971966791d65412c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   targetObject: {fileID: 0}
-  cameraHeight: 250
+  cameraHeight: 150
   cameraDistance: 5
   smoothSpeed: 5
   cameraXPosition: 0
