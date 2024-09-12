@@ -67,7 +67,9 @@ class UnityToGymWrapper(gym.Env):
             f"Discrete action branches: {self.behavior_spec.action_spec.discrete_branches}"
         )
 
-        # Define observation and action spaces
+        self._update_spaces()
+
+    def _update_spaces(self):
         self.observation_space = gym.spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -75,7 +77,6 @@ class UnityToGymWrapper(gym.Env):
             dtype=np.float32,
         )
 
-        # Generalize for multiple agents
         self.action_space = gym.spaces.Tuple(
             tuple(
                 gym.spaces.Tuple(
@@ -94,6 +95,8 @@ class UnityToGymWrapper(gym.Env):
                 for _ in range(self.num_agents)
             )
         )
+
+
 
     def __str__(self):
         return f"<{type(self).__name__} with custom behavior spec>"
@@ -120,32 +123,14 @@ class UnityToGymWrapper(gym.Env):
 
         # Update num_agents and observation_space
         self.num_agents = len(decision_steps)
-        self.observation_space = gym.spaces.Box(
-            low=-np.inf,
-            high=np.inf,
-            shape=(self.num_agents, self.size_of_single_agent_obs),
-            dtype=np.float32,
-        )
-        self.action_space = gym.spaces.Tuple(
-            tuple(
-                gym.spaces.Tuple(
-                    (
-                        gym.spaces.Discrete(
-                            self.behavior_spec.action_spec.discrete_branches[0]
-                        ),
-                        gym.spaces.Box(
-                            low=np.array([-0.610865, 0.0, -8.0]),
-                            high=np.array([0.610865, 4.5, 0.0]),
-                            shape=(self.behavior_spec.action_spec.continuous_size,),
-                            dtype=np.float32,
-                        ),
-                    )
-                )
-                for _ in range(self.num_agents)
-            )
-        )
+        self._update_spaces()
 
-        return obs, {}  # Return observation and an empty info dict
+        print(f"Number of agents after reset: {self.num_agents}")
+        print(f"Observation shape: {obs.shape}")
+        print(f"Action space: {self.action_space}")
+
+        return obs, {}
+
 
     def step(self, action):
         # Initialize lists to store discrete and continuous actions
