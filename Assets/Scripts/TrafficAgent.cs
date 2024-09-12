@@ -70,23 +70,12 @@ public class TrafficAgent : Agent
             }
         }
 
-        /*
-        rb = GetComponent<Rigidbody>();
-
-        if (rb == null)
-        {
-            rb = gameObject.AddComponent<Rigidbody>();
-        }
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-
-        // Assign to "Agent" layer (create this layer in Unity)
-        gameObject.layer = LayerMask.NameToLayer("Road");
-        */
-
         // Initialize lowLevelActions array with appropriate size (e.g., 3 for steering, acceleration, and braking)
         lowLevelActions = new float[3];
 
+        #if UNITY_EDITOR
         Debug.Log("--- TrafficAgent::Awake END ---");
+        #endif
     }
 
     // Initialize is part of the ML-Agents specific setup details
@@ -98,9 +87,8 @@ public class TrafficAgent : Agent
      */
     public override void Initialize()
     {
-        Debug.Log("--- TrafficAgent::Initialize START ---");
-
         #if UNITY_EDITOR
+        Debug.Log("--- TrafficAgent::Initialize START ---");
         // Get the initial agent positions and create agent instances
         Debug.Log($"TrafficAgent Initialize called on {gameObject.name}");
         #endif
@@ -115,7 +103,9 @@ public class TrafficAgent : Agent
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
 
+        #if UNITY_EDITOR
         Debug.Log("--- TrafficAgent::Initialize END ---");
+        #endif
 
     }
 
@@ -146,9 +136,11 @@ public class TrafficAgent : Agent
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
 
+        #if UNITY_EDITOR
         Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
 
         Debug.Log("--- OnEpisodeBegin END ---");
+        #endif
     }
 
     // Collect observations from the environment

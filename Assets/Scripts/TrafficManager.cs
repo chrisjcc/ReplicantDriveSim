@@ -179,7 +179,7 @@ public class TrafficManager : MonoBehaviour
         lowLevelActions = new List<float[]>();
 
         // Create the FloatPropertiesChannel
-        floatPropertiesChannel = new FloatPropertiesChannel();
+        floatPropertiesChannel = new FloatPropertiesChannel(new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7"));
 
         // Register the channel
         SideChannelManager.RegisterSideChannel(floatPropertiesChannel);
@@ -658,48 +658,8 @@ public class TrafficManager : MonoBehaviour
 
         CleanUpSimulation();
 
-        /*
-        if (trafficSimulationPtr != IntPtr.Zero)
-        {
-            Marshal.FreeHGlobal(trafficSimulationPtr);
-            trafficSimulationPtr = IntPtr.Zero;
-        }
-
-        // Clean up agent instances
-        if (agentInstances != null)
-        {
-            foreach (var agentInstance in agentInstances.Values)
-            {
-                if (agentInstance != null)
-                {
-                    // Remove DecisionRequester first
-                    var decisionRequester = agentInstance.GetComponent<DecisionRequester>();
-                    if (decisionRequester != null)
-                    {
-                        Destroy(decisionRequester);
-                    }
-
-                    // Then remove TrafficAgent
-                    Destroy(agentInstance);
-                }
-            }
-            agentInstances.Clear();
-        }
-
-        if (agentColliders != null)
-        {
-            agentColliders.Clear();
-        }
-
-        // Clean up map references
-        CleanUpMap(ref agentPositionsMap);
-        CleanUpMap(ref agentVelocitiesMap);
-        CleanUpMap(ref agentOrientationsMap);
-        CleanUpMap(ref agentPreviousPositionsMap);
-        */
-
         // Unregister the channel when the TrafficManager is destroyed
-        if (Academy.IsInitialized)
+        if (floatPropertiesChannel != null)
         {
             SideChannelManager.UnregisterSideChannel(floatPropertiesChannel);
         }
