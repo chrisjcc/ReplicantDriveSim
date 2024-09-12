@@ -33,6 +33,9 @@ public class TrafficAgent : Agent
     private bool debugVisualization = false;
 
     [HideInInspector]
+    Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
+
+    [HideInInspector]
     private bool isGrounded;
     //private Rigidbody rb;
 

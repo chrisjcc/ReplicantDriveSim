@@ -2,12 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
-using System.Linq;
+using Unity.MLAgents.SideChannels;
 
 
 // Responsible for stepping the traffic simulation and updating all agents
@@ -106,7 +107,10 @@ public class TrafficManager : MonoBehaviour
     public IntPtr agentOrientationsMap;
     public IntPtr agentPreviousPositionsMap;
 
+    [HideInInspector]
     public float moveSpeed = 5f;
+
+    [HideInInspector]
     public float rotationSpeed = 100f;
 
     [SerializeField]
@@ -131,7 +135,10 @@ public class TrafficManager : MonoBehaviour
     public bool debugVisualization = false;
 
     // Non-serialized Fields
+    [HideInInspector]
     public float spawnAreaSize = 100f;
+
+    [HideInInspector]
     public float spawnHeight = 0.5f;
 
     public Dictionary<string, TrafficAgent> agentInstances = new Dictionary<string, TrafficAgent>();
@@ -142,6 +149,8 @@ public class TrafficManager : MonoBehaviour
 
     [HideInInspector]
     public float AngleStep;
+
+    private FloatPropertiesChannel floatPropertiesChannel;
 
     void Awake()
     {
@@ -168,6 +177,15 @@ public class TrafficManager : MonoBehaviour
 
         highLevelActions = new List<int>();
         lowLevelActions = new List<float[]>();
+
+        // Create the FloatPropertiesChannel
+        floatPropertiesChannel = new FloatPropertiesChannel();
+
+        // Register the channel
+        SideChannelManager.RegisterSideChannel(floatPropertiesChannel);
+
+        // Subscribe to the OnFloatPropertiesChanged event
+        floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
 
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Awake END ===");
@@ -565,12 +583,82 @@ public class TrafficManager : MonoBehaviour
         #endif
     }
 
+    private void OnInitialAgentCountChanged(float newValue)
+    {
+        int newAgentCount = Mathf.RoundToInt(newValue);
+
+        #if UNITY_EDITOR
+        Debug.Log($"Received new initial agent count: {newAgentCount}");
+        #endif
+
+        if (newAgentCount != initialAgentCount)
+        {
+            initialAgentCount = newAgentCount;
+            RestartSimulation();
+        }
+    }
+
+    private void RestartSimulation()
+    {
+        // Clean up existing simulation
+        OnDestroy();
+
+        // Recreate the simulation with the new agent count
+        trafficSimulationPtr = Traffic_create(initialAgentCount, seed);
+
+        if (trafficSimulationPtr == IntPtr.Zero)
+        {
+            Debug.LogError("Failed to create new traffic simulation.");
+            enabled = false;
+            return;
+        }
+
+        // Reinitialize agent positions, velocities, etc.
+        agentPositionsMap = Traffic_get_agent_positions(trafficSimulationPtr);
+        agentVelocitiesMap = Traffic_get_agent_velocities(trafficSimulationPtr);
+        agentOrientationsMap = Traffic_get_agent_orientations(trafficSimulationPtr);
+        agentPreviousPositionsMap = Traffic_get_previous_positions(trafficSimulationPtr);
+
+        // Reinitialize agents
+        InitializeAgents();
+    }
+
+    private void CleanUpSimulation()
+    {
+        // Clean up existing agents
+        foreach (var agentInstance in agentInstances.Values)
+        {
+            if (agentInstance != null)
+            {
+                Destroy(agentInstance.gameObject);
+            }
+        }
+        agentInstances.Clear();
+        agentColliders.Clear();
+
+        // Clean up existing simulation
+        if (trafficSimulationPtr != IntPtr.Zero)
+        {
+            Traffic_destroy(trafficSimulationPtr);
+            trafficSimulationPtr = IntPtr.Zero;
+        }
+
+        // Clean up map references
+        CleanUpMap(ref agentPositionsMap);
+        CleanUpMap(ref agentVelocitiesMap);
+        CleanUpMap(ref agentOrientationsMap);
+        CleanUpMap(ref agentPreviousPositionsMap);
+    }
+
     private void OnDestroy()
     {
         #if UNITY_EDITOR
         Debug.Log("-- TrafficManager::OnDestroy --");
         #endif
 
+        CleanUpSimulation();
+
+        /*
         if (trafficSimulationPtr != IntPtr.Zero)
         {
             Marshal.FreeHGlobal(trafficSimulationPtr);
@@ -608,6 +696,13 @@ public class TrafficManager : MonoBehaviour
         CleanUpMap(ref agentVelocitiesMap);
         CleanUpMap(ref agentOrientationsMap);
         CleanUpMap(ref agentPreviousPositionsMap);
+        */
+
+        // Unregister the channel when the TrafficManager is destroyed
+        if (Academy.IsInitialized)
+        {
+            SideChannelManager.UnregisterSideChannel(floatPropertiesChannel);
+        }
     }
 
     private void CleanUpMap(ref IntPtr map)
