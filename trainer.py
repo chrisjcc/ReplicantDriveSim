@@ -39,6 +39,7 @@ class UnityToGymWrapper(gym.Env):
         self.current_agent_count = initial_agent_count
 
         # Set the initialAgentCount before resetting the environment
+        print(f"Initializing with {initial_agent_count} agents")
         self.float_properties_channel.set_property(
             "initialAgentCount", float(initial_agent_count)
         )
@@ -55,6 +56,7 @@ class UnityToGymWrapper(gym.Env):
         # Get the actual number of agents after environment reset
         decision_steps, _ = self.env.get_steps(self.behavior_name)
         self.num_agents = len(decision_steps)
+        print(f"Initial number of agents: {self.num_agents}")
 
         # Get observation size
         self.size_of_single_agent_obs = self.behavior_spec.observation_specs[0].shape[0]
@@ -96,8 +98,6 @@ class UnityToGymWrapper(gym.Env):
             )
         )
 
-
-
     def __str__(self):
         return f"<{type(self).__name__} with custom behavior spec>"
 
@@ -116,14 +116,20 @@ class UnityToGymWrapper(gym.Env):
                 )
                 print(f"Setting new agent count to: {new_agent_count}")
 
+        print("Resetting Unity environment...")
         self.env.reset()
 
         decision_steps, _ = self.env.get_steps(self.behavior_name)
+        self.num_agents = len(decision_steps)
+        print(f"Number of agents after reset: {self.num_agents}")
+
         obs = np.array(decision_steps.obs[0], dtype=np.float32)
+        print(f"Observation shape: {obs.shape}")
 
         # Update num_agents and observation_space
         self.num_agents = len(decision_steps)
         self._update_spaces()
+        print(f"Updated action space: {self.action_space}")
 
         print(f"Number of agents after reset: {self.num_agents}")
         print(f"Observation shape: {obs.shape}")
@@ -149,6 +155,7 @@ class UnityToGymWrapper(gym.Env):
         discrete_actions = np.array(discrete_actions)
         continuous_actions = np.array(continuous_actions)
 
+        print(f"Step - Number of agents: {self.num_agents}")
         print(f"Discrete action: {discrete_actions}")
         print(f"Continuous action: {continuous_actions}")
 
@@ -162,8 +169,12 @@ class UnityToGymWrapper(gym.Env):
         decision_steps, terminal_steps = self.env.get_steps(self.behavior_name)
 
         done = len(terminal_steps.agent_id) > 0
-        reward = terminal_steps.reward[0] if done else decision_steps.reward[0]
+        #reward = terminal_steps.reward[0] if done else decision_steps.reward[0]
+        reward = np.mean(decision_steps.reward)  # Average reward across all agents
+
         obs = np.array(decision_steps.obs[0], dtype=np.float32)
+
+        print(f"Step - Observation shape: {obs.shape}")
 
         return obs, reward, done, False, {}
 
