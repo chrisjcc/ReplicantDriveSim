@@ -102,9 +102,15 @@ for episode in range(3):
         # Set actions in the environment
         env.set_actions(behavior_name, action_tuple)
 
-        # Advance the simulation
+        # Advance the simulation (first step with both actions)
         env.step()
         env.step()
+
+        # Execute the continuous actions for the next 25 frames (without changing discrete actions)
+        for _ in range(25):
+            # Only update the continuous actions (discrete and continous action remains unchanged)
+            env.set_actions(behavior_name, action_tuple)
+            env.step()
 
         # Get the new state, rewards, and done flags
         decision_steps, terminal_steps = env.get_steps(behavior_name)
@@ -118,6 +124,7 @@ for episode in range(3):
             print(f"Agent {agent_id} finished with reward: {episode_rewards[f'agent_{agent_id}']}")
 
         episode_steps += 1
+        #episode_steps += 25  # Count 25 frames for each decision step
 
         # If all agents are done, end the episode
         if len(terminal_steps) == new_agent_count:
