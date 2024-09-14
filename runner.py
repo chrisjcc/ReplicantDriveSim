@@ -11,6 +11,8 @@ from mlagents_envs.side_channel.engine_configuration_channel import (
 )
 from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 
+np.random.seed(42)
+
 # Set up the Unity environment with the desired executable
 env_path = "libReplicantDriveSim.app"  # Replace with your Unity environment path
 engine_configuration_channel = EngineConfigurationChannel()
@@ -22,7 +24,6 @@ env = UnityEnvironment(
     file_name=env_path,
     side_channels=[
         engine_configuration_channel,
-        # env_params_channel
         float_props_channel,
     ],
 )
@@ -49,7 +50,7 @@ single_agent_action_space = gym.spaces.Tuple(
 )
 
 # Training loop
-for episode in range(3):
+for episode in range(2):
     # Generate a new agent count
     new_agent_count = np.random.randint(
         1, 10
@@ -70,6 +71,10 @@ for episode in range(3):
     num_agents = len(decision_steps)
     print(f"Number of agents after the second reset: {num_agents}")
 
+    if num_agents != new_agent_count:
+        print(f"\033[93mWARNING\033[0m: Mismatch between set agent count ({new_agent_count}) and actual agent count ({num_agents})")
+
+
     # Episode loop
     episode_rewards = {f'agent_{i}': 0 for i in decision_steps.agent_id}
     print(f"List of agents: {episode_rewards}")
@@ -78,7 +83,7 @@ for episode in range(3):
     print(f"Observation shape: {obs.shape}")
 
     episode_steps = 0
-    episode_max_steps = 5000  # Adjust as needed
+    episode_max_steps = 100  # Adjust as needed
 
     while episode_steps < episode_max_steps:
         # Sample random actions for each agent
@@ -104,7 +109,6 @@ for episode in range(3):
 
         # Advance the simulation (first step with both actions)
         env.step()
-        env.step()
 
         # Execute the continuous actions for the next 25 frames (without changing discrete actions)
         for _ in range(25):
@@ -123,8 +127,7 @@ for episode in range(3):
         for agent_id in terminal_steps.agent_id:
             print(f"Agent {agent_id} finished with reward: {episode_rewards[f'agent_{agent_id}']}")
 
-        episode_steps += 1
-        #episode_steps += 25  # Count 25 frames for each decision step
+        episode_steps += 25  # Count 25 frames for each decision step
 
         # If all agents are done, end the episode
         if len(terminal_steps) == new_agent_count:
