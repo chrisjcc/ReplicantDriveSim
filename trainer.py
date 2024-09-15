@@ -38,28 +38,40 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             "initialAgentCount", float(self.initial_agent_count)
         )
 
-        self.env = UnityEnvironment(
+        # Note: Communication Layer: ML-Agents uses a communication protocol (gRPC) to transfer data between Unity and Python.
+        # This protocol serializes the observation data into a format that can be sent over the network.
+        # When we create a UnityEnvironment object, it establishes a connection with the Unity.
+        # When we call e.g env.resent() or env.step(), it triggers Unity to advance its simulation by one step.
+        # After this, Unity sends the new observations back to Python.
+        # We can get the observations using the get_steps() method.
+        # The decision_steps and terminal_steps objects contain the observations for agents that are still active
+        # and those that have terminated, respectively.
+        self.unity_env = UnityEnvironment(
             file_name=self.file_name,
             side_channels=[
                 self.engine_configuration_channel,
                 self.float_props_channel,
             ],
+            seed=42,
         )
 
         # Start the environment
         print(f"Initializing with {self.initial_agent_count} agents")
-        self.env.reset()
+        self.unity_env.reset()
 
         # Access the BehaviorSpec for the behavior
-        self.behavior_name = list(self.env.behavior_specs.keys())[0]
-        self.behavior_spec = self.env.behavior_specs[self.behavior_name]
+        self.behavior_name = list(self.unity_env.behavior_specs.keys())[0]
+        self.behavior_spec = self.unity_env.behavior_specs[self.behavior_name]
 
         # Initialize observation and action spaces
+        self.observation_space = None
+        self.action_space = None
+
         self.observation_spaces = {}
         self.action_spaces = {}
 
         # Get the actual number of agents after environment reset
-        decision_steps, _ = self.env.get_steps(self.behavior_name)
+        decision_steps, _ = self.unity_env.get_steps(self.behavior_name)
         self.num_agents = len(decision_steps)
         print(f"Initial number of agents: {self.num_agents}")
 
@@ -73,10 +85,19 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         print(
             f"Discrete action branches: {self.behavior_spec.action_spec.discrete_branches}"
         )
+        # Add the private attribute `_agent_ids` to or env, which is a set containing the ids of agents supported by our env.
+
+        decision_steps, terminal_steps = self.unity_env.get_steps(
+            self.behavior_name
+        )  # decision_steps.agent_id
         self._agent_ids = {f"agent_{i}" for i in range(self.num_agents)}
+        # self._agent_ids = {f"agent_{i}" for i in decision_steps.agent_id}
+
+        # Establish observation and action spaces
         self._update_spaces()
 
     def _update_spaces(self):
+        # Create the observation space
         single_agent_obs_space = gym.spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -98,12 +119,19 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                 ),
             )
         )
+        print(f"Action space for each agent: {single_agent_action_space}")
+
+        # Populate observation_spaces and action_spaces
+        for i in range(self.num_agents):
+            agent_key = f"agent_{i}"
+            self.observation_spaces[agent_key] = single_agent_obs_space
+            self.action_spaces[agent_key] = single_agent_action_space
 
         self.observation_space = {
-            agent: single_agent_obs_space for agent in self._agent_ids
+            f"agent_{i}": single_agent_obs_space for i in range(self.num_agents)
         }
         self.action_space = {
-            agent: single_agent_action_space for agent in self._agent_ids
+            f"agent_{i}": single_agent_action_space for i in range(self.num_agents)
         }
 
     def __str__(self):
@@ -122,19 +150,26 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                 return True
         return False
 
-    def action_space_sample(self):
-        # Sample actions for each agent and return a dictionary
-        actions = {}
-        for agent_id, act_space in self.action_spaces.items():
-            actions[agent_id] = act_space.sample()
-        return actions
-
     def action_space_contains(self, action):
         # Check if the given action is valid for any agent's action space
         for agent_id, act_space in self.action_spaces.items():
             if act_space.contains(action.get(agent_id, None)):
                 return True
         return False
+
+    def observation_space_sample(self):
+        # Return a sample observation for each agent
+        return {
+            agent_id: space.sample()
+            for agent_id, space in self.observation_space.items()
+        }
+
+    def action_space_sample(self, agent_id: list = None):
+        return {
+            agent_idx: act_sample.sample()
+            for agent_idx, act_sample in self.action_space.items()
+            if agent_id is None or agent_idx in agent_id
+        }
 
     def reset(self, *, seed=None, options=None):
         # Handle seed if provided
@@ -152,42 +187,41 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                 )
                 print(f"Setting new agent count to: {new_agent_count}")
 
-        print("Resetting Unity environment...")
-        self.env.reset()
-        self.env.reset()
+        # print("Resetting Unity environment...")
+        self.unity_env.reset()  # Reset the environment only once (ideally)
+        self.unity_env.reset()
 
-        decision_steps, _ = self.env.get_steps(self.behavior_name)
+        # Get decision steps after the reset
+        decision_steps, _ = self.unity_env.get_steps(self.behavior_name)
         self.num_agents = len(decision_steps)
-        print(f"Number of agents after reset: {self.num_agents}")
-
-        #obs = np.array(decision_steps.obs[0], dtype=np.float32)
-        #print(f"Observation shape: {obs.shape}")
+        # print(f"Number of agents after reset: {self.num_agents}")
 
         # Update num_agents and observation_space
         self._update_spaces()
-        print(f"Updated action space: {self.action_space}")
-
-        print(f"Number of agents after reset: {self.num_agents}")
-        #print(f"Observation shape: {obs.shape}")
-        print(f"Action space: {self.action_space}")
-
-        #obs_dict = {f"agent_{i}": obs[i] for i in range(self.num_agents)}
+        # print(f"Updated action space: {self.action_space}")
 
         obs_dict = {}
-        for agent_id, idx in enumerate(decision_steps.agent_id):
-            print(f"TODO: agent_id: {agent_id}: idx: {idx}")
-            obs_dict[f"agent_{agent_id}"] = decision_steps.obs[0][idx]
+        for i, agent_id in enumerate(decision_steps.agent_id):
+            obs = decision_steps[agent_id].obs[0].astype(np.float32)
+            # print(f"Agent id: {i}, Unity agent_id: {agent_id}")
+            agent_key = f"agent_{i}"
+            obs_dict[agent_key] = obs
 
-        obs_dict = {agent: obs.astype(np.float32) for agent, obs in obs_dict.items()}
+            # Debug print
+            # print(f"Reset - {agent_key} observation shape: {obs.shape}")
+            # print(f"Reset - Agent {i} observation shape: {obs.shape}")
+            # print(f"Reset - {agent_key} observation space shape: {self.observation_space[agent_key].shape}")
+            # print(f"Reset - Agent {i} observation space shape: {self.observation_space[f'agent_{i}'].shape}")
 
+        # Checking if the observations are within the bounds of the observation space
         for agent_id, obs in obs_dict.items():
+            # print(f"observation space are within bounds for agent: {agent_id}")
             if not self.observation_space[agent_id].contains(obs):
-                print(f"Observation for {agent_id} is out of bounds:")
+                print(f"Warning: Observation for {agent_key} is out of bounds:")
                 print(f"Observation: {obs}")
                 print(f"Observation space: {self.observation_space[agent_id]}")
 
-        #print(f"Observation shape: {obs.shape}")
-
+        # Returning the observations and an empty info dict
         return obs_dict, {}
 
     def step(
@@ -195,16 +229,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
     ) -> Tuple[
         Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any]
     ]:
-        action_dict = {
-            'agent_1': (5, np.array([[-0.610865, 0., -8.], [0.610865, 4.5, 0.]])),
-            'agent_0': (5, np.array([[-0.610865, 0., -8.], [0.610865, 4.5, 0.]])),
-            'agent_4': (5, np.array([[-0.610865, 0., -8.], [0.610865, 4.5, 0.]])),
-            'agent_3': (5, np.array([[-0.610865, 0., -8.], [0.610865, 4.5, 0.]])),
-            'agent_2': (5, np.array([[-0.610865, 0., -8.], [0.610865, 4.5, 0.]]))
-        }
-
-        print("TODO: ACTION: ", action_dict)
-
         # Initialize lists to store discrete and continuous actions
         discrete_actions = []
         continuous_actions = []
@@ -222,33 +246,45 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         discrete_actions = np.array(discrete_actions)
         continuous_actions = np.array(continuous_actions)
 
-        print(f"Step - Number of agents: {self.num_agents}")
-        print(f"Discrete action: {discrete_actions}")
-        print(f"Continuous action: {continuous_actions}")
-
         action_tuple = ActionTuple(
             discrete=discrete_actions, continuous=continuous_actions
         )
 
-        self.env.set_actions(self.behavior_name, action_tuple)
-        self.env.step()
+        self.unity_env.set_actions(self.behavior_name, action_tuple)
+        self.unity_env.step()
 
-        decision_steps, terminal_steps = self.env.get_steps(self.behavior_name)
+        decision_steps, terminal_steps = self.unity_env.get_steps(self.behavior_name)
 
-        obs_dict = {f"agent_{i}": obs[i] for i in range(self.num_agents)}
-        rewards_dict = {f"agent_{i}": reward[i] for i in range(self.num_agents)}
-        terminateds_dict = {f"agent_{i}": False for i in range(self.num_agents)}
-        terminateds_dict["__all__"] = done
-        truncateds_dict = {f"agent_{i}": truncated[i] for i in range(self.num_agents)}
-        truncateds_dict["__all__"] = (
-            False  # or `done`, depending on how you detect truncations
+        obs, rewards, terminateds, truncateds, infos = {}, {}, {}, {}, {}
+        for i, agent_id in enumerate(decision_steps.agent_id):
+            agent_key = f"agent_{agent_id}"
+            obs[agent_key] = decision_steps[agent_id].obs[0].astype(np.float32)
+            rewards[agent_key] = decision_steps[agent_id].reward
+            terminateds[agent_key] = False
+            truncateds[agent_key] = False  # Assume not truncated if in decision_steps
+            infos[agent_key] = {}
+
+        for i, agent_id in enumerate(terminal_steps.agent_id):
+            agent_key = f"agent_{agent_id}"
+            obs[agent_key] = terminal_steps[agent_id].obs[0].astype(np.float32)
+            rewards[agent_key] = terminal_steps[agent_id].reward
+            terminateds[agent_key] = True
+            truncateds[agent_key] = terminal_steps[agent_id].interrupted
+            infos[agent_key] = {}
+
+        # Check if all agents are terminated
+        terminateds["__all__"] = len(terminal_steps.agent_id) == len(
+            self.unity_env.behavior_specs[self.behavior_name].action_spec.discrete_branches
         )
+        # terminateds["__all__"] = all(terminateds.values())
 
-        infos_dict = {}
-        return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
+        # Check if all agents are truncated
+        truncateds["__all__"] = any(truncateds.values())
+
+        return obs, rewards, terminateds, truncateds, infos
 
     def close(self):
-        self.env.close()
+        self.unity_env.close()
 
 
 def env_creator(env_config):
@@ -269,7 +305,7 @@ config = {
         "policies": {
             "default_policy": (
                 None,
-                gym.spaces.Box(-np.inf, np.inf, (1,)),
+                gym.spaces.Box(-np.inf, np.inf, (19,)),
                 gym.spaces.Tuple(
                     (
                         gym.spaces.Discrete(2),
@@ -297,6 +333,7 @@ config = {
     "clip_param": 0.2,
     "num_envs_per_worker": 1,
     "rollout_fragment_length": 200,
+    "disable_env_checking": True,  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
 }
 
 # Register the environment with RLlib
@@ -306,12 +343,11 @@ tune.register_env("CustomUnityMultiAgentEnv", env_creator)
 trainer = PPO(config=config)
 
 # Training loop
-for i in range(10):
+for i in range(3):
     # Generate a new agent count
-    #new_agent_count = np.random.randint(
-    #    1, 10
-    #)  # Choose a random number of agents between 1 and 10
-    new_agent_count = 5
+    new_agent_count = np.random.randint(
+        1, 5
+    )  # Choose a random number of agents between 1 and 10
     print(f"Episode {i} number of agents: ", new_agent_count)
 
     # Update the env_config with the new agent count
@@ -319,7 +355,7 @@ for i in range(10):
 
     # Update all worker environments
     def update_env(env):
-        if isinstance(env, CustomUnityMultiAgentEnv): # UnityToGymWrapper
+        if isinstance(env, CustomUnityMultiAgentEnv):  # UnityToGymWrapper
             env.reset(options={"new_agent_count": new_agent_count})
 
     trainer.workers.foreach_worker(lambda worker: worker.foreach_env(update_env))
@@ -330,11 +366,21 @@ for i in range(10):
 
 
 # Train the model using PPO
-# tune.run(
-#    ppo.PPOTrainer,
+#results=tune.run(
+#    "PPO",
 #    config=config,
-#    stop={"training_iteration": 10}  # Number of training iterations
-# )
+#    checkpoint_freq=5,  # Set checkpoint frequency here
+#    num_samples=1,      # Number of times to repeat the experiment
+#    max_failures=1,     # Maximum number of failures before stopping the experiment
+#    verbose=1,          # Verbosity level for logging
+#    stop={
+#        "training_iteration": 3, # Number of training iterations
+#        "episode_reward_mean": 200
+#    }
+#)
+
+# Print the results dictionary of the training to inspect the structure
+#print("Training results: ", results)
 
 # Close Ray
 ray.shutdown()

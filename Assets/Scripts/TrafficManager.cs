@@ -201,6 +201,9 @@ public class TrafficManager : MonoBehaviour
         // Subscribe to the OnFloatPropertiesChanged event
         floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
 
+        //var envParameters = Academy.Instance.EnvironmentParameters;
+        //initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 3.0f));
+
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Awake END ===");
         #endif
