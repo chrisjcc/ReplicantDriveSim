@@ -1,36 +1,51 @@
 import os
-from typing import Any, Dict, Tuple
-
-os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
-
+from typing import Any, Dict, Optional, Tuple, Union
 import uuid
-
 import gymnasium as gym
+import mlflow
 import numpy as np
 
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
-from mlagents_envs.side_channel.engine_configuration_channel import (
-    EngineConfigurationChannel,
-)
+from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 
 import ray
-from ray.tune.registry import register_env
-from ray.rllib.env.env_context import EnvContext
 from ray import tune
-from ray.rllib.algorithms.ppo import PPO
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.air.integrations.mlflow import MLflowLoggerCallback
+from ray.rllib.algorithms.ppo import PPO
+from ray.rllib.env.env_context import EnvContext
+from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from ray.tune.registry import register_env
 
+# Suppress DeprecationWarnings from output
+os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
 
 @ray.remote
 class UnityEnvResource:
-    def __init__(self, file_name, worker_id=0, base_port=5004):
+    """
+    A resource class that manages the Unity environment, providing methods to interact with it.
+
+    Attributes:
+        channel_id (uuid.UUID): Unique identifier for the float properties channel.
+        engine_configuration_channel (EngineConfigurationChannel): Channel for configuring the Unity engine.
+        float_props_channel (FloatPropertiesChannel): Channel for setting float properties in Unity.
+        unity_env (UnityEnvironment): The Unity environment instance.
+    """
+    def __init__(self, file_name: str, worker_id: int = 0, base_port: int = 5004):
+        """
+        Initializes the Unity environment with specified configuration channels.
+
+        Args:
+            file_name (str): Path to the Unity executable.
+            worker_id (int): Worker ID for parallel environments.
+            base_port (int): Base port for communication with Unity.
+        """
         self.channel_id = uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f7")
         self.engine_configuration_channel = EngineConfigurationChannel()
         self.float_props_channel = FloatPropertiesChannel(self.channel_id)
 
+        # Initialize the Unity environment with communication channels
         # Note: Communication Layer: ML-Agents uses a communication protocol (gRPC) to transfer data between Unity and Python.
         # This protocol serializes the observation data into a format that can be sent over the network.
         # When we create a UnityEnvironment object, it establishes a connection with the Unity.
@@ -38,7 +53,7 @@ class UnityEnvResource:
         # After this, Unity sends the new observations back to Python.
         # We can get the observations using the get_steps() method.
         # The decision_steps and terminal_steps objects contain the observations for agents that are still active
-        # and those that have terminated, respectively.        
+        # and those that have terminated, respectively.
         self.unity_env = UnityEnvironment(
             file_name=file_name,
             worker_id=worker_id,
@@ -47,26 +62,73 @@ class UnityEnvResource:
             seed=42,
         )
 
-    def set_float_property(self, key, value):
+    def set_float_property(self, key: str, value: float):
+        """
+        Sets a float property in the Unity environment.
+
+        Args:
+            key (str): The key for the float property.
+            value (float): The value to set for the property.
+        """
         self.float_props_channel.set_property(key, float(value))
 
-    def get_behavior_specs(self):
+    def get_behavior_specs(self) -> Dict[str, Any]:
+        """
+        Retrieves the behavior specifications from the Unity environment.
+
+        Returns:
+            Dict[str, Any]: The behavior specifications.
+        """
         return self.unity_env.behavior_specs
 
-    def get_steps(self, behavior_name):
+    def get_steps(self, behavior_name: str) -> Tuple:
+        """
+        Gets the current steps (observations) from the Unity environment.
+
+        Args:
+            behavior_name (str): The behavior name to get steps for.
+
+        Returns:
+            Tuple: Decision steps and terminal steps.
+        """
         return self.unity_env.get_steps(behavior_name)
 
-    def set_actions(self, behavior_name, action):
+    def set_actions(self, behavior_name: str, action: ActionTuple):
+        """
+        Sends actions to the Unity environment.
+
+        Args:
+            behavior_name (str): The behavior name to set actions for.
+            action (ActionTuple): The actions to apply.
+        """
         return self.unity_env.set_actions(behavior_name, action)
 
     def reset(self):
+        """
+        Resets the Unity environment.
+
+        Returns:
+            None
+        """
         return self.unity_env.reset()
 
     def step(self):
+        """
+        Advances the Unity environment by one step.
+
+        Returns:
+            None
+        """
         return self.unity_env.step()
 
     def close(self):
-        if hasattr(self, 'unity_env') and self.unity_env is not None:
+        """
+        Closes the Unity environment to free resources.
+
+        Returns:
+            None
+        """
+        if hasattr(self, "unity_env") and self.unity_env is not None:
             try:
                 self.unity_env.close()
             except Exception as e:
@@ -85,33 +147,37 @@ class UnityEnvResource:
 
 class CustomUnityMultiAgentEnv(MultiAgentEnv):
     """
-    Custom multi-agent highway environment.
+    Custom multi-agent environment for Unity.
 
-    This environment simulates a highway with multiple agents. Each agent is
-    represented by a vehicle and can perform high-level and low-level actions.
-    The environment supports rendering using Unity.
+    This environment simulates a scenario with multiple agents. Each agent can perform
+    both high-level and low-level actions within the Unity simulation.
     """
     def __init__(self, config: EnvContext, *args, **kwargs):
         """
-        Initialize the HighwayEnv.
+        Initializes the multi-agent environment.
+
         Args:
-            configs (EnvContext): Configuration dictionary containing environment settings.
+            config (EnvContext): Configuration dictionary containing environment settings.
         """
         super().__init__()
         self.initial_agent_count = config.get("initial_agent_count", 2)
         self.unity_env_handle = config["unity_env_handle"]
         self.current_agent_count = self.initial_agent_count
 
-        # Set the initial agent count
-        ray.get(self.unity_env_handle.set_float_property.remote("initialAgentCount", self.initial_agent_count))
+        # Set the initial agent count in the Unity environment
+        ray.get(
+            self.unity_env_handle.set_float_property.remote(
+                "initialAgentCount", self.initial_agent_count
+            )
+        )
 
-        # Start the environment
+        # Start the Unity environment
         print(f"Initializing with {self.initial_agent_count} agents")
 
-        # Reset the environment
+        # Reset the Unity environment
         ray.get(self.unity_env_handle.reset.remote())
 
-        # Access the behavior spects
+        # Access the behavior specifications
         behavior_specs = ray.get(self.unity_env_handle.get_behavior_specs.remote())
         self.behavior_name = list(behavior_specs.keys())[0]
         self.behavior_spec = behavior_specs[self.behavior_name]
@@ -119,38 +185,42 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         # Initialize observation and action spaces
         self.observation_space = None
         self.action_space = None
-
         self.observation_spaces = {}
         self.action_spaces = {}
-
         self.action_tuple = ActionTuple()
 
         # Get the actual number of agents after environment reset
-        decision_steps, _ = ray.get(self.unity_env_handle.get_steps.remote(self.behavior_name))
+        decision_steps, _ = ray.get(
+            self.unity_env_handle.get_steps.remote(self.behavior_name)
+        )
         self.num_agents = len(decision_steps)
         print(f"Initial number of agents: {self.num_agents}")
 
         # Get observation size
         self.size_of_single_agent_obs = self.behavior_spec.observation_specs[0].shape[0]
 
-        # You can access continuous and discrete action sizes like this:
+        # Log the continuous and discrete action sizes
         print(
             f"Continuous action size: {self.behavior_spec.action_spec.continuous_size}"
         )
         print(
             f"Discrete action branches: {self.behavior_spec.action_spec.discrete_branches}"
         )
-        # Add the private attribute `_agent_ids` to or env, which is a set containing the ids of agents supported by our env.
 
-        decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self.behavior_name))
+        # Add the private attribute `_agent_ids`, which is a set containing the ids of agents supported by the environment
         self._agent_ids = {f"agent_{i}" for i in range(self.num_agents)}
-        # self._agent_ids = {f"agent_{i}" for i in decision_steps.agent_id}
 
         # Establish observation and action spaces
         self._update_spaces()
 
     def _update_spaces(self):
-        # Create the observation space
+        """
+        Updates the observation and action spaces for all agents.
+
+        Returns:
+            None
+        """
+        # Create the observation space for a single agent
         single_agent_obs_space = gym.spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -158,6 +228,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             dtype=np.float32,
         )
 
+        # Create the action space for a single agent
         single_agent_action_space = gym.spaces.Tuple(
             (
                 gym.spaces.Discrete(
@@ -172,7 +243,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             )
         )
 
-        # Populate observation_spaces and action_spaces
+        # Populate observation_spaces and action_spaces for each agent
         for i in range(self.num_agents):
             agent_key = f"agent_{i}"
             self.observation_spaces[agent_key] = single_agent_obs_space
@@ -185,47 +256,143 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             f"agent_{i}": single_agent_action_space for i in range(self.num_agents)
         }
 
-        #self.observation_space = self.observation_spaces
-        #self.action_space = self.action_spaces
-
     def __str__(self):
         return f"<{type(self).__name__} with custom behavior spec>"
 
-    def set_observation_space(self, agent_id, obs_space):
+    def set_observation_space(self, agent_id: str, obs_space: gym.Space):
+        """
+        Sets the observation space for a specific agent.
+
+        Args:
+            agent_id (str): The ID of the agent.
+            obs_space (gym.Space): The observation space to set.
+        """
         self.observation_spaces[agent_id] = obs_space
 
-    def set_action_space(self, agent_id, act_space):
+    def set_action_space(self, agent_id: str, act_space: gym.Space):
+        """
+        Sets the action space for a specific agent.
+
+        Args:
+            agent_id (str): The ID of the agent.
+            act_space (gym.Space): The action space to set.
+        """
         self.action_spaces[agent_id] = act_space
 
-    def observation_space_contains(self, observation):
-        # Check if the given observation is valid for any agent
+    def observation_space_contains(self, observation: Dict[Any, Any]) -> bool:
+        """
+        Checks if the given observation is valid for any agent.
+
+        Args:
+            observation (Dict[Any, Any]): The observation to check.
+
+        Returns:
+            bool: True if valid for any agent, False otherwise.
+        """
         for agent_id, obs_space in self.observation_spaces.items():
             if obs_space.contains(observation.get(agent_id, None)):
                 return True
         return False
 
-    def action_space_contains(self, action):
-        # Check if the given action is valid for any agent's action space
+    def action_space_contains(self, action: Dict[Any, Any]) -> bool:
+        """
+        Checks if the given action is valid for any agent.
+
+        Args:
+            action (Dict[Any, Any]): The action to check.
+
+        Returns:
+            bool: True if valid for any agent, False otherwise.
+        """
         for agent_id, act_space in self.action_spaces.items():
             if act_space.contains(action.get(agent_id, None)):
                 return True
         return False
 
     def observation_space_sample(self):
-        # Return a sample observation for each agent
+        """
+        Samples observations from the observation space for each agent.
+
+        This method provides a random sample from the observation space for each agent.
+        It can be useful for testing or initializing agent observations.
+
+        Returns:
+            dict: A dictionary where the keys are agent IDs and the values are sampled observations 
+            from the corresponding agent's observation space.
+        """
         return {
             agent_id: space.sample()
             for agent_id, space in self.observation_space.items()
         }
 
     def action_space_sample(self, agent_id: list = None):
+        """
+        Samples actions from the action space for each or specified agents.
+
+        This method provides a random sample from the action space for each agent. 
+        If `agent_id` is provided, only samples actions for the specified agents. 
+        Useful for testing or initializing agent actions.
+
+        Args:
+            agent_id (list, optional): A list of agent IDs to sample actions for. 
+            If None, samples actions for all agents. Defaults to None.
+
+        Returns:
+            dict: A dictionary where the keys are agent IDs and the values are sampled actions 
+            from the corresponding agent's action space.
+        """
         return {
             agent_idx: act_sample.sample()
             for agent_idx, act_sample in self.action_space.items()
             if agent_id is None or agent_idx in agent_id
         }
 
-    def reset(self, *, seed=None, options=None):
+    def _convert_to_action_tuple(self, actions_dict: Dict[str, Any]) -> ActionTuple:
+        """
+        Converts the given actions dictionary to an ActionTuple for Unity.
+
+        Args:
+            actions_dict (Dict[str, Any]): The actions dictionary to convert.
+
+        Returns:
+            ActionTuple: The corresponding ActionTuple.
+        """
+        # Split the actions into continuous and discrete actions
+        continuous_actions = []
+        discrete_actions = []
+
+        for agent_id, agent_actions in actions_dict.items():
+            # Agent actions is a tuple where the first element is discrete and the rest are continuous
+            discrete_action, continuous_action = agent_actions
+
+            discrete_actions.append([discrete_action])
+            continuous_actions.append(list(continuous_action))
+
+        # Convert to numpy arrays
+        discrete_actions = np.array(discrete_actions, dtype=np.int32)
+        continuous_actions = np.array(continuous_actions, dtype=np.float32)
+
+        # Alternative use of ActionTuple.add_discrete(discrete_actions) and ActionTuple.add_continuous(continuous_actions)
+        return ActionTuple(continuous=continuous_actions, discrete=discrete_actions)
+
+    def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None) -> Union[Any, Tuple[Any, Dict]]:
+        """
+        Resets the environment to an initial state and returns the initial observation.
+
+        This method is used to reset the environment at the beginning of an episode.
+        If a seed is provided, it ensures the environment's behavior is deterministic 
+        by starting from a reproducible state. Additional options can be passed to 
+        modify the reset behavior.
+
+        Args:
+            seed (Optional[int]): An optional integer to seed the environment's random number generator.
+            options (Optional[dict]): An optional dictionary with parameters to customize the reset behavior.
+
+        Returns:
+            Union[Any, Tuple[Any, dict]]: 
+                - Any: The initial observation of the environment after resetting.
+                - Tuple[Any, Dict]: A tuple containing the initial observation and an optional info dictionary.
+        """
         # Handle seed if provided
         if seed is not None:
             np.random.seed(seed)
@@ -235,15 +402,21 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             new_agent_count = options["new_agent_count"]
 
             if new_agent_count != self.current_agent_count:
-                ray.get(self.unity_env_handle.set_float_property.remote("initialAgentCount", new_agent_count))
+                ray.get(
+                    self.unity_env_handle.set_float_property.remote(
+                        "initialAgentCount", new_agent_count
+                    )
+                )
                 print(f"Setting new agent count to: {new_agent_count}")
 
         # Reset the environment only once (ideally)
         ray.get(self.unity_env_handle.reset.remote())
-        #ray.get(self.unity_env_handle.reset.remote())
+        # ray.get(self.unity_env_handle.reset.remote())
 
         # Get decision steps after the reset
-        decision_steps, _ = ray.get(self.unity_env_handle.get_steps.remote(self.behavior_name))
+        decision_steps, _ = ray.get(
+            self.unity_env_handle.get_steps.remote(self.behavior_name)
+        )
         self.num_agents = len(decision_steps)
 
         # Update num_agents and observation_space
@@ -270,86 +443,129 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
     ) -> Tuple[
         Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any]
     ]:
-        # Initialize lists to store discrete and continuous actions
-        discrete_actions = []
-        continuous_actions = []
+        """
+        Steps the environment with the given actions.
 
-        # Loop over the actions to separate discrete and continuous actions
-        for agent_id, action in action_dict.items():
-            # Assuming action is of type gym.spaces.Tuple(gym.spaces.Discrete, gym.spaces.Box)
-            discrete, continuous = action
+        Args:
+            action_dict (Dict[str, Any]): A dictionary mapping agent IDs to actions.
 
-            # Append the actions to the respective lists
-            discrete_actions.append([discrete])
-            continuous_actions.append(continuous)
+        Returns:
+            Tuple[Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Any]]:
+                A tuple containing observations, rewards, done flags, and additional info.
+        """
+        action_tuple = self._convert_to_action_tuple(action_dict)
+        ray.get(self.unity_env_handle.set_actions.remote(self.behavior_name, action_tuple))
 
-        # Convert lists to numpy arrays
-        discrete_actions = np.array(discrete_actions)
-        continuous_actions = np.array(continuous_actions)
-
-        #action_tuple = ActionTuple(
-        #    discrete=discrete_actions, continuous=continuous_actions
-        #)
-        self.action_tuple.add_discrete(discrete_actions)
-        self.action_tuple.add_continuous(continuous_actions)
-
-        ray.get(self.unity_env_handle.set_actions.remote(self.behavior_name, self.action_tuple))
-
+        # Step the Unity environment
         ray.get(self.unity_env_handle.step.remote())
 
-        decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self.behavior_name))
+        # Get the new state
+        decision_steps, terminal_steps = ray.get(
+            self.unity_env_handle.get_steps.remote(self.behavior_name)
+        )
 
-        obs, rewards, terminateds, truncateds, infos = {}, {}, {}, {}, {}
-        for i, agent_id in enumerate(decision_steps.agent_id):
-            agent_key = f"agent_{agent_id}"
-            obs[agent_key] = decision_steps[agent_id].obs[0].astype(np.float32)
-            rewards[agent_key] = decision_steps[agent_id].reward
-            terminateds[agent_key] = False
-            truncateds[agent_key] = False  # Assume not truncated if in decision_steps
-            infos[agent_key] = {}
+        # Process observations, rewards, and done flags
+        obs_dict = {}
+        rewards_dict = {}
+        terminateds_dict = {}
+        truncateds_dict = {}
+        infos_dict = {}
 
-        for i, agent_id in enumerate(terminal_steps.agent_id):
+        # Alternative, decision_steps.agent_id_to_index
+        for agent_id in decision_steps.agent_id:
             agent_key = f"agent_{agent_id}"
-            obs[agent_key] = terminal_steps[agent_id].obs[0].astype(np.float32)
-            rewards[agent_key] = terminal_steps[agent_id].reward
-            terminateds[agent_key] = True
-            truncateds[agent_key] = terminal_steps[agent_id].interrupted
-            infos[agent_key] = {}
+            obs_dict[agent_key] = decision_steps[agent_id].obs[0].astype(np.float32)
+            rewards_dict[agent_key] = decision_steps[agent_id].reward
+            terminateds_dict[agent_key] = False
+            truncateds_dict[agent_key] = False  # Assume not truncated if in decision_steps
+            infos_dict[agent_key] = {}
+
+        for agent_id in terminal_steps.agent_id:
+            agent_key = f"agent_{agent_id}"
+            obs_dict[agent_key] = terminal_steps[agent_id].obs[0].astype(np.float32)
+            rewards_dict[agent_key] = terminal_steps[agent_id].reward
+            terminateds_dict[agent_key] = True
+            truncateds_dict[agent_key] = terminal_steps[agent_id].interrupted
+            infos_dict[agent_key] = {}
 
         # Check if all agents are terminated
-        terminateds["__all__"] = all(terminateds.values())
+        terminateds_dict["__all__"] = all(terminateds_dict.values())
 
         # Check if all agents are truncated
-        truncateds["__all__"] = any(truncateds.values())
+        truncateds_dict["__all__"] = any(truncateds_dict.values())
 
-        return obs, rewards, terminateds, truncateds, infos
+        return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
 
     def close(self):
+        """
+        Close the Unity environment and release any resources associated with it.
+
+        This method sends a remote call to the Unity environment handle to close
+        the environment. It ensures that any resources or connections used by
+        the Unity environment are properly cleaned up. The `ray.get()` method
+        is used to ensure the closure operation is completed before proceeding.
+
+        Note:
+            This method should be called to properly shut down the environment
+            after training or when it is no longer needed.
+
+        Example:
+            # Close the Unity environment
+            env.close()
+        """
         ray.get(self.unity_env_handle.close.remote())
 
-def env_creator(env_config):
-    return CustomUnityMultiAgentEnv(env_config)
 
-# Register the environment with RLlib
-tune.register_env("CustomUnityMultiAgentEnv", env_creator)
+def create_unity_env(file_name: str, worker_id: int = 0, base_port: int = 5004) -> UnityEnvResource:
+    """
+    Creates a Unity environment resource for use with RLlib.
 
-# Create the shared Unity environment resource
-file_name = "libReplicantDriveSim.app" # Path to your Unity executable
-unity_env_handle = UnityEnvResource.remote(file_name=file_name)
+    Args:
+        file_name (str): Path to the Unity environment binary.
+        worker_id (int): Worker ID for parallel environments.
+        base_port (int): Base port for communication with Unity.
 
-# Initialize Ray
-ray.init(ignore_reinit_error=True)
+    Returns:
+        UnityEnvResource: The Unity environment resource.
+    """
+    return UnityEnvResource.remote(file_name, worker_id, base_port)
 
-# Define PPO configuration
-config = {
-    "env": "CustomUnityMultiAgentEnv",
-    "env_config": {
-        "unity_env_handle": unity_env_handle,
-        "initial_agent_count": 5,  # Set your desired initial agent count here
-    },
-    "multiagent": {
-        "policies": {
-            "default_policy": (
+
+def main():
+    """
+    Main function to initialize the Unity environment and start the training process.
+
+    Returns:
+        None
+    """
+    # Initialize Ray
+    ray.init(ignore_reinit_error=True)
+
+    unity_env_handle = create_unity_env(
+        file_name="libReplicantDriveSim.app",  # Path to your Unity executable
+        worker_id=0,
+        base_port=5004,
+    )
+
+    # Register the environment with RLlib
+    env_name = "CustomUnityMultiAgentEnv"
+    register_env(
+        env_name,
+        lambda config: CustomUnityMultiAgentEnv(config, unity_env_handle=unity_env_handle),
+    )
+    #tune.register_env("CustomUnityMultiAgentEnv", env_creator)
+
+    # Define the configuration for the PPO algorithm
+    config = PPO.get_default_config()
+    config["env"] = env_name
+    config["env_config"] = {"initial_agent_count": 2, "unity_env_handle": unity_env_handle}
+    config["framework"] = "torch"
+    config["num_gpus"] = 0
+    config = config.multi_agent(
+        policies={
+            # Define our policies here
+            #"default_policy"
+            "shared_policy": (
                 None,
                 gym.spaces.Box(-np.inf, np.inf, (19,)),
                 gym.spaces.Tuple(
@@ -365,47 +581,71 @@ config = {
                 {},
             ),
         },
-        "policy_mapping_fn": lambda agent_id, episode, worker, **kwargs: "default_policy",
-    },
-    # ... other config options ...
-    "num_workers": 1,
-    "framework": "torch",
-    "train_batch_size": 4000,
-    "sgd_minibatch_size": 128,
-    "num_sgd_iter": 30,
-    "lr": 3e-4,
-    "gamma": 0.99,
-    "lambda": 0.95,
-    "clip_param": 0.2,
-    "num_envs_per_worker": 1,
-    "rollout_fragment_length": 200,
-    "disable_env_checking": True,  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
-}
+        policy_mapping_fn=lambda agent_id, episode, **kwargs: "shared_policy"
+        # Include other multi-agent settings here
+    )
 
-# Run the training
-results=tune.run(
-    "PPO",
-    config=config,
-    checkpoint_freq=5,  # Set checkpoint frequency here
-    num_samples=1,      # Number of times to repeat the experiment
-    max_failures=1,     # Maximum number of failures before stopping the experiment
-    verbose=1,          # Verbosity level for logging
-    stop={
-        "training_iteration": 1, # Number of training iterations
-        "episode_reward_mean": 200
-    },
-    callbacks=[MLflowLoggerCallback(
-        experiment_name="MARLExperiment",
-        tracking_uri="file://" + os.path.abspath("./mlruns"),
-        save_artifact=True
-    )]
-)
+    config["train_batch_size"] = 4000
+    config["sgd_minibatch_size"] = 128
+    config["num_sgd_iter"] = 30
+    config["lr"] = 3e-4
+    config["gamma"] = 0.99
+    config["lambda"] = 0.95
+    config["clip_param"] = 0.2
+    config["num_envs_per_worker"] = 1
+    config["rollout_fragment_length"] = 200
+    config["disable_env_checking"] = True  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
 
-# Print the results dictionary of the training to inspect the structure
-print("Training results: ", results)
+    # Set up MLflow logging
+    mlflow.set_experiment("MARLExperiment")
+    
+    results = tune.run(
+        PPO,
+        config=config,
+        checkpoint_freq=5,  # Set checkpoint frequency here
+        num_samples=1,      # Number of times to repeat the experiment
+        max_failures=1,     # Maximum number of failures before stopping the experiment
+        verbose=1,  # Verbosity level for logging
+        callbacks=[MLflowLoggerCallback(
+            experiment_name="MARLExperiment",
+            tracking_uri=mlflow.get_tracking_uri(),
+            #tracking_uri="file://" + os.path.abspath("./mlruns"),
+            save_artifact=True,
+        )],
+        stop={"training_iteration": 1},
+        local_dir="./ray_results",
+    )
 
-# Make sure to close the Unity environment at the end
-ray.get(unity_env_handle.close.remote())
+    # Print the results dictionary of the training to inspect the structure
+    print("Training results: ", results)
 
-# Close Ray
-ray.shutdown()
+    # Get the best trial based on a metric (e.g., 'episode_reward_mean')
+    best_trial = results.get_best_trial("episode_reward_mean", mode="max")
+
+    if best_trial:
+        best_checkpoint = best_trial.checkpoint
+
+        if best_checkpoint:
+            # Load the model from the best checkpoint
+            best_model = PPO.from_checkpoint(best_checkpoint)
+
+            # Register the model
+            with mlflow.start_run(run_name="model_registration") as run:
+                # Log model
+                mlflow.pytorch.log_model(
+                    best_model.get_policy().model,
+                    "ppo_model",
+                    registered_model_name="PPO_Highway_Model",
+                )
+                print(f"Model registered with run ID: {run.info.run_id}")
+        else:
+            print("No best trial found. Model registration skipped.")
+
+    # Make sure to close the Unity environment at the end
+    ray.get(unity_env_handle.close.remote())
+
+    ray.shutdown()
+
+
+if __name__ == "__main__":
+    main()
