@@ -12,10 +12,13 @@ from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesC
 
 import ray
 from ray import tune
+from ray.tune import Tuner
+from ray.train import RunConfig
 from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from ray.rllib.utils.typing import MultiAgentDict, PolicyID, AgentID
 from ray.tune.registry import register_env
 
 # Suppress DeprecationWarnings from output
@@ -439,9 +442,9 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         return obs_dict, {}
 
     def step(
-        self, action_dict: Dict[Any, Any]
+        self, action_dict: MultiAgentDict
     ) -> Tuple[
-        Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any]
+        MultiAgentDict, MultiAgentDict, MultiAgentDict, MultiAgentDict, MultiAgentDict
     ]:
         """
         Steps the environment with the given actions.
@@ -553,18 +556,17 @@ def main():
         env_name,
         lambda config: CustomUnityMultiAgentEnv(config, unity_env_handle=unity_env_handle),
     )
-    #tune.register_env("CustomUnityMultiAgentEnv", env_creator)
 
     # Define the configuration for the PPO algorithm
     config = PPO.get_default_config()
-    config["env"] = env_name
-    config["env_config"] = {"initial_agent_count": 2, "unity_env_handle": unity_env_handle}
-    config["framework"] = "torch"
-    config["num_gpus"] = 0
+    config = config.environment(env=env_name, env_config={"initial_agent_count": 2, "unity_env_handle": unity_env_handle})
+    config = config.framework("torch")
+    config = config.resources(num_gpus=0)
+
+    # Multi-agent configuration
     config = config.multi_agent(
         policies={
-            # Define our policies here
-            #"default_policy"
+            # Define our policies here (e.g., "default_policy")
             "shared_policy": (
                 None,
                 gym.spaces.Box(-np.inf, np.inf, (19,)),
@@ -581,24 +583,71 @@ def main():
                 {},
             ),
         },
-        policy_mapping_fn=lambda agent_id, episode, **kwargs: "shared_policy"
-        # Include other multi-agent settings here
+        policy_mapping_fn=lambda agent_id, episode, worker, **kwargs: "shared_policy",
     )
 
-    config["train_batch_size"] = 4000
-    config["sgd_minibatch_size"] = 128
-    config["num_sgd_iter"] = 30
-    config["lr"] = 3e-4
-    config["gamma"] = 0.99
-    config["lambda"] = 0.95
-    config["clip_param"] = 0.2
-    config["num_envs_per_worker"] = 1
-    config["rollout_fragment_length"] = 200
-    config["disable_env_checking"] = True  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
+    # Rollout configuration
+    # Setting num_env_runners=0 will only create the local worker, in which case both sample collection 
+    # and training will be done by the local worker. On the other hand, setting num_env_runners=5 
+    # will create the local worker (responsible for training updates)
+    # and 5 remote workers (responsible for sample collection).
+    config = config.rollouts(
+        num_rollout_workers=2,
+        num_envs_per_worker=1,
+        rollout_fragment_length=200,
+        batch_mode="truncate_episodes"
+    )
+
+    # Training configuration
+    config = config.training(
+        train_batch_size=4000,
+        sgd_minibatch_size=128,
+        num_sgd_iter=30,
+        lr=3e-4,
+        gamma=0.99,
+        lambda_=0.95,
+        clip_param=0.2,
+        vf_clip_param=10.0,
+        entropy_coeff=0.01,
+        kl_coeff=0.5,
+        vf_loss_coeff=1.0,
+    )
+
+    # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
+    config = config.environment(disable_env_checking= True)
 
     # Set up MLflow logging
     mlflow.set_experiment("MARLExperiment")
-    
+
+    # Initialize PPO trainer
+#    trainer = PPO(config=config)
+
+    # Training loop
+#    for i in range(1):
+        # Generate a new agent count
+#        new_agent_count = np.random.randint(
+#            1, 5
+#        )  # Choose a random number of agents between 1 and 10
+#        print(f"Episode {i} number of agents: ", new_agent_count)
+
+        # Update the env_config with the new agent count
+#        trainer.config["env_config"]["initial_agent_count"] = new_agent_count
+
+        # Update all worker environments
+#        def update_env(env):
+#            if hasattr(env, 'reset') and callable(env.reset):
+#                env.reset(options={"new_agent_count": new_agent_count})
+
+#        trainer.workers.foreach_worker(lambda worker: worker.foreach_env(update_env))
+
+        # Train for one iteration
+#        result = trainer.train()
+#        print(f"Iteration {i}: reward_mean={result['episode_reward_mean']}")
+
+#        if i % 10 == 0:  # Save a checkpoint every 10 iterations
+#            checkpoint = trainer.save()
+#            print(f"Checkpoint saved at {checkpoint}")
+
     results = tune.run(
         PPO,
         config=config,
@@ -612,8 +661,9 @@ def main():
             #tracking_uri="file://" + os.path.abspath("./mlruns"),
             save_artifact=True,
         )],
-        stop={"training_iteration": 1},
-        local_dir="./ray_results",
+        stop={"training_iteration": 1}, # storage_path=
+        local_dir="./ray_results", # default ~/ray_results
+        name="PPO_Highway_Experiment",
     )
 
     # Print the results dictionary of the training to inspect the structure
