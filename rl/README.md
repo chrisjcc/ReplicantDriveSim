@@ -2,7 +2,7 @@
 
 This repository demonstrates how to train multi-agent reinforcement learning (MARL) models using [Ray RLlib](https://docs.ray.io/en/latest/rllib.html). The `trainer_tune.py` script allows you to configure, train, and evaluate MARL agents within a customizable environment.
 
- ![MARL LOGO](https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/marl-logo.png)
+<img src="https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/marl-logo.png" alt="MARL LOGO" width="200" height="100">
 
 ## Getting Started
 
