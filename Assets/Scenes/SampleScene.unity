@@ -424,7 +424,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetObject: {fileID: 0}
-  cameraHeight: 150
+  cameraHeight: 300
   cameraDistance: 5
   smoothSpeed: 5
   cameraXPosition: 0

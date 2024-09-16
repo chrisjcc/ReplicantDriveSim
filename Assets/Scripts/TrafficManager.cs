@@ -2,12 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
-using System.Linq;
+using Unity.MLAgents.SideChannels;
 
 
 // Responsible for stepping the traffic simulation and updating all agents
@@ -106,7 +107,10 @@ public class TrafficManager : MonoBehaviour
     public IntPtr agentOrientationsMap;
     public IntPtr agentPreviousPositionsMap;
 
+    [HideInInspector]
     public float moveSpeed = 5f;
+
+    [HideInInspector]
     public float rotationSpeed = 100f;
 
     [SerializeField]
@@ -131,7 +135,10 @@ public class TrafficManager : MonoBehaviour
     public bool debugVisualization = false;
 
     // Non-serialized Fields
+    [HideInInspector]
     public float spawnAreaSize = 100f;
+
+    [HideInInspector]
     public float spawnHeight = 0.5f;
 
     public Dictionary<string, TrafficAgent> agentInstances = new Dictionary<string, TrafficAgent>();
@@ -143,7 +150,23 @@ public class TrafficManager : MonoBehaviour
     [HideInInspector]
     public float AngleStep;
 
-    void Awake()
+    //[HideInInspector]
+    private FloatPropertiesChannel floatPropertiesChannel;
+
+    [HideInInspector]
+    private bool pendingAgentCountUpdate = false;
+
+    [HideInInspector]
+    private int pendingAgentCount = 0; // NEW
+
+    [HideInInspector]
+    private bool isDisposed = false;
+
+    [HideInInspector]
+    private bool _hasCleanedUp = false;
+
+
+    private void Awake()
     {
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Awake START ===");
@@ -169,12 +192,25 @@ public class TrafficManager : MonoBehaviour
         highLevelActions = new List<int>();
         lowLevelActions = new List<float[]>();
 
+        // Create the FloatPropertiesChannel
+        floatPropertiesChannel = new FloatPropertiesChannel(new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7"));
+
+        // Register the channel
+        SideChannelManager.RegisterSideChannel(floatPropertiesChannel);
+
+        // Subscribe to the OnFloatPropertiesChanged event
+        floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
+
+        //var envParameters = Academy.Instance.EnvironmentParameters;
+        //initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 3.0f));
+        //Academy.Instance.EnvironmentParameters.GetWithDefault("my_environment_parameter", 0.0f);
+
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Awake END ===");
         #endif
     }
 
-    void Start()
+    private void Start()
     {
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Start START ===");
@@ -211,12 +247,24 @@ public class TrafficManager : MonoBehaviour
         Debug.Log("=== TrafficManager::Start END ===");
         #endif
     }
-
-    public void InitializeAgents()
+    private void InitializeAgents()
     {
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::InitializeAgents START ===");
         #endif
+
+
+        // Clear existing agents before initializing
+        foreach (var agent in agentInstances.Values)
+        {
+            if (agent != null && agent.gameObject != null)
+            {
+                Destroy(agent.gameObject);
+            }
+        }
+
+        agentInstances.Clear();
+        agentColliders.Clear();
 
         for (int i = 0; i < initialAgentCount; i++)
         {
@@ -237,7 +285,7 @@ public class TrafficManager : MonoBehaviour
         #endif
     }
 
-    void SpawnAgent(int i)
+    private void SpawnAgent(int i)
     {
         IntPtr agentIdPtr = StringFloatVectorMap_get_key(agentPositionsMap, i);
 
@@ -264,17 +312,20 @@ public class TrafficManager : MonoBehaviour
         Debug.Log($"Euler angles: Pitch={rotation.eulerAngles.x}, Yaw={rotation.eulerAngles.y}, Roll={rotation.eulerAngles.z}");
         #endif
 
-        if (agentInstances.ContainsKey(agentId))
+        // Check if agent already exists
+        if (agentInstances.TryGetValue(agentId, out TrafficAgent existingAgent))
         {
             // Agent already exists, update its position and rotation
             Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
-            //TrafficAgent existingAgent = agentInstances[agentId];
-            var existingAgent = agentInstances[agentId]; // type TrafficAgent
+            // Update existing agent
             existingAgent.transform.position = position;
             existingAgent.transform.rotation = rotation;
             existingAgent.transform.hasChanged = true;
             Debug.Log($"Updated agent: {agentId} to position: {position} and rotation: {rotation}");
 
+            //UpdateColliderForExistingAgent(existingAgent.gameObject, agentId); // NOT OIGINALLY INCLUDED (SHOULD IT BE??)
+
+            /*
             // Ensure the collider is updated if it's not part of the main GameObject
             if (agentColliders.TryGetValue(agentId, out Collider existingCollider))
             {
@@ -289,12 +340,12 @@ public class TrafficManager : MonoBehaviour
                 Debug.LogWarning($"Collider not found for existing agent {agentId}. Attempting to find or add one.");
                 UpdateColliderForExistingAgent(existingAgent.gameObject, agentId);
             }
+            */
         }
         else
         {
             // Create new agent GameObject with the specified position and orientation
             GameObject agentObject = Instantiate(agentPrefab, position, rotation);
-
             agentObject.name = agentId; // Set the name of the instantiated object to the agent ID
             agentObject.transform.SetParent(this.transform); // Use 'this.transform' to refer to the TrafficSimulationManager's transform
             Debug.Log($"Instantiated agent: {agentId}, Prefab name: {agentPrefab.name}");
@@ -413,7 +464,6 @@ public class TrafficManager : MonoBehaviour
         return path;
     }
 
-    ///private void Update()
     private void FixedUpdate()
     {
         #if UNITY_EDITOR
@@ -487,6 +537,8 @@ public class TrafficManager : MonoBehaviour
         agentOrientationsMap = Traffic_get_agent_orientations(trafficSimulationPtr);
         agentPreviousPositionsMap = Traffic_get_previous_positions(trafficSimulationPtr);
 
+        HashSet<string> updatedAgents = new HashSet<string>();
+
         // Process the agent positions
         for (int i = 0; i < initialAgentCount; i++)
         {
@@ -498,7 +550,9 @@ public class TrafficManager : MonoBehaviour
 
             if (positionPtr == IntPtr.Zero || orientationPtr == IntPtr.Zero)
             {
-                throw new Exception($"Failed to get position or orientation for agent {agentId}");
+                //throw new Exception($"Failed to get position or orientation for agent {agentId}");
+                Debug.LogWarning($"Failed to get position or orientation for agent {agentId}");
+                continue;
             }
 
             Vector3 position = GetVector3FromFloatVector(positionPtr);
@@ -508,18 +562,18 @@ public class TrafficManager : MonoBehaviour
             //Quaternion targetRotation = Quaternion.Euler(0, 0.64f * Mathf.Rad2Deg, 0);
             //transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
 
-
-            if (agentInstances.ContainsKey(agentId))
+            if (agentInstances.TryGetValue(agentId, out TrafficAgent existingAgent))
             {
                 // Agent already exists, update its position and rotation
                 Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
 
-                var existingAgent = agentInstances[agentId]; // type TrafficAgent
-                existingAgent.transform.position = position;
-                existingAgent.transform.rotation = rotation;
+                existingAgent.transform.SetPositionAndRotation(position, rotation);
                 existingAgent.transform.hasChanged = true;
+                updatedAgents.Add(agentId);
                 Debug.Log($"Updated agent: {agentId} Position: {position}, Rotation: {rotation.eulerAngles}");
 
+                //UpdateColliderForExistingAgent(existingAgent.gameObject, agentId); // NOT ORIGINALLY INCLUDE (SHOULD IT BE??)
+                /*
                 // Ensure the collider is updated if it's not part of the main GameObject
                 if (agentColliders.TryGetValue(agentId, out Collider existingCollider))
                 {
@@ -534,10 +588,11 @@ public class TrafficManager : MonoBehaviour
                     Debug.LogWarning($"Collider not found for existing agent {agentId}. Attempting to find or add one.");
                     UpdateColliderForExistingAgent(existingAgent.gameObject, agentId);
                 }
-
+                */
             }
             else
             {
+                /*
                 // Create new agent GameObject with the specified position and orientation
                 GameObject agentObject = Instantiate(agentPrefab, position, rotation);
                 agentObject.name = agentId; // Set the name of the instantiated object to the agent ID
@@ -556,8 +611,31 @@ public class TrafficManager : MonoBehaviour
                 agentInstances.Add(agentId, agent);
 
                 UpdateColliderForExistingAgent(agentObject, agentId);
-            }
+                */
 
+                SpawnAgent(i);
+                updatedAgents.Add(agentId);
+            }
+        }
+
+        // Remove agents that are no longer in the simulation
+        List<string> agentsToRemove = new List<string>();
+        foreach (var kvp in agentInstances)
+        {
+            if (!updatedAgents.Contains(kvp.Key))
+            {
+                agentsToRemove.Add(kvp.Key);
+            }
+        }
+
+        foreach (string agentId in agentsToRemove)
+        {
+            if (agentInstances.TryGetValue(agentId, out TrafficAgent agent))
+            {
+                Destroy(agent.gameObject);
+                agentInstances.Remove(agentId);
+                agentColliders.Remove(agentId);
+            }
         }
 
         #if UNITY_EDITOR
@@ -565,42 +643,178 @@ public class TrafficManager : MonoBehaviour
         #endif
     }
 
-    private void OnDestroy()
+    private void OnInitialAgentCountChanged(float newValue)
     {
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::OnDestroy --");
+        Debug.Log("=== TrafficManager::OnInitialAgentCountChanged START ===");
         #endif
 
+        int newAgentCount = Mathf.RoundToInt(newValue);
+
+        #if UNITY_EDITOR
+        Debug.Log($"Received new initial agent count: {newAgentCount}");
+        #endif
+
+        if (newAgentCount != initialAgentCount)
+        {
+            //initialAgentCount = newAgentCount;
+            pendingAgentCount = newAgentCount; // NEW
+            pendingAgentCountUpdate = true;
+            //Debug.Log($"New agent count set: {initialAgentCount}. Pending update.");
+            Debug.Log($"Pending agent count update: {pendingAgentCount}");
+
+        }
+
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::OnInitialAgentCountChanged END ===");
+        #endif
+    }
+
+    private void EnvironmentReset()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::EnvironmentReset START ===");
+        Debug.Log($"Current agent count: {initialAgentCount}, Pending update: {pendingAgentCountUpdate}");
+        Debug.Log($"Environment reset called. Current agent count: {initialAgentCount}");
+        #endif
+
+        if (pendingAgentCountUpdate)
+        {
+            Debug.Log($"Environment reset called. Current agent count: {initialAgentCount}, Pending update: {pendingAgentCountUpdate}");
+            initialAgentCount = pendingAgentCount; // NEW
+
+            try
+            {
+                // Perform any necessary reset logic here
+                RestartSimulation();
+
+                Debug.Log($"Applying pending update. New agent count: {initialAgentCount}");
+
+                for (int i = 0; i < initialAgentCount; i++) // (pendingAgentCount - initialAgentCount) some agents might still be drving
+                {
+                    SpawnAgent(i);
+                }
+
+                pendingAgentCountUpdate = false;
+                Debug.Log($"Successfully updated to {initialAgentCount} agents");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error during environment reset: {e.Message}\n{e.StackTrace}");
+            }
+        }
+        else
+        {
+            Debug.Log("No pending updates. Skipping reset.");
+        }
+
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::EnvironmentReset END ===");
+        #endif
+    }
+
+    private void RestartSimulation()
+    {
+        // Reset your simulation state here
+        // This method should prepare the environment for a new episode
+        // without fully cleaning up or disposing of objects
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::RestartSimulation START ===");
+        #endif
+
+        try
+        {
+            // Clean up existing simulation
+            CleanUpSimulation();
+
+            // Recreate the simulation with the new agent count
+            trafficSimulationPtr = Traffic_create(initialAgentCount, seed);
+
+            if (trafficSimulationPtr == IntPtr.Zero)
+            {
+                throw new Exception("Failed to create new traffic simulation.");
+            }
+
+            // Reinitialize agent positions, velocities, etc.
+            agentPositionsMap = Traffic_get_agent_positions(trafficSimulationPtr);
+            agentVelocitiesMap = Traffic_get_agent_velocities(trafficSimulationPtr);
+            agentOrientationsMap = Traffic_get_agent_orientations(trafficSimulationPtr);
+            agentPreviousPositionsMap = Traffic_get_previous_positions(trafficSimulationPtr);
+
+            // Reinitialize agents
+            InitializeAgents();
+
+            if (agentInstances.Count != initialAgentCount)
+            {
+                Debug.LogWarning($"Mismatch between initialAgentCount ({initialAgentCount}) and actual agent count ({agentInstances.Count})");
+            }
+
+            // Re-initialize other necessary components
+            Debug.Log("Traffic simulation restarted successfully");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error in RestartSimulation: {e.Message}\n{e.StackTrace}");
+            enabled = false;
+        }
+
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::RestartSimulation END ===");
+        #endif
+    }
+
+    private void OnEnable()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::OnEnable START ===");
+        #endif
+        if (Academy.Instance != null)
+        {
+            Academy.Instance.OnEnvironmentReset += EnvironmentReset;
+        }
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::OnEnable END ===");
+        #endif
+    }
+
+    private void OnDisable()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::OnDisable START ===");
+        #endif
+
+        if (Academy.IsInitialized)
+        {
+            Academy.Instance.OnEnvironmentReset -= EnvironmentReset;
+        }
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::OnDisable END ===");
+        #endif
+    }
+
+    private void CleanUpSimulation()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::CleanUpSimulation START ===");
+        #endif
+        if (_hasCleanedUp) return;
+
+        // Clean up existing agents
+        foreach (var agentInstance in agentInstances.Values)
+        {
+            if (agentInstance != null && agentInstance.gameObject != null)
+            {
+                Destroy(agentInstance.gameObject);
+            }
+        }
+        agentInstances.Clear();
+        agentColliders.Clear();
+
+        // Clean up existing simulation
         if (trafficSimulationPtr != IntPtr.Zero)
         {
-            Marshal.FreeHGlobal(trafficSimulationPtr);
+            Traffic_destroy(trafficSimulationPtr);
             trafficSimulationPtr = IntPtr.Zero;
-        }
-
-        // Clean up agent instances
-        if (agentInstances != null)
-        {
-            foreach (var agentInstance in agentInstances.Values)
-            {
-                if (agentInstance != null)
-                {
-                    // Remove DecisionRequester first
-                    var decisionRequester = agentInstance.GetComponent<DecisionRequester>();
-                    if (decisionRequester != null)
-                    {
-                        Destroy(decisionRequester);
-                    }
-
-                    // Then remove TrafficAgent
-                    Destroy(agentInstance);
-                }
-            }
-            agentInstances.Clear();
-        }
-
-        if (agentColliders != null)
-        {
-            agentColliders.Clear();
         }
 
         // Clean up map references
@@ -608,14 +822,83 @@ public class TrafficManager : MonoBehaviour
         CleanUpMap(ref agentVelocitiesMap);
         CleanUpMap(ref agentOrientationsMap);
         CleanUpMap(ref agentPreviousPositionsMap);
+
+        // Unregister the channel
+        if (floatPropertiesChannel != null)
+        {
+            // Unregister the channel when the TrafficManager is destroyed
+            SideChannelManager.UnregisterSideChannel(floatPropertiesChannel);
+            floatPropertiesChannel = null; // NEW
+        }
+
+        #if UNITY_EDITOR
+        Debug.Log("=== TrafficManager::CleanUpSimulation END ===");
+        #endif
+        _hasCleanedUp = true;
+
+    }
+
+    private void OnDestroy()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::OnDestroy START --");
+        #endif
+        CleanUpSimulation();
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::OnDestroy END --");
+        #endif
     }
 
     private void CleanUpMap(ref IntPtr map)
     {
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::CleanUpMap START --");
+        #endif
         if (map != IntPtr.Zero)
         {
             StringFloatVectorMap_destroy(map);
             map = IntPtr.Zero;
         }
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::CleanUpMap END --");
+        #endif
+    }
+
+    private void OnApplicationQuit()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::OnApplicationQuit START --");
+        #endif
+        CleanUpSimulation();
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::OnApplicationQuit END --");
+        #endif
+    }
+
+    public void Dispose()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::Dispose --");
+        #endif
+        if (!isDisposed)
+        {
+            CleanUpSimulation();
+            isDisposed = true;
+            GC.SuppressFinalize(this);
+        }
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::Dispose END --");
+        #endif
+    }
+
+    ~TrafficManager()
+    {
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::~TrafficManager START --");
+        #endif
+        Dispose();
+        #if UNITY_EDITOR
+        Debug.Log("-- TrafficManager::~TrafficManager END --");
+        #endif
     }
 }
