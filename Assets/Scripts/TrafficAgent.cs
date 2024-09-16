@@ -38,11 +38,24 @@ public class TrafficAgent : Agent
     [HideInInspector]
     private bool isGrounded;
 
-    /*
-    private Rigidbody rb;
+    [SerializeField]
     public float positiveReward = 1.0f;
+    [SerializeField]
     public float negativeReward = -0.5f;
-    */
+    [SerializeField]
+    private float timeInHazardZone = 0f;
+
+
+    [SerializeField] private float onRoadReward = 0.1f;
+    [SerializeField] private float offRoadPenalty = -0.5f;
+    [SerializeField] private string roadTag = "Road";
+    [SerializeField] private LayerMask roadLayer;
+
+    private bool isOnRoad = false;
+    private float timeOnRoad = 0f;
+    private float timeOffRoad = 0f;
+
+    //private Rigidbody rb;
 
     /// <summary>
     /// Awake is called when the script instance is being loaded.
@@ -113,6 +126,10 @@ public class TrafficAgent : Agent
         #if UNITY_EDITOR
         Debug.Log("--- OnEpisodeBegin START ---");
         #endif
+
+        isOnRoad = false;
+        timeOnRoad = 0f;
+        timeOffRoad = 0f;
 
         base.OnEpisodeBegin();
         ResetActions();
@@ -394,23 +411,24 @@ public class TrafficAgent : Agent
         Debug.Log("-- TrafficAgent::OnCollisionEnter --");
         #endif
 
-        /*
+        
         // Check the tag of the object we collided with
         switch (collision.gameObject.tag) // collision.collider.CompareTag("boundary")
         {
+            /*
             case "Goal":
                 // Reward the agent for reaching the goal
                 AddReward(positiveReward);
                 Debug.Log("Goal reached! Reward added: " + positiveReward);
                 EndEpisode();
                 break;
-
+            */
             case "Obstacle":
                 // Penalize the agent for hitting an obstacle
                 AddReward(negativeReward);
                 Debug.Log("Hit obstacle! Penalty added: " + negativeReward);
                 break;
-
+            /*
             case "Collectible":
                 // Reward the agent for collecting an item
                 AddReward(0.5f);
@@ -425,47 +443,45 @@ public class TrafficAgent : Agent
                 Debug.Log("Entered death zone! Episode ended with penalty: -1.0");
                 EndEpisode();
                 break;
-
-            case "IsOnRoad":
-                // Example reward based on staying on the road
-                AddReward(0.1f); //-1.0f
-                //EndEpisode();
-                break;
-
+            */
             default:
                 // For any other collision, we might want to add a small negative reward
                 AddReward(-0.1f);
                 Debug.Log("Unspecified collision! Small penalty added: -0.1");
                 break;
         }
-        */
     }
 
-    void GetRandomActions()
-    {
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
-
-        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
-    }
-
-    void OnCollisionStay(Collision collision)
+    /// <summary>
+    /// Called every fixed frame-rate frame for the duration of the collision
+    /// </summary>
+    /// <param name="collision">Information about the ongoing collision</param>
+    private void OnCollisionStay(Collision collision)
     {
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::OnCollisionStay --");
         #endif
 
         // Check if we're colliding with the road
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
+        if (collision.gameObject.layer == roadLayer)
         {
-            isGrounded = true;
+            HandleRoadCollision();
+        }
+        else
+        {
+            HandleNonRoadCollision();
         }
     }
 
-    void OnCollisionExit(Collision collision)
+    /// <summary>
+    /// Called when the collider has stopped touching another collider
+    /// </summary>
+    /// <param name="collision">Information about the collision that has ended</param>
+    public void OnCollisionExit(Collision collision)
     {
+        // Handle end of collision
+        // Could be used to reset states or apply final rewards/penalties
+        // when an agent leaves a certain area.
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::OnCollisionExit --");
         #endif
@@ -475,6 +491,128 @@ public class TrafficAgent : Agent
         {
             isGrounded = false;
         }
+    }
+
+    /// <summary>
+    /// Called when the Collider enters the trigger
+    /// </summary>
+    /// <param name="other">The other Collider involved in this collision</param>
+    private void OnTriggerEnter(Collider other)
+    {
+        /*
+         * This method is called when a collider enters the trigger zone of another collider set as a trigger.
+         * Use cases:
+         *   - Detecting when an agent enters a specific area
+         *   - Activating events when an agent reaches a checkpoint
+         *   - Collecting items or power-ups
+         */
+        // Implementation here
+        /*
+        if (other.CompareTag("Agent"))
+        {
+            // Agent entered a checkpoint
+            AddReward(1.0f);
+            Debug.Log("Agent reached checkpoint!");
+        }
+        else if (other.CompareTag("Collectible"))
+        {
+            // Agent collected an item
+            AddReward(0.5f);
+            Destroy(other.gameObject);
+            Debug.Log("Item collected!");
+        }
+        */
+    }
+
+    /// <summary>
+    /// Called every fixed frame-rate frame for the duration the Collider stays in the trigger
+    /// </summary>
+    /// <param name="other">The other Collider involved in this collision</param>
+    private void OnTriggerStay(Collider other)
+    {
+        /*
+         * This method is called every fixed frame-rate frame while a collider remains inside the trigger zone.
+         * Use cases:
+         *   - Applying continuous effects while an agent is in an area
+         *   - Monitoring time spent in a specific zone
+         *   - Gradually increasing or decreasing a value based on presence in an area
+         */
+        // Implementation here
+        /*
+        if (other.CompareTag("HazardZone"))
+        {
+            timeInHazardZone += Time.fixedDeltaTime;
+            float penalty = -0.1f * Time.fixedDeltaTime;
+            AddReward(penalty);
+            Debug.Log($"Time in hazard zone: {timeInHazardZone}s, Penalty: {penalty}");
+        }
+        */
+    }
+
+    /// <summary>
+    /// Called when the Collider has stopped touching the trigger
+    /// </summary>
+    /// <param name="other">The other Collider involved in this collision</param>
+    private void OnTriggerExit(Collider other)
+    {
+        /*
+         * This method is called when a collider exits the trigger zone.
+         * Use cases:
+         *    - Deactivating effects when an agent leaves an area
+         *    - Applying final rewards or penalties for leaving a zone
+         *    - Resetting states or counters when an agent exits an area
+         */
+        // Implementation here
+        /*
+        if (other.CompareTag("SafeZone"))
+        {
+            // Agent left the safe zone
+            AddReward(-0.5f);
+            Debug.Log("Agent left safe zone. Penalty applied.");
+        }
+        else if (other.CompareTag("TrainingArea"))
+        {
+            // Agent left the designated training area
+            AddReward(-1.0f);
+            EndEpisode();
+            Debug.Log("Agent left training area. Episode ended.");
+        }
+        */
+    }
+
+    private void HandleRoadCollision()
+    {
+        isOnRoad = true;
+        timeOnRoad += Time.fixedDeltaTime;
+        timeOffRoad = 0f;
+
+        // Apply reward for staying on the road
+        float reward = onRoadReward * Time.fixedDeltaTime;
+        AddReward(reward);
+
+        Debug.Log($"On road for {timeOnRoad:F2}s. Reward: {reward:F4}");
+    }
+
+    private void HandleNonRoadCollision()
+    {
+        isOnRoad = false;
+        timeOffRoad += Time.fixedDeltaTime;
+        timeOnRoad = 0f;
+
+        // Apply penalty for being off the road
+        float penalty = offRoadPenalty * Time.fixedDeltaTime;
+        AddReward(penalty);
+
+        Debug.Log($"Off road for {timeOffRoad:F2}s. Penalty: {penalty:F4}");
+    }
+    void GetRandomActions()
+    {
+        float minAngleRad = -0.610865f; // -35 degrees in radians
+        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+
+        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
     }
 
     private void LogToFile(string message)
