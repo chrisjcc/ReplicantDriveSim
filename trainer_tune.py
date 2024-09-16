@@ -21,7 +21,7 @@ from ray.rllib.env.env_context import EnvContext
 from ray import tune
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
-# from ray.rllib.env.external_env import ExternalEnv
+from ray.air.integrations.mlflow import MLflowLoggerCallback
 
 
 @ray.remote
@@ -84,7 +84,19 @@ class UnityEnvResource:
 
 
 class CustomUnityMultiAgentEnv(MultiAgentEnv):
+    """
+    Custom multi-agent highway environment.
+
+    This environment simulates a highway with multiple agents. Each agent is
+    represented by a vehicle and can perform high-level and low-level actions.
+    The environment supports rendering using Unity.
+    """
     def __init__(self, config: EnvContext, *args, **kwargs):
+        """
+        Initialize the HighwayEnv.
+        Args:
+            configs (EnvContext): Configuration dictionary containing environment settings.
+        """
         super().__init__()
         self.initial_agent_count = config.get("initial_agent_count", 2)
         self.unity_env_handle = config["unity_env_handle"]
@@ -95,6 +107,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         # Start the environment
         print(f"Initializing with {self.initial_agent_count} agents")
+
         # Reset the environment
         ray.get(self.unity_env_handle.reset.remote())
 
@@ -109,6 +122,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         self.observation_spaces = {}
         self.action_spaces = {}
+
+        self.action_tuple = ActionTuple()
 
         # Get the actual number of agents after environment reset
         decision_steps, _ = ray.get(self.unity_env_handle.get_steps.remote(self.behavior_name))
@@ -272,11 +287,13 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         discrete_actions = np.array(discrete_actions)
         continuous_actions = np.array(continuous_actions)
 
-        action_tuple = ActionTuple(
-            discrete=discrete_actions, continuous=continuous_actions
-        )
+        #action_tuple = ActionTuple(
+        #    discrete=discrete_actions, continuous=continuous_actions
+        #)
+        self.action_tuple.add_discrete(discrete_actions)
+        self.action_tuple.add_continuous(continuous_actions)
 
-        ray.get(self.unity_env_handle.set_actions.remote(self.behavior_name, action_tuple))
+        ray.get(self.unity_env_handle.set_actions.remote(self.behavior_name, self.action_tuple))
 
         ray.get(self.unity_env_handle.step.remote())
 
@@ -376,7 +393,12 @@ results=tune.run(
     stop={
         "training_iteration": 1, # Number of training iterations
         "episode_reward_mean": 200
-    }
+    },
+    callbacks=[MLflowLoggerCallback(
+        experiment_name="MARLExperiment",
+        tracking_uri="file://" + os.path.abspath("./mlruns"),
+        save_artifact=True
+    )]
 )
 
 # Print the results dictionary of the training to inspect the structure
