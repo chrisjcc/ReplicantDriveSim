@@ -18,6 +18,7 @@ from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from ray.rllib.utils.typing import MultiAgentDict, PolicyID, AgentID
 from ray.tune.registry import register_env
 
 # Suppress DeprecationWarnings from output
@@ -441,9 +442,9 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         return obs_dict, {}
 
     def step(
-        self, action_dict: Dict[Any, Any]
+        self, action_dict: MultiAgentDict
     ) -> Tuple[
-        Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Dict[Any, Any]
+        MultiAgentDict, MultiAgentDict, MultiAgentDict, MultiAgentDict, MultiAgentDict
     ]:
         """
         Steps the environment with the given actions.
