@@ -74,10 +74,10 @@ void Traffic::step(const std::vector<int>& high_level_actions, const std::vector
     }
 
     // Update perceptions
-    perceptionModule->updatePerceptions();
+    //perceptionModule->updatePerceptions();
 
     // Check for collisions between agents
-    checkCollisions(); // Collision detection
+    //checkCollisions(); // Collision detection
 }
 
 /**
@@ -228,7 +228,7 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     if (vehicle.getZ() >= SCREEN_WIDTH) vehicle.setZ(vehicle.getZ() - SCREEN_WIDTH);
 
     // Constrain vertically within the road
-    vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
+    //vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
 }
 
 /**

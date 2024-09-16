@@ -33,19 +33,22 @@ public class TrafficAgent : Agent
     private bool debugVisualization = false;
 
     [HideInInspector]
+    Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
+
+    [HideInInspector]
     private bool isGrounded;
-    //private Rigidbody rb;
 
     /*
+    private Rigidbody rb;
     public float positiveReward = 1.0f;
     public float negativeReward = -0.5f;
     */
 
-    // Awake is called when the script instance is being loaded
-    /*
-     * This is called when the script instance is being loaded, before any Start() method is called.
-     * It is often used for initializing references to other objects that are already present in the scene.
-     */
+    /// <summary>
+    /// Awake is called when the script instance is being loaded.
+    /// This is called when the script instance is being loaded, before any Start() method is called.
+    /// It is often used for initializing references to other objects that are already present in the scene.
+    /// </summary>
     private void Awake()
     {
         #if UNITY_EDITOR
@@ -67,61 +70,44 @@ public class TrafficAgent : Agent
             }
         }
 
-        /*
-        rb = GetComponent<Rigidbody>();
-
-        if (rb == null)
-        {
-            rb = gameObject.AddComponent<Rigidbody>();
-        }
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-
-        // Assign to "Agent" layer (create this layer in Unity)
-        gameObject.layer = LayerMask.NameToLayer("Road");
-        */
-
         // Initialize lowLevelActions array with appropriate size (e.g., 3 for steering, acceleration, and braking)
         lowLevelActions = new float[3];
 
+        #if UNITY_EDITOR
         Debug.Log("--- TrafficAgent::Awake END ---");
+        #endif
     }
 
-    // Initialize is part of the ML-Agents specific setup details
-    // Initialize the agent and the traffic simulation
-    /*
-     * This is an ML-Agents-specific method that is used to initialize the agent.
-     * It is called once when the agent is first created.
-     * This is a good place to initialize variables and set up the environment specific to the ML-Agents framework.
-     */
+    /// <summary>
+    /// Initialize is part of the ML-Agents specific setup details.
+    /// Initialize the agent and the traffic simulation.
+    /// This is an ML-Agents-specific method that is used to initialize the agent.
+    /// It is called once when the agent is first created.
+    /// This is a good place to initialize variables and set up the environment specific to the ML-Agents framework.
+    /// </summary>
     public override void Initialize()
     {
-        Debug.Log("--- TrafficAgent::Initialize START ---");
-
         #if UNITY_EDITOR
+        Debug.Log("--- TrafficAgent::Initialize START ---");
         // Get the initial agent positions and create agent instances
         Debug.Log($"TrafficAgent Initialize called on {gameObject.name}");
         #endif
 
         // Initialize your agent-specific variables here
         base.Initialize();
+        ResetActions();
 
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
-
-        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
-
+        #if UNITY_EDITOR
         Debug.Log("--- TrafficAgent::Initialize END ---");
+        #endif
 
     }
 
-    // Modify other methods to use trafficManager as needed
-    /*
-     *  If you want to reset or randomize agent positions at the start of each episode,
-     *  this is the ideal place to do so. It ensures that the agents start each episode in a fresh state,
-     *  which is often a requirement in reinforcement learning to provide diverse training experiences.
-     */
+    /// <summary>
+    ///  If you want to reset or randomize agent positions at the start of each episode,
+    ///  this is the ideal place to do so.It ensures that the agents start each episode in a fresh state,
+    ///  which is often a requirement in reinforcement learning to provide diverse training experiences.
+    /// </summary>
     public override void OnEpisodeBegin()
     {
         #if UNITY_EDITOR
@@ -129,26 +115,31 @@ public class TrafficAgent : Agent
         #endif
 
         base.OnEpisodeBegin();
+        ResetActions();
 
-        if (trafficManager.agentPrefab == null)
-        {
-            Debug.LogError("agentPrefab is null at the end of OnEpisodeBegin");
-            return;
-        }
-
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
-
-        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
-
+        #if UNITY_EDITOR
         Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
 
         Debug.Log("--- OnEpisodeBegin END ---");
+        #endif
     }
 
-    // Collect observations from the environment
+    /// <summary>
+    /// Randomly select action values
+    /// </summary>
+    private void ResetActions()
+    {
+        float minAngleRad = -0.610865f;
+        float maxAngleRad = 0.610865f;
+        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad);
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f);
+        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f);
+    }
+
+    /// <summary>
+    /// Collect observations from the environment
+    /// </summary>
+    /// <param name="sensor">Collect observations</param>
     public override void CollectObservations(VectorSensor sensor)
     {
         #if UNITY_EDITOR
@@ -161,23 +152,16 @@ public class TrafficAgent : Agent
         Debug.Log($"Collected {sensor.ObservationSize()} observations");
         #endif
 
-        if (trafficManager == null)
+        if (trafficManager == null || !trafficManager.agentColliders.ContainsKey(gameObject.name))
         {
-            Debug.LogError("TrafficManager not properly initialized");
-            return;
-        }
-        Debug.Log($"Number of agent colliders: {trafficManager.agentColliders.Count}");
-
-        if (trafficManager.agentColliders.Count == 0)
-        {
-            Debug.LogWarning("No agent colliders available for observations.");
+            Debug.LogWarning($"TrafficManager or agent collider not properly initialized for {gameObject.name}");
             return;
         }
 
-        Collider agentCollider = GetComponent<Collider>();
+        Collider agentCollider = trafficManager.agentColliders[gameObject.name];
         if (agentCollider == null)
         {
-            Debug.LogError("Agent colliders not properly initialized");
+            Debug.LogError($"Agent collider not found for {gameObject.name}");
             return;
         }
 
@@ -213,6 +197,12 @@ public class TrafficAgent : Agent
         Debug.Log("--- CollectObservations End ---");
     }
 
+    /// <summary>
+    /// When Behavior Type is set to "Heuristic Only" on the agent's Behavior Parameters,
+    /// this function will be called. Its return value will be fed into
+    /// <see cref="OnActionReceived(float[])"/> instead of using the neural network
+    /// </summary>
+    /// <param name="actionsOut">An output action array</param>
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         // Debug logs to check method calls
@@ -248,7 +238,10 @@ public class TrafficAgent : Agent
         #endif
     }
 
-    // Execute the actions decided by the ML model
+    /// <summary>
+    /// Execute the actions decided by the ML model
+    /// </summary>
+    /// <param name="actionBuffers">The actions to take</param>
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         #if UNITY_EDITOR
@@ -259,7 +252,6 @@ public class TrafficAgent : Agent
         #endif
 
         // Process Discrete (High-Level) Actions
-        int highLevelActionCount = actionBuffers.DiscreteActions.Length;
         highLevelActions = actionBuffers.DiscreteActions[0];
 
         // Process Continuous (Low-Level) Actions
@@ -294,8 +286,10 @@ public class TrafficAgent : Agent
         #endif
     }
 
-    // This method is only for visualization and doesn't affect agent movement.
-    //private void Update()
+    /// <summary>
+    /// Called every .02 seconds.
+    /// This method is only for visualization and doesn't affect agent movement.
+    /// </summary>
     private void FixedUpdate()
     {
         /*
@@ -308,29 +302,38 @@ public class TrafficAgent : Agent
         #endif
 
         // Only draw debug rays if visualization is enabled
-        if (debugVisualization || trafficManager.debugVisualization)
+        if (debugVisualization || (trafficManager != null && trafficManager.debugVisualization))
         {
             DrawDebugRays();
         }
+
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::FixedUpdate END --");
         #endif
     }
 
+    /// <summary>
+    /// For debugging purposes
+    /// </summary>
     void Update()
     {
+        #if UNITY_EDITOR
         Debug.Log($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
+        #endif
     }
 
+    /// <summary>
+    /// Draw Raycast in scene
+    /// </summary>
     private void DrawDebugRays()
     {
-        if (trafficManager == null)
+        if (trafficManager == null || !trafficManager.agentColliders.ContainsKey(gameObject.name))
         {
             Debug.LogError("TrafficManager is null in DrawDebugRays");
             return;
         }
 
-        Collider agentCollider = GetComponent<Collider>();
+        Collider agentCollider = trafficManager.agentColliders[gameObject.name];
         if (agentCollider == null)
         {
             Debug.LogError("Agent Collider is null in DrawDebugRays");
@@ -359,6 +362,10 @@ public class TrafficAgent : Agent
         }
     }
 
+    /// <summary>
+    /// Calculate reward singal
+    /// </summary>
+    /// <returns></returns>
     private float CalculateReward()
     {
         // Implement your actual reward logic here
@@ -377,15 +384,19 @@ public class TrafficAgent : Agent
         return collider.bounds.center + collider.transform.up * (collider.bounds.size.y / 2);
     }
 
-    /*
+    /// <summary>
+    /// Called when the agent collides with something solid
+    /// </summary>
+    /// <param name="collision">The collision info</param>
     private void OnCollisionEnter(Collision collision)
     {
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::OnCollisionEnter --");
         #endif
 
+        /*
         // Check the tag of the object we collided with
-        switch (collision.gameObject.tag)
+        switch (collision.gameObject.tag) // collision.collider.CompareTag("boundary")
         {
             case "Goal":
                 // Reward the agent for reaching the goal
@@ -427,8 +438,8 @@ public class TrafficAgent : Agent
                 Debug.Log("Unspecified collision! Small penalty added: -0.1");
                 break;
         }
+        */
     }
-    */
 
     void GetRandomActions()
     {
@@ -438,33 +449,6 @@ public class TrafficAgent : Agent
         lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
-    }
-
-    // Clean up the simulation on destroy
-    private void OnDestroy()
-    {
-        #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::OnDestroy --");
-        #endif
-
-        if (trafficManager != null)
-        {
-            if (trafficManager.agentInstances != null && trafficManager.agentInstances.ContainsKey(gameObject.name))
-            {
-                trafficManager.agentInstances.Remove(gameObject.name);
-            }
-            if (trafficManager.agentColliders != null && trafficManager.agentColliders.ContainsKey(gameObject.name))
-            {
-                trafficManager.agentColliders.Remove(gameObject.name);
-            }
-        }
-
-        // Remove DecisionRequester first
-        var decisionRequester = GetComponent<DecisionRequester>();
-        if (decisionRequester != null)
-        {
-            Destroy(decisionRequester);
-        }
     }
 
     void OnCollisionStay(Collision collision)
