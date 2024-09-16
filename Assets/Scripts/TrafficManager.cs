@@ -203,6 +203,7 @@ public class TrafficManager : MonoBehaviour
 
         //var envParameters = Academy.Instance.EnvironmentParameters;
         //initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 3.0f));
+        //Academy.Instance.EnvironmentParameters.GetWithDefault("my_environment_parameter", 0.0f);
 
         #if UNITY_EDITOR
         Debug.Log("=== TrafficManager::Awake END ===");

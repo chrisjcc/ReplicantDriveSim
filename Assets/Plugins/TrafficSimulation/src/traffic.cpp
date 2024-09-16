@@ -74,10 +74,10 @@ void Traffic::step(const std::vector<int>& high_level_actions, const std::vector
     }
 
     // Update perceptions
-    perceptionModule->updatePerceptions();
+    //perceptionModule->updatePerceptions();
 
     // Check for collisions between agents
-    checkCollisions(); // Collision detection
+    //checkCollisions(); // Collision detection
 }
 
 /**
