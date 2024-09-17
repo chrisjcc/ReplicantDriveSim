@@ -37,7 +37,7 @@ gunicorn==23.0.0
 gymnasium==0.28.1
 h5py==3.8.0
 idna==3.8
-imageio==2.32.1
+imageio==2.31.2
 importlib_metadata==8.4.0
 importlib_resources==6.4.5
 isort==5.13.2
