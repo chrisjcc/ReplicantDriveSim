@@ -54,7 +54,7 @@ Mako==1.2.4
 Markdown==3.4.3
 markdown-it-py==2.2.0
 MarkupSafe==2.1.5
-matplotlib==3.7.5
+matplotlib==3.5.3
 mdurl==0.1.2
 mlagents==0.27.0
 mlagents-envs==0.27.0
