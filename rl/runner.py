@@ -15,25 +15,56 @@ np.random.seed(42)
 
 # Set up the Unity environment with the desired executable
 env_path = "libReplicantDriveSim.app"  # Replace with your Unity environment path
-engine_configuration_channel = EngineConfigurationChannel()
 
+# Set up side channels
+# Note : A side channel will only send/receive messages when env.step or env.reset() is called.
+engine_configuration_channel = EngineConfigurationChannel() # Can modify the time-scale, resolution, and graphics quality of the environment. 
+engine_configuration_channel.set_configuration_parameters(target_frame_rate=25, time_scale = 2.0)
 channel_id = uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f7")
 float_props_channel = FloatPropertiesChannel(channel_id)
+#env_params_channel = EnvironmentParametersChannel()
+float_props_channel.set_property("initialAgentCount", 3.0)
 
-env = UnityEnvironment(
+# This is a non-blocking call that only loads the environment.
+unity_env = UnityEnvironment(
     file_name=env_path,
     side_channels=[
         engine_configuration_channel,
         float_props_channel,
     ],
+    seed=42,
 )
 
-# Start the environment
-env.reset()
+# Start interacting with the environment.
+unity_env.reset()
+
+# Get the behavior names
+behavior_names = list(unity_env.behavior_specs.keys())
 
 # Get the behavior name from the environment (usually there's only one behavior)
-behavior_name = list(env.behavior_specs.keys())[0]
-spec = env.behavior_specs[behavior_name]
+behavior_name = behavior_names[0]
+spec = unity_env.behavior_specs[behavior_name]
+print(f"BehaviorSpec: {spec}")
+
+# Extract observation shapes
+observation_shapes = [obs_spec.shape for obs_spec in spec.observation_specs]
+
+# Extract action spec
+action_spec = spec.action_spec
+
+# Print the information
+print(f"Behavior name: {behavior_name}")
+print(f"Observation shapes: {observation_shapes}")
+print(f"Continuous action size: {action_spec.continuous_size}")
+print(f"Discrete action branches: {action_spec.discrete_branches}")
+
+# Start the environment
+unity_env.reset()
+
+# Get the behavior name from the environment (usually there's only one behavior)
+behavior_specs = unity_env.behavior_specs
+behavior_name = list(behavior_specs.keys())[0]
+spec = behavior_specs[behavior_name]
 print(f"BehaviorSpec: {spec}")
 
 # Define the single agent action space
@@ -61,11 +92,11 @@ for episode in range(2):
     float_props_channel.set_property("initialAgentCount", float(new_agent_count))
 
     # Reset the environment to apply the new agent count
-    env.reset()
-    env.reset()
+    unity_env.reset()
+    unity_env.reset()
 
     # Get the initial state
-    decision_steps, terminal_steps = env.get_steps(behavior_name)
+    decision_steps, terminal_steps = unity_env.get_steps(behavior_name)
 
     # After the reset, get the updated number of agents
     num_agents = len(decision_steps)
@@ -105,19 +136,22 @@ for episode in range(2):
         )
 
         # Set actions in the environment
-        env.set_actions(behavior_name, action_tuple)
+        unity_env.set_actions(behavior_name, action_tuple)
 
         # Advance the simulation (first step with both actions)
-        env.step()
+        # env.step() Sends a signal to step the environment. Returns None. 
+        # Note that a "step" for Python does not correspond to either Unity `Update` nor `FixedUpdate`.
+        # When step() or reset() is called, the Unity simulation will move forward until an Agent in the simulation needs a input from Python to act.
+        unity_env.step()
 
         # Execute the continuous actions for the next 25 frames (without changing discrete actions)
         for _ in range(25):
             # Only update the continuous actions (discrete and continous action remains unchanged)
-            env.set_actions(behavior_name, action_tuple)
-            env.step()
+            unity_env.set_actions(behavior_name, action_tuple)
+            unity_env.step()
 
         # Get the new state, rewards, and done flags
-        decision_steps, terminal_steps = env.get_steps(behavior_name)
+        decision_steps, terminal_steps = unity_env.get_steps(behavior_name)
 
         # Update episode rewards (decision_steps.agent_id)
         for agent_id, reward in zip(decision_steps.agent_id, decision_steps.reward):
@@ -136,4 +170,4 @@ for episode in range(2):
     print(f"Episode {episode} completed. Average reward: {np.mean(list(episode_rewards.values()))}")
 
 # Close the environment
-env.close()
+unity_env.close()
