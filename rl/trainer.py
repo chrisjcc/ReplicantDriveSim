@@ -53,29 +53,28 @@ def main():
     # Construct the full path to the Unity executable
     unity_executable_path = os.path.join(base_dir, "libReplicantDriveSim.app")
 
-    def env_creator(env_config):
-        return CustomUnityMultiAgentEnv(env_config)
-
+    # Create Unity environment
     unity_env_handle = create_unity_env(
-        file_name=unity_executable_path,  # Path to your Unity executable
+        file_name=unity_executable_path,
         worker_id=0,
         base_port=5004,
         no_graphics=False,
     )
 
-    # Create an instance of our CustomUnityMultiAgentEnv
+    # Define environment creator function
+    def env_creator(env_config):
+        return CustomUnityMultiAgentEnv(env_config)
+
+    # Register the environment with RLlib
+    env_name = "CustomUnityMultiAgentEnv"
+    register_env(env_name, env_creator)
+
+    # Create an instance of the environment for configuration
     env_config = {
         "initial_agent_count": 2,
         "unity_env_handle": unity_env_handle,
         "episode_horizon": 1000,
     }
-
-    # Register the environment with RLlib
-    env_name = "CustomUnityMultiAgentEnv"
-
-    # Register the environment with RLlib
-    register_env(env_name, env_creator)
-
     env = CustomUnityMultiAgentEnv(config=env_config, unity_env_handle=unity_env_handle)
 
     # Define the configuration for the PPO algorithm
