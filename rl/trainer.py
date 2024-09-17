@@ -39,8 +39,10 @@ def main():
         None
     """
 
-    # Load configuration from YAML file
+    # Determine the current directory where the script is running
     current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Load configuration from YAML file
     config_path = os.path.join(current_dir, "config.yaml")
     with open(config_path, "r") as config_file:
         config_data = yaml.safe_load(config_file)
@@ -50,9 +52,6 @@ def main():
 
     # Initialize Ray
     ray.init(ignore_reinit_error=True, num_cpus=config_data["ray"]["num_cpus"])
-
-    # Determine the current directory where the script is running
-    current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Get the base directory by moving up one level (assuming the script is in 'rl' folder)
     base_dir = os.path.dirname(current_dir)
