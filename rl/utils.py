@@ -179,7 +179,7 @@ def create_unity_env(
 
     # Check if the file exists
     if not os.path.exists(file_name):
-        print(f"Error: The file '{file_name}' does not exist.")
+        print(f"\033[91mError\033[0m: The file '{file_name}' does not exist.")
         return None
 
     # Check if it's a directory
