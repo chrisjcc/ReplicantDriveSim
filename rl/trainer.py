@@ -1,5 +1,6 @@
 import os
 import yaml
+import yamale
 
 import gymnasium as gym
 import mlflow
@@ -30,6 +31,16 @@ from utils import create_unity_env
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
 
+def validate_yaml_schema(data_path, schema_path):
+    try:
+        schema = yamale.make_schema(schema_path)
+        data = yamale.make_data(data_path)
+        yamale.validate(schema, data)
+        print("YAML is valid according to the schema!")
+        return True
+    except yamale.YamaleError as e:
+        print(f"Validation failed: {e}")
+        return False
 
 def main():
     """
@@ -42,8 +53,14 @@ def main():
     # Determine the current directory where the script is running
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Load configuration from YAML file
+    # Set YAML files paths
     config_path = os.path.join(current_dir, "config.yaml")
+    config_schema_path = os.path.join(current_dir, 'config_schema.yaml')
+
+    # Validate YAML file
+    validate_yaml_schema(config_path, config_schema_path)
+
+    # Load configuration from YAML file
     with open(config_path, "r") as config_file:
         config_data = yaml.safe_load(config_file)
 
