@@ -9,23 +9,23 @@ description = "ReplicantDriveSim is an advanced traffic simulation project desig
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [
-  { name="Christian Contreras-Campana", email="chrisjcc.physics@gmail.com" },
-  { name="Emmanuel Contreras-Campana" },
+  { name = "Christian Contreras-Campana", email = "chrisjcc.physics@gmail.com" },
+  { name = "Emmanuel Contreras-Campana" }
 ]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
 ]
 
 dependencies = [
-    "numpy",
-    "torch"
-    "gymnasium"
-    "ray"
-    "mlagents"
-    "mlflow"
+  "numpy",
+  "torch",
+  "gymnasium",
+  "ray",
+  "mlagents",
+  "mlflow"
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/chrisjcc/ReplicantDriveSim/"
+Homepage = "https://github.com/chrisjcc/ReplicantDriveSim/"
