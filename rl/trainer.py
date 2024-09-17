@@ -1,4 +1,5 @@
 import os
+import yaml
 
 import gymnasium as gym
 import mlflow
@@ -37,12 +38,18 @@ def main():
     Returns:
         None
     """
+
+    # Load configuration from YAML file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(current_dir, "config.yaml")
+    with open(config_path, "r") as config_file:
+        config_data = yaml.safe_load(config_file)
+
     # Set up MLflow logging
-    experiment_name="MARLExperiment"
-    mlflow.set_experiment(experiment_name)
+    mlflow.set_experiment(config_data["mlflow"]["experiment_name"])
 
     # Initialize Ray
-    ray.init(ignore_reinit_error=True, num_cpus=4)
+    ray.init(ignore_reinit_error=True, num_cpus=config_data["ray"]["num_cpus"])
 
     # Determine the current directory where the script is running
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -57,8 +64,8 @@ def main():
     unity_env_handle = create_unity_env(
         file_name=unity_executable_path,
         worker_id=0,
-        base_port=5004,
-        no_graphics=False,
+        base_port=config_data["unity_env"]["base_port"],
+        no_graphics=config_data["unity_env"]["no_graphics"],
     )
 
     # Define environment creator function
@@ -71,24 +78,24 @@ def main():
 
     # Create an instance of the environment for configuration
     env_config = {
-        "initial_agent_count": 2,
+        "initial_agent_count": config_data["env_config"]["initial_agent_count"],
         "unity_env_handle": unity_env_handle,
-        "episode_horizon": 1000,
+        "episode_horizon": config_data["env_config"]["episode_horizon"],
+    }
+
+    # Create an instance of the environment for configuration
+    env_config = {
+        "initial_agent_count": config_data["env_config"]["initial_agent_count"],
+        "unity_env_handle": unity_env_handle,
+        "episode_horizon": config_data["env_config"]["episode_horizon"],
     }
     env = CustomUnityMultiAgentEnv(config=env_config, unity_env_handle=unity_env_handle)
 
     # Define the configuration for the PPO algorithm
     config = PPO.get_default_config()
-    config = config.environment(
-        env=env_name,
-        env_config={
-            "initial_agent_count": 2,
-            "unity_env_handle": unity_env_handle,
-            "episode_horizon": 1000,
-        },
-    )
-    config = config.framework("torch")
-    config = config.resources(num_gpus=0)
+    config = config.environment(env=env_name, env_config=env_config)
+    config = config.framework(config_data["ppo_config"]["framework"])
+    config = config.resources(num_gpus=config_data["ppo_config"]["num_gpus"])
 
     # Multi-agent configuration
     config = config.multi_agent(
@@ -105,29 +112,30 @@ def main():
     # will create the local worker (responsible for training updates)
     # and 5 remote workers (responsible for sample collection).
     config = config.rollouts(
-        num_rollout_workers=2,
-        num_envs_per_worker=1,
-        rollout_fragment_length=200,
-        batch_mode="truncate_episodes",
+        num_rollout_workers=config_data["rollouts"]["num_rollout_workers"],
+        num_envs_per_worker=config_data["rollouts"]["num_envs_per_worker"],
+        rollout_fragment_length=config_data["rollouts"]["rollout_fragment_length"],
+        batch_mode=config_data["rollouts"]["batch_mode"],
     )
 
     # Training configuration
     config = config.training(
-        train_batch_size=4000,
-        sgd_minibatch_size=128,
-        num_sgd_iter=30,
-        lr=3e-4,
-        gamma=0.99,
-        lambda_=0.95,
-        clip_param=0.2,
-        vf_clip_param=10.0,
-        entropy_coeff=0.01,
-        kl_coeff=0.5,
-        vf_loss_coeff=1.0,
+        train_batch_size=config_data["training"]["train_batch_size"],
+        sgd_minibatch_size=config_data["training"]["sgd_minibatch_size"],
+        num_sgd_iter=config_data["training"]["num_sgd_iter"],
+        lr=config_data["training"]["lr"],
+        gamma=config_data["training"]["gamma"],
+        lambda_=config_data["training"]["lambda"],
+        clip_param=config_data["training"]["clip_param"],
+        vf_clip_param=config_data["training"]["vf_clip_param"],
+        entropy_coeff=config_data["training"]["entropy_coeff"],
+        kl_coeff=config_data["training"]["kl_coeff"],
+        vf_loss_coeff=config_data["training"]["vf_loss_coeff"],
     )
 
+    # Environment configuration
     # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
-    config = config.environment(disable_env_checking=True)
+    config = config.environment(disable_env_checking=config_data["environment"]["disable_env_checking"])
 
     # Initialize PPO trainer
     #    trainer = PPO(config=config)
@@ -162,12 +170,12 @@ def main():
         PPO,
         config=config,
         checkpoint_freq=5,  # Set checkpoint frequency here
-        num_samples=1,  # Number of times to repeat the experiment
-        max_failures=1,  # Maximum number of failures before stopping the experiment
-        verbose=1,  # Verbosity level for logging
+        num_samples=1,      # Number of times to repeat the experiment
+        max_failures=1,     # Maximum number of failures before stopping the experiment
+        verbose=1,          # Verbosity level for logging
         callbacks=[
             MLflowLoggerCallback(
-                experiment_name=experiment_name,
+                experiment_name=config_data["mlflow"]["experiment_name"],
                 tracking_uri=mlflow.get_tracking_uri(),
                 # tracking_uri="file://" + os.path.abspath("./mlruns"),
                 save_artifact=True,
