@@ -18,10 +18,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-[project.urls]
-"Homepage" = "https://github.com/chrisjcc/ReplicantDriveSim/"
-
-[project]
 dependencies = [
     "numpy",
     "torch"
@@ -30,3 +26,6 @@ dependencies = [
     "mlagents"
     "mlflow"
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/chrisjcc/ReplicantDriveSim/"
