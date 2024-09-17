@@ -14,9 +14,9 @@ ReplicantDriveSim is an advanced traffic simulation project designed for autonom
 
 [Doxygen Documentation](https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/)
 
-[GitHub Page](https://github.com/chrisjcc/ReplicantDriveSim/)
-
 [AI Page](https://chrisjcc.github.io/ReplicantDriveSim/rl/)
+
+[GitHub Page](https://github.com/chrisjcc/ReplicantDriveSim/)
 
 ![Nissan GTR](https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim.png)
 
