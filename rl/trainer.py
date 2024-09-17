@@ -17,6 +17,7 @@ from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from ray.rllib.policy.policy import PolicySpec
 from ray.rllib.utils.typing import AgentID, MultiAgentDict, PolicyID
 from ray.train import RunConfig
 from ray.tune import Tuner
@@ -36,6 +37,12 @@ def main():
     Returns:
         None
     """
+    # Set up MLflow logging
+    experiment_name="MARLExperiment"
+    mlflow.set_experiment(experiment_name)
+
+    # Initialize Ray
+    ray.init(ignore_reinit_error=True, num_cpus=4)
 
     # Determine the current directory where the script is running
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -46,8 +53,8 @@ def main():
     # Construct the full path to the Unity executable
     unity_executable_path = os.path.join(base_dir, "libReplicantDriveSim.app")
 
-    # Initialize Ray
-    ray.init(ignore_reinit_error=True, num_cpus=4)
+    def env_creator(env_config):
+        return CustomUnityMultiAgentEnv(env_config)
 
     unity_env_handle = create_unity_env(
         file_name=unity_executable_path,  # Path to your Unity executable
@@ -56,20 +63,30 @@ def main():
         no_graphics=False,
     )
 
+    # Create an instance of our CustomUnityMultiAgentEnv
+    env_config = {
+        "initial_agent_count": 2,
+        "unity_env_handle": unity_env_handle,
+        "episode_horizon": 1000,
+    }
+
     # Register the environment with RLlib
     env_name = "CustomUnityMultiAgentEnv"
-    register_env(
-        env_name,
-        lambda config: CustomUnityMultiAgentEnv(
-            config, unity_env_handle=unity_env_handle
-        ),
-    )
+
+    # Register the environment with RLlib
+    register_env(env_name, env_creator)
+
+    env = CustomUnityMultiAgentEnv(config=env_config, unity_env_handle=unity_env_handle)
 
     # Define the configuration for the PPO algorithm
     config = PPO.get_default_config()
     config = config.environment(
         env=env_name,
-        env_config={"initial_agent_count": 2, "unity_env_handle": unity_env_handle},
+        env_config={
+            "initial_agent_count": 2,
+            "unity_env_handle": unity_env_handle,
+            "episode_horizon": 1000,
+        },
     )
     config = config.framework("torch")
     config = config.resources(num_gpus=0)
@@ -78,21 +95,7 @@ def main():
     config = config.multi_agent(
         policies={
             # Define our policies here (e.g., "default_policy")
-            "shared_policy": (
-                None,
-                gym.spaces.Box(-np.inf, np.inf, (19,)),
-                gym.spaces.Tuple(
-                    (
-                        gym.spaces.Discrete(2),
-                        gym.spaces.Box(
-                            low=np.array([-0.610865, 0.0, -8.0]),
-                            high=np.array([0.610865, 4.5, 0.0]),
-                            dtype=np.float32,
-                        ),
-                    )
-                ),
-                {},
-            ),
+            "shared_policy": PolicySpec(observation_space=env.single_agent_obs_space, action_space=env.single_agent_action_space),
         },
         policy_mapping_fn=lambda agent_id, episode, worker, **kwargs: "shared_policy",
     )
@@ -126,9 +129,6 @@ def main():
 
     # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
     config = config.environment(disable_env_checking=True)
-
-    # Set up MLflow logging
-    mlflow.set_experiment("MARLExperiment")
 
     # Initialize PPO trainer
     #    trainer = PPO(config=config)
@@ -168,7 +168,7 @@ def main():
         verbose=1,  # Verbosity level for logging
         callbacks=[
             MLflowLoggerCallback(
-                experiment_name="MARLExperiment",
+                experiment_name=experiment_name,
                 tracking_uri=mlflow.get_tracking_uri(),
                 # tracking_uri="file://" + os.path.abspath("./mlruns"),
                 save_artifact=True,

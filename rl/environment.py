@@ -28,6 +28,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
     This environment simulates a scenario with multiple agents. Each agent can perform
     both high-level and low-level actions within the Unity simulation.
+
+    Source: http://www.gitpp.com/xray/ray/-/blob/master/rllib/env/wrappers/unity3d_env.py
     """
 
     def __init__(self, config: EnvContext, *args, **kwargs):
@@ -39,6 +41,13 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         """
         super().__init__()
         self.initial_agent_count = config.get("initial_agent_count", 2)
+
+        # Reset entire env every this number of step calls.
+        self.episode_horizon = config.get("episode_horizon", 1000)
+
+        # Keep track of how many times we have called `step` so far.
+        self.episode_timesteps = 0
+
         self.unity_env_handle = config["unity_env_handle"]
         self.current_agent_count = self.initial_agent_count
 
@@ -85,21 +94,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             f"Discrete action branches: {self.behavior_spec.action_spec.discrete_branches}"
         )
 
-        # Add the private attribute `_agent_ids`, which is a set containing the ids of agents supported by the environment
-        self._agent_ids = {f"agent_{i}" for i in range(self.num_agents)}
-
-        # Establish observation and action spaces
-        self._update_spaces()
-
-    def _update_spaces(self):
-        """
-        Updates the observation and action spaces for all agents.
-
-        Returns:
-            None
-        """
         # Create the observation space for a single agent
-        single_agent_obs_space = gym.spaces.Box(
+        self._single_agent_obs_space = gym.spaces.Box(
             low=-np.inf,
             high=np.inf,
             shape=(self.size_of_single_agent_obs,),
@@ -107,7 +103,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         )
 
         # Create the action space for a single agent
-        single_agent_action_space = gym.spaces.Tuple(
+        self._single_agent_action_space = gym.spaces.Tuple(
             (
                 gym.spaces.Discrete(
                     self.behavior_spec.action_spec.discrete_branches[0]
@@ -121,17 +117,45 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             )
         )
 
+        # Add the private attribute `_agent_ids`, which is a set containing the ids of agents supported by the environment
+        self._agent_ids = {f"agent_{i}" for i in range(self.num_agents)}
+
+        # Establish observation and action spaces
+        self._update_spaces()
+
+        # ML-Agents API version.
+        api_version_string = ray.get(self.unity_env_handle.get_api_version.remote())
+        self.api_version = api_version_string.split(".")
+        self.api_version = [int(s) for s in self.api_version]
+
+    @property
+    def single_agent_obs_space(self):
+    # Define and return the observation space for a single agent
+        return self._single_agent_obs_space
+
+    @property
+    def single_agent_action_space(self):
+        # Define and return the action space for a single agent
+        return self._single_agent_action_space
+
+    def _update_spaces(self):
+        """
+        Updates the observation and action spaces for all agents.
+
+        Returns:
+            None
+        """
         # Populate observation_spaces and action_spaces for each agent
         for i in range(self.num_agents):
             agent_key = f"agent_{i}"
-            self.observation_spaces[agent_key] = single_agent_obs_space
-            self.action_spaces[agent_key] = single_agent_action_space
+            self.observation_spaces[agent_key] =  self.single_agent_obs_space
+            self.action_spaces[agent_key] =  self.single_agent_action_space
 
         self.observation_space = {
-            f"agent_{i}": single_agent_obs_space for i in range(self.num_agents)
+            f"agent_{i}": self.single_agent_obs_space for i in range(self.num_agents)
         }
         self.action_space = {
-            f"agent_{i}": single_agent_action_space for i in range(self.num_agents)
+            f"agent_{i}": self.single_agent_action_space for i in range(self.num_agents)
         }
 
     def __str__(self):
@@ -289,6 +313,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                 )
                 print(f"Setting new agent count to: {new_agent_count}")
 
+        self.episode_timesteps = 0
+
         # Reset the environment only once (ideally)
         ray.get(self.unity_env_handle.reset.remote())
         # ray.get(self.unity_env_handle.reset.remote())
@@ -341,17 +367,46 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         # Step the Unity environment
         ray.get(self.unity_env_handle.step.remote())
 
-        # Get the new state
-        decision_steps, terminal_steps = ray.get(
-            self.unity_env_handle.get_steps.remote(self.behavior_name)
-        )
+        obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict = self._get_step_results()
 
+        # Global horizon reached? -> Return __all__ truncated=True, so user
+        # can reset. Set all agents' individual `truncated` to True as well.
+        self.episode_timesteps += 1
+
+        if self.episode_timesteps > self.episode_horizon:
+            truncateds_dict =  dict({"__all__": True}, **{agent_id: True for agent_id in all_agents})
+
+        # Check if all agents are terminated
+        terminateds_dict["__all__"] = all(terminateds_dict.values())
+
+        # Check if all agents are truncated
+        truncateds_dict["__all__"] = any(truncateds_dict.values())
+
+        return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
+
+    def _get_step_results(self):
+        """Collects those agents' obs/rewards that have to act in next `step`.
+
+        Returns:
+            Tuple:
+                obs: Multi-agent observation dict.
+                    Only those observations for which to get new actions are
+                    returned.
+                rewards: Rewards dict matching `obs`.
+                dones: Done dict with only an __all__ multi-agent entry in it.
+                    __all__=True, if episode is done for all agents.
+        """
         # Process observations, rewards, and done flags
         obs_dict = {}
         rewards_dict = {}
         terminateds_dict = {}
         truncateds_dict = {}
         infos_dict = {}
+
+        # Get the new state
+        decision_steps, terminal_steps = ray.get(
+            self.unity_env_handle.get_steps.remote(self.behavior_name)
+        )
 
         # Alternative, decision_steps.agent_id_to_index
         for agent_id in decision_steps.agent_id:
@@ -372,11 +427,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             truncateds_dict[agent_key] = terminal_steps[agent_id].interrupted
             infos_dict[agent_key] = {}
 
-        # Check if all agents are terminated
-        terminateds_dict["__all__"] = all(terminateds_dict.values())
 
-        # Check if all agents are truncated
-        truncateds_dict["__all__"] = any(truncateds_dict.values())
+        # All Agents Done Check: Only use dones if all agents are done, then we should do a reset.
+        terminateds_dict["__all__"] = len(terminal_steps) == self.num_agents
+        truncateds_dict["__all__"] = all(truncateds_dict.values())
 
         return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
 
