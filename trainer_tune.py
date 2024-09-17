@@ -35,7 +35,7 @@ class UnityEnvResource:
         float_props_channel (FloatPropertiesChannel): Channel for setting float properties in Unity.
         unity_env (UnityEnvironment): The Unity environment instance.
     """
-    def __init__(self, file_name: str, worker_id: int = 0, base_port: int = 5004):
+    def __init__(self, file_name: str, worker_id: int = 0, base_port: int = 5004, no_graphics=True):
         """
         Initializes the Unity environment with specified configuration channels.
 
@@ -62,6 +62,7 @@ class UnityEnvResource:
             worker_id=worker_id,
             base_port=base_port,
             side_channels=[self.engine_configuration_channel, self.float_props_channel],
+            no_graphics=no_graphics,
             seed=42,
         )
 
@@ -548,6 +549,7 @@ def main():
         file_name="libReplicantDriveSim.app",  # Path to your Unity executable
         worker_id=0,
         base_port=5004,
+        no_graphics=True,
     )
 
     # Register the environment with RLlib
