@@ -191,24 +191,21 @@ def main():
     # Get the best trial based on a metric (e.g., 'episode_reward_mean')
     best_trial = results.get_best_trial("episode_reward_mean", mode="max")
 
-    if best_trial:
-        best_checkpoint = best_trial.checkpoint
+    if best_trial and best_trial.checkpoint:
+        # Load the model from the best checkpoint
+        best_model = PPO.from_checkpoint(best_trial.checkpoint)
 
-        if best_checkpoint:
-            # Load the model from the best checkpoint
-            best_model = PPO.from_checkpoint(best_checkpoint)
-
-            # Register the model
-            with mlflow.start_run(run_name="model_registration") as run:
-                # Log model
-                mlflow.pytorch.log_model(
-                    best_model.get_policy().model,
-                    "ppo_model",
-                    registered_model_name="PPO_Highway_Model",
-                )
-                print(f"Model registered with run ID: {run.info.run_id}")
-        else:
-            print("No best trial found. Model registration skipped.")
+        # Register the model
+        with mlflow.start_run(run_name="model_registration") as run:
+            # Log model
+            mlflow.pytorch.log_model(
+                best_model.get_policy().model,
+                "ppo_model",
+                registered_model_name="PPO_Highway_Model",
+            )
+            print(f"Model registered with run ID: {run.info.run_id}")
+    else:
+        print("No best trial found or no checkpoint. Model registration skipped.")
 
     # Make sure to close the Unity environment at the end
     ray.get(unity_env_handle.close.remote())

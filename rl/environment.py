@@ -374,7 +374,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self.episode_timesteps += 1
 
         if self.episode_timesteps > self.episode_horizon:
-            truncateds_dict =  dict({"__all__": True}, **{agent_id: True for agent_id in all_agents})
+            truncateds_dict =  dict({"__all__": True}, **{agent_id: True for agent_id in self._agent_ids})
 
         # Check if all agents are terminated
         terminateds_dict["__all__"] = all(terminateds_dict.values())
