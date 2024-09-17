@@ -161,6 +161,8 @@ class UnityEnvResource:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def get_api_version(self):
+        return self.unity_env.API_VERSION
 
 def create_unity_env(
     file_name: str, worker_id: int = 0, base_port: int = 5004, no_graphics: bool = False
