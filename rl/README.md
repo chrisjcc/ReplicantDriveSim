@@ -53,6 +53,7 @@ After training, the results and checkpoints will be saved to the directory speci
 
 ## Additional Resources
 [Ray RLlib Documentation](https://docs.ray.io/en/latest/rllib/index.html)
+
 [Multi-Agent Training](https://marllib.readthedocs.io/en/latest/index.html)
 
 
