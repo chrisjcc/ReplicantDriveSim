@@ -1,3 +1,9 @@
+---
+layout: default
+title: "AI"
+permalink: /rl/
+---
+
 # Multi-Agent Reinforcement Learning (MARL) with Ray RLlib
 
 This repository demonstrates how to train multi-agent reinforcement learning (MARL) models using [Ray RLlib](https://docs.ray.io/en/latest/rllib.html). The `trainer_tune.py` script allows you to configure, train, and evaluate MARL agents within a customizable environment.

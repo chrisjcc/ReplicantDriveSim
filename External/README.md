@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Traffic Simulation"
+title: "Traffic Architecture"
 permalink: /External/
 ---
 
