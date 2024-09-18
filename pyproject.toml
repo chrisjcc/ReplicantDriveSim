@@ -23,7 +23,8 @@ dependencies = [
   "gymnasium",
   "ray",
   "mlagents",
-  "mlflow"
+  "mlflow",
+  "nbsphinx"
 ]
 
 [project.urls]
