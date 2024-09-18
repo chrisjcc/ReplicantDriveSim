@@ -25,7 +25,8 @@ dependencies = [
   "mlagents",
   "mlflow",
   "nbsphinx",
-  'myst_parser'
+  'myst_parser',
+  "furo"
 ]
 
 [project.urls]
