@@ -102,7 +102,7 @@ sqlparse==0.4.4
 tensorboard==2.11.2
 tensorboard-data-server==0.7.2
 tensorboardX==2.6.2.2
-threadpoolctl==3.5.0
+threadpoolctl==3.1.0
 tifffile==2023.7.10
 tomli==2.0.1
 torch==1.9.0
