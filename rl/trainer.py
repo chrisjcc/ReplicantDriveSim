@@ -113,13 +113,21 @@ def main():
     config = config.framework(config_data["ppo_config"]["framework"])
     config = config.resources(num_gpus=config_data["ppo_config"]["num_gpus"])
 
+    def policy_mapping_fn(agent_id, episode, worker, **kwargs):
+        return "shared_policy"
+
     # Multi-agent configuration
     config = config.multi_agent(
         policies={
             # Define our policies here (e.g., "default_policy")
-            "shared_policy": PolicySpec(observation_space=env.single_agent_obs_space, action_space=env.single_agent_action_space),
+            "shared_policy": PolicySpec(
+                policy_class=None,  # Use default PPOTorchPolicy policy
+                observation_space=env.single_agent_obs_space,
+                action_space=env.single_agent_action_space,
+                config={}
+            )
         },
-        policy_mapping_fn=lambda agent_id, episode, worker, **kwargs: "shared_policy",
+        policy_mapping_fn=policy_mapping_fn,
     )
 
     # Rollout configuration
