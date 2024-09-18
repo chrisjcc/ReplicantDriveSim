@@ -86,7 +86,7 @@ pytz==2024.2
 PyWavelets==1.3.0
 PyYAML==6.0.1
 ray==2.7.2
-referencing==0.3.0
+referencing>=0.8.8
 requests==2.31.0
 requests-oauthlib==2.0.0
 rich==12.6.0
