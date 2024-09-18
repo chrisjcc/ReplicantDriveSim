@@ -14,6 +14,7 @@ from mlagents_envs.side_channel.engine_configuration_channel import (
 from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 
 import ray
+from ray import train
 from ray import tune
 from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
@@ -30,6 +31,8 @@ from utils import create_unity_env
 
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
+
+gym.logger.set_level(gym.logger.DISABLED)
 
 def validate_yaml_schema(data_path, schema_path):
     try:
@@ -98,13 +101,6 @@ def main():
         "unity_env_handle": unity_env_handle,
         "episode_horizon": config_data["env_config"]["episode_horizon"],
     }
-
-    # Create an instance of the environment for configuration
-    env_config = {
-        "initial_agent_count": config_data["env_config"]["initial_agent_count"],
-        "unity_env_handle": unity_env_handle,
-        "episode_horizon": config_data["env_config"]["episode_horizon"],
-    }
     env = CustomUnityMultiAgentEnv(config=env_config, unity_env_handle=unity_env_handle)
 
     # Define the configuration for the PPO algorithm
@@ -161,6 +157,11 @@ def main():
     # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
     config = config.environment(disable_env_checking=config_data["environment"]["disable_env_checking"])
 
+    config = config.checkpointing(
+        export_native_model_files=True # This option will save the model in its native format .pb for PyTorch alongside the checkpoints.
+    )
+    config = config.debugging(log_level='ERROR') # INFO, DEBUG, ERROR, WARN
+
     # Initialize PPO trainer
     #    trainer = PPO(config=config)
 
@@ -193,7 +194,11 @@ def main():
     results = tune.run(
         PPO,
         config=config,
-        checkpoint_freq=5,  # Set checkpoint frequency here
+        checkpoint_config=train.CheckpointConfig(
+            num_to_keep=1,           # Number of checkpoints to keep
+            checkpoint_frequency=1,  # Frequency of checkpointing
+            checkpoint_at_end=True,  # Save a checkpoint at the end of training
+        ),
         num_samples=1,      # Number of times to repeat the experiment
         max_failures=1,     # Maximum number of failures before stopping the experiment
         verbose=1,          # Verbosity level for logging
@@ -205,8 +210,8 @@ def main():
                 save_artifact=True,
             )
         ],
-        stop={"training_iteration": 1},  # storage_path=
-        local_dir="./ray_results",  # default ~/ray_results
+        stop={"training_iteration": 1},
+        local_dir="./ray_results",  # storage_path # default ~/ray_results
         name="PPO_Highway_Experiment",
     )
 
@@ -216,21 +221,42 @@ def main():
     # Get the best trial based on a metric (e.g., 'episode_reward_mean')
     best_trial = results.get_best_trial("episode_reward_mean", mode="max")
 
-    if best_trial and best_trial.checkpoint:
-        # Load the model from the best checkpoint
-        best_model = PPO.from_checkpoint(best_trial.checkpoint)
+    #if results.trials:
+    #    last_checkpoint = results.trials[0].checkpoint
+    #    if last_checkpoint:
+    #        # Load the model from the last checkpoint
+    #        trained_model = PPO.from_checkpoint(last_checkpoint)["shared_policy"] # "default_policy"
 
-        # Register the model
-        with mlflow.start_run(run_name="model_registration") as run:
-            # Log model
-            mlflow.pytorch.log_model(
-                best_model.get_policy().model,
-                "ppo_model",
-                registered_model_name="PPO_Highway_Model",
-            )
-            print(f"Model registered with run ID: {run.info.run_id}")
-    else:
-        print("No best trial found or no checkpoint. Model registration skipped.")
+    #        # Register the model
+    #        with mlflow.start_run(run_name="model_registration") as run:
+    #            # Log model
+    #            mlflow.pytorch.log_model(
+    #                trained_model.get_policy().model,
+    #                "ppo_model",
+    #                registered_model_name="PPO_Highway_Model",
+    #            )
+    #            print(f"Model registered with run ID: {run.info.run_id}")
+    #    else:
+    #        print("No checkpoint found. Model registration skipped.")
+    #else:
+    #    print("No trials completed. Model registration skipped.")
+
+
+    #if best_trial and best_trial.checkpoint:
+    #    # Load the model from the best checkpoint
+    #    best_model = PPO.from_checkpoint(best_trial.checkpoint)["shared_policy"] # "default_policy"
+
+    #    # Register the model
+    #    with mlflow.start_run(run_name="model_registration") as run:
+    #        # Log model
+    #        mlflow.pytorch.log_model(
+    #            best_model.get_policy().model,
+    #            "ppo_model",
+    #            registered_model_name="PPO_Highway_Model",
+    #        )
+    #        print(f"Model registered with run ID: {run.info.run_id}")
+    #else:
+    #    print("No best trial found or no checkpoint. Model registration skipped.")
 
     # Make sure to close the Unity environment at the end
     ray.get(unity_env_handle.close.remote())
