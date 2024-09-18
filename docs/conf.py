@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath("../External"))
 project = "ReplicantDriveSm"
 copyright = "2024, Christian Contreras"
 author = "Christian Contreras"
-release = "0.7.0"
+release = "0.2.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
