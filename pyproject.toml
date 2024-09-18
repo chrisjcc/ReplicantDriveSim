@@ -24,7 +24,8 @@ dependencies = [
   "ray",
   "mlagents",
   "mlflow",
-  "nbsphinx"
+  "nbsphinx",
+  'myst_parser'
 ]
 
 [project.urls]
