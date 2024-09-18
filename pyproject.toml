@@ -7,7 +7,7 @@ name = "ReplicantDriveSim"
 version = "0.2.0"
 description = "ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research."
 readme = "README.md"
-requires-python = "3.8"
+requires-python = ">=3.8"
 authors = [
   { name = "Christian Contreras-Campana", email = "chrisjcc.physics@gmail.com" },
   { name = "Emmanuel Contreras-Campana" }
