@@ -86,7 +86,7 @@ public class CreateRoad : MonoBehaviour
 
         // Make the boundary invisible
         Renderer boundaryRenderer = boundary.GetComponent<Renderer>();
-        boundaryRenderer.enabled = false;
+        boundaryRenderer.enabled = true; // Default: false
 
         // Ensure it has a collider
         BoxCollider boundaryCollider = boundary.GetComponent<BoxCollider>();

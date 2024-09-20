@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Road
   - TrafficAgent
+  - RoadBoundary
   layers:
   - Default
   - TransparentFX
@@ -13,7 +14,7 @@ TagManager:
   - Road
   - Water
   - UI
-  - 
+  - RoadBoundary
   - 
   - 
   - 
