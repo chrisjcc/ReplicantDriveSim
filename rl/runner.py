@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 
@@ -13,8 +14,15 @@ from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesC
 
 np.random.seed(42)
 
-# Set up the Unity environment with the desired executable
-env_path = "libReplicantDriveSim.app"  # Replace with your Unity environment path
+
+# Determine the current directory where the script is running
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Get the base directory by moving up one level (assuming the script is in 'rl' folder)
+base_dir = os.path.dirname(current_dir)
+
+# Construct the full path to the Unity executable
+unity_executable_path = os.path.join(base_dir, "libReplicantDriveSim.app")
 
 # Set up side channels
 # Note : A side channel will only send/receive messages when env.step or env.reset() is called.
@@ -27,7 +35,7 @@ float_props_channel.set_property("initialAgentCount", 3.0)
 
 # This is a non-blocking call that only loads the environment.
 unity_env = UnityEnvironment(
-    file_name=env_path,
+    file_name=unity_executable_path,
     side_channels=[
         engine_configuration_channel,
         float_props_channel,
