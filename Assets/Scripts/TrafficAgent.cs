@@ -8,6 +8,7 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 using System.Linq;
+using Random = UnityEngine.Random;
 
 
 // Responsible for ML-Agents specific behaviors (collecting observations, receiving actions, etc.)
@@ -43,6 +44,12 @@ public class TrafficAgent : Agent
     public float positiveReward = 1.0f;
     public float negativeReward = -0.5f;
     */
+
+    [SerializeField]
+    private float offRoadPenalty = -0.5f;
+
+    [SerializeField]
+    private float collisionWithOtherAgentPenalty = -1.0f;
 
     /// <summary>
     /// Awake is called when the script instance is being loaded.
@@ -116,10 +123,11 @@ public class TrafficAgent : Agent
 
         base.OnEpisodeBegin();
         ResetActions();
+        //ResetPosition();
 
         #if UNITY_EDITOR
         Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
-
+        Debug.Log($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
         Debug.Log("--- OnEpisodeBegin END ---");
         #endif
     }
@@ -135,6 +143,42 @@ public class TrafficAgent : Agent
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f);
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f);
     }
+
+    private void ResetPosition()
+    {
+        // Check traffic manager exists
+        if (trafficManager != null)
+        {
+            // Get a random position within the spawn area
+            Vector3 randomPosition = new Vector3(
+                UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2),
+                trafficManager.spawnHeight,
+                UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2)
+            );
+            // Set a random rotation
+            Quaternion randomRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
+
+            // Apply the new position and rotation
+            transform.SetPositionAndRotation(randomPosition, randomRotation);
+
+            // Update the agent's position in the TrafficManager if necessary
+            if (trafficManager.agentInstances.ContainsKey(gameObject.name))
+            {
+                trafficManager.agentInstances[gameObject.name] = this;
+            }
+
+            // Update the collider position if it's separate from the main GameObject
+            if (trafficManager.agentColliders.TryGetValue(gameObject.name, out Collider agentCollider))
+            {
+                if (agentCollider.transform != transform)
+                {
+                    agentCollider.transform.SetPositionAndRotation(randomPosition, randomRotation);
+                }
+            }
+        }
+    }
+
+
 
     /// <summary>
     /// Collect observations from the environment
@@ -165,6 +209,7 @@ public class TrafficAgent : Agent
             return;
         }
 
+        // Raycast observations (e.e.g observations for nearby agents and road boundaries)
         Vector3 rayStart = GetRayStartPosition(agentCollider);
 
         for (int i = 0; i < trafficManager.numberOfRays; i++)
@@ -175,10 +220,25 @@ public class TrafficAgent : Agent
             if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
             {
                 sensor.AddObservation(hit.distance / trafficManager.rayLength);
+
+                // Add information about what was hit
+                if (hit.collider.CompareTag("TrafficAgent"))
+                {
+                    sensor.AddObservation(1.0f); // Indicates hit another agent
+                }
+                else if (hit.collider.CompareTag("RoadBoundary"))
+                {
+                    sensor.AddObservation(2.0f); // Indicates hit road boundary
+                }
+                else
+                {
+                    sensor.AddObservation(0.0f); // Indicates hit something else
+                }
             }
             else
             {
                 sensor.AddObservation(1.0f); // Normalized max distance for missed raycasts
+                sensor.AddObservation(0.0f); // Indicates nothing was hit
             }
         }
 
@@ -190,9 +250,21 @@ public class TrafficAgent : Agent
         //sensor.AddObservation(transform.rotation.eulerAngles);
         sensor.AddObservation(transform.rotation.eulerAngles.y);
 
-        //Rigidbody rb = GetComponent<Rigidbody>();
-        //sensor.AddObservation(rb.velocity);
-        //Debug.Log($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
+        // Agent's own speed and orientation
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            sensor.AddObservation(rb.velocity.magnitude / 50.0f); // Normalize speed (assuming max speed is 50)
+        }
+        else
+        {
+            sensor.AddObservation(0.0f); // No Rigidbody attached or zero velocity
+            Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
+        }
+
+        // Orientation (only y rotation, normalized to [-1, 1])
+        sensor.AddObservation(transform.rotation.eulerAngles.y / 180.0f - 1.0f);
+        Debug.Log($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
 
         Debug.Log("--- CollectObservations End ---");
     }
@@ -393,6 +465,24 @@ public class TrafficAgent : Agent
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::OnCollisionEnter --");
         #endif
+
+        // Check the tag of the object we collided with
+        switch (collision.gameObject.tag)
+        {
+            case "RoadBoundary":
+                // Penalize the agent for going off the road
+                AddReward(offRoadPenalty);
+                Debug.Log($"Hit road boundary! Penalty added: {offRoadPenalty}");
+                break;
+
+            case "TrafficAgent":
+                // Penalize the agent for colliding with another traffic participant
+                AddReward(collisionWithOtherAgentPenalty);
+                Debug.Log($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
+                break;
+
+                // ... (keep other cases from the original script)
+        }
 
         /*
         // Check the tag of the object we collided with
