@@ -62,7 +62,11 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         print(f"Initializing with {self.initial_agent_count} agents")
 
         # Reset the Unity environment
-        ray.get(self.unity_env_handle.reset.remote())
+        try:
+            ray.get(self.unity_env_handle.reset.remote())
+        except Exception as e:
+            print(f"Error resetting Unity environment: {e}")
+            # Handle the error appropriately, maybe re-initialize the environment
 
         # Access the behavior specifications
         behavior_specs = ray.get(self.unity_env_handle.get_behavior_specs.remote())

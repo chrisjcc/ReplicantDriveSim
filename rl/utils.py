@@ -125,6 +125,8 @@ class UnityEnvResource:
         Returns:
             None
         """
+        if self.unity_env is None:
+            raise ValueError("Unity environment is not initialized")
         return self.unity_env.reset()
 
     def step(self):
