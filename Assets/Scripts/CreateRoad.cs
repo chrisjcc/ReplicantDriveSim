@@ -96,7 +96,7 @@ public class CreateRoad : MonoBehaviour
         }
 
         // Tag the boundary
-        boundary.tag = "TrafficAgent";
+        boundary.tag = "RoadBoundary";
 
         // Set the layer (you might want to create a specific layer for boundaries)
         int boundaryLayer = LayerMask.NameToLayer("TrafficAgent");
