@@ -135,8 +135,9 @@ public class TrafficManager : MonoBehaviour
     public bool debugVisualization = false;
 
     // Non-serialized Fields
-    [HideInInspector]
-    public float spawnAreaSize = 100f;
+    //[HideInInspector]
+    [SerializeField]
+    public float spawnAreaSize = 50.0f;
 
     [HideInInspector]
     public float spawnHeight = 0.5f;
@@ -154,7 +155,7 @@ public class TrafficManager : MonoBehaviour
     private FloatPropertiesChannel floatPropertiesChannel;
 
     [HideInInspector]
-    private bool pendingAgentCountUpdate = false;
+    public bool pendingAgentCountUpdate = false;
 
     [HideInInspector]
     private int pendingAgentCount = 0; // NEW
@@ -165,16 +166,19 @@ public class TrafficManager : MonoBehaviour
     [HideInInspector]
     private bool _hasCleanedUp = false;
 
+    // The layer you want to assign to TrafficAgents
+    public string trafficAgentLayerName = "RoadBoundary"; //"TrafficAgent"; //"NISSAN-GTR";
+
 
     private void Awake()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::Awake START ===");
+        //Debug.Log("=== TrafficManager::Awake START ===");
         #endif
 
         if (agentPrefab == null)
         {
-            Debug.LogError("Agent prefab is not assigned. Please assign it in the inspector.");
+            //Debug.LogError("Agent prefab is not assigned. Please assign it in the inspector.");
             enabled = false;
             return;
         }
@@ -182,7 +186,7 @@ public class TrafficManager : MonoBehaviour
         // Validate that the prefab has necessary components
         if (!agentPrefab.GetComponent<TrafficAgent>())
         {
-            Debug.LogError("Agent prefab does not have a TrafficAgent component. Please add one.");
+            //Debug.LogError("Agent prefab does not have a TrafficAgent component. Please add one.");
             enabled = false;
             return;
         }
@@ -206,26 +210,26 @@ public class TrafficManager : MonoBehaviour
         //initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 3.0f));
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::Awake END ===");
+        //Debug.Log("=== TrafficManager::Awake END ===");
         #endif
     }
 
     private void Start()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::Start START ===");
+        //Debug.Log("=== TrafficManager::Start START ===");
         #endif
 
         try
         {
-            Debug.Log("Attempting to create traffic simulation");
+            //Debug.Log("Attempting to create traffic simulation");
             // Assuming you have a reference to the Traffic_create and Traffic_destroy functions from the C API
             trafficSimulationPtr = Traffic_create(initialAgentCount, seed); // Create simulation with 2 agents and seed 12345
-            Debug.Log($"Traffic simulation created: {trafficSimulationPtr != IntPtr.Zero}");
+            //Debug.Log($"Traffic simulation created: {trafficSimulationPtr != IntPtr.Zero}");
 
             if (trafficSimulationPtr == IntPtr.Zero)
             {
-                Debug.LogError("Failed to create traffic simulation.");
+                //Debug.LogError("Failed to create traffic simulation.");
                 enabled = false;
                 return;
             }
@@ -244,13 +248,13 @@ public class TrafficManager : MonoBehaviour
         }
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::Start END ===");
+        //Debug.Log("=== TrafficManager::Start END ===");
         #endif
     }
     private void InitializeAgents()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::InitializeAgents START ===");
+        //Debug.Log("=== TrafficManager::InitializeAgents START ===");
         #endif
 
 
@@ -278,10 +282,10 @@ public class TrafficManager : MonoBehaviour
             }
         }
         #if UNITY_EDITOR
-        Debug.Log($"Number of agents: {agentInstances.Count}");
-        Debug.Log($"Number of collider boxes: {agentColliders.Count}");
+        //Debug.Log($"Number of agents: {agentInstances.Count}");
+        //Debug.Log($"Number of collider boxes: {agentColliders.Count}");
 
-        Debug.Log("=== TrafficManager::InitializeAgents END ===");
+        //Debug.Log("=== TrafficManager::InitializeAgents END ===");
         #endif
     }
 
@@ -308,8 +312,8 @@ public class TrafficManager : MonoBehaviour
         Quaternion rotation = GetQuaternionFromFloatVector(orientationPtr);
 
         #if UNITY_EDITOR
-        Debug.Log($"Agent {agentId}: Position = {position}, Rotation = {rotation.eulerAngles}");
-        Debug.Log($"Euler angles: Pitch={rotation.eulerAngles.x}, Yaw={rotation.eulerAngles.y}, Roll={rotation.eulerAngles.z}");
+        //Debug.Log($"Agent {agentId}: Position = {position}, Rotation = {rotation.eulerAngles}");
+        //Debug.Log($"Euler angles: Pitch={rotation.eulerAngles.x}, Yaw={rotation.eulerAngles.y}, Roll={rotation.eulerAngles.z}");
         #endif
 
         // Check if agent already exists
@@ -321,7 +325,7 @@ public class TrafficManager : MonoBehaviour
             existingAgent.transform.position = position;
             existingAgent.transform.rotation = rotation;
             existingAgent.transform.hasChanged = true;
-            Debug.Log($"Updated agent: {agentId} to position: {position} and rotation: {rotation}");
+            //Debug.Log($"Updated agent: {agentId} to position: {position} and rotation: {rotation}");
 
             //UpdateColliderForExistingAgent(existingAgent.gameObject, agentId); // NOT OIGINALLY INCLUDED (SHOULD IT BE??)
 
@@ -348,14 +352,25 @@ public class TrafficManager : MonoBehaviour
             GameObject agentObject = Instantiate(agentPrefab, position, rotation);
             agentObject.name = agentId; // Set the name of the instantiated object to the agent ID
             agentObject.transform.SetParent(this.transform); // Use 'this.transform' to refer to the TrafficSimulationManager's transform
-            Debug.Log($"Instantiated agent: {agentId}, Prefab name: {agentPrefab.name}");
+            //Debug.Log($"Instantiated agent: {agentId}, Prefab name: {agentPrefab.name}");
+
+            // Assign the layer programmatically
+            agentObject.layer = LayerMask.NameToLayer(trafficAgentLayerName);
+            Debug.Log($"Instantiated agent: {agentId}, layer name: {agentObject.layer}");
+
+            // Assign layer to all child objects if any (PROBABLY CAN REMOVE)
+            foreach (Transform child in agentObject.transform)
+            {
+                child.gameObject.layer = LayerMask.NameToLayer(trafficAgentLayerName);
+            }
 
             TrafficAgent agent = agentObject.GetComponent<TrafficAgent>();
 
             if (agent == null)
             {
-                Debug.LogWarning($"TrafficAgent component not found on the instantiated prefab for {agentId}. Adding it manually.");
+                //Debug.LogWarning($"TrafficAgent component not found on the instantiated prefab for {agentId}. Adding it manually.");
                 agent = agentObject.AddComponent<TrafficAgent>();
+                agent.MaxStep = 500; // Default 1000
             }
 
             agent.Initialize();
@@ -402,14 +417,15 @@ public class TrafficManager : MonoBehaviour
     {
         // Get the collider component from the instantiated agent or its children recursively
         Collider agentCollider = FindColliderRecursively(agentObject);
+        agentCollider.isTrigger = false;
 
         #if UNITY_EDITOR
-        Debug.Log($"agentCollider: {(agentCollider != null ? agentCollider.GetType().Name : "Not found")}");
+        //Debug.Log($"agentCollider: {(agentCollider != null ? agentCollider.GetType().Name : "Not found")}");
         #endif
 
         if (agentCollider == null)
         {
-            Debug.LogWarning($"No Collider found on the agent {agentId} or its children. Adding a BoxCollider.");
+            //Debug.LogWarning($"No Collider found on the agent {agentId} or its children. Adding a BoxCollider.");
             agentCollider = agentObject.AddComponent<BoxCollider>();
         }
 
@@ -417,7 +433,7 @@ public class TrafficManager : MonoBehaviour
         // agentColliders.Add(agentId, agentCollider);
 
         #if UNITY_EDITOR
-        Debug.Log($"Updated collider for Agent ID: {agentId}");
+        //Debug.Log($"Updated collider for Agent ID: {agentId}");
         #endif
     }
 
@@ -425,7 +441,7 @@ public class TrafficManager : MonoBehaviour
     private Collider FindColliderRecursively(GameObject obj)
     {
         #if UNITY_EDITOR
-        Debug.Log($"Searching for Collider in: {obj.name}");
+        //Debug.Log($"Searching for Collider in: {obj.name}");
         #endif
 
         // Check if the object itself has a Collider
@@ -433,9 +449,9 @@ public class TrafficManager : MonoBehaviour
 
         if (collider != null)
         {
-            Debug.Log($"Found Collider on: {obj.name}");
+            //Debug.Log($"Found Collider on: {obj.name}");
             Collider[] childColliders = obj.GetComponentsInChildren<Collider>(true);
-            Debug.Log($"Found {childColliders.Length} Collider(s) in children of: {obj.name}");
+            //Debug.Log($"Found {childColliders.Length} Collider(s) in children of: {obj.name}");
             return collider;
         }
 
@@ -446,7 +462,7 @@ public class TrafficManager : MonoBehaviour
         }
 
         #if UNITY_EDITOR
-        Debug.Log($"No Collider found in: {obj.name} or its children");
+        //Debug.Log($"No Collider found in: {obj.name} or its children");
         #endif
 
         return null;
@@ -467,7 +483,7 @@ public class TrafficManager : MonoBehaviour
     private void FixedUpdate()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::FixedUpdate START ===");
+        //Debug.Log("=== TrafficManager::FixedUpdate START ===");
         #endif
 
         if (agentInstances == null || agentColliders == null)
@@ -520,15 +536,20 @@ public class TrafficManager : MonoBehaviour
         UpdateAgentPositions();
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::FixedUpdate END ===");
+        //Debug.Log("=== TrafficManager::FixedUpdate END ===");
         #endif
+    }
+
+    private void Update()
+    {
+        UpdateAgentPositions();
     }
 
     // Update the positions of agents based on the simulation results
     public void UpdateAgentPositions()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::UpdateAgentPositions START ===");
+        //Debug.Log("=== TrafficManager::UpdateAgentPositions START ===");
         #endif
 
         // Get the initial state of agent
@@ -539,9 +560,14 @@ public class TrafficManager : MonoBehaviour
 
         HashSet<string> updatedAgents = new HashSet<string>();
 
+        // Get all vehicles from the C++ simulation
+        IntPtr vehiclesPtr = Traffic_get_agents(trafficSimulationPtr); // NEW
+        int vehicleCount = VehiclePtrVector_size(vehiclesPtr); // NEW
+
         // Process the agent positions
-        for (int i = 0; i < initialAgentCount; i++)
+        for (int i = 0; i < initialAgentCount; i++) //vehicleCount
         {
+            IntPtr vehiclePtr = VehiclePtrVector_get(vehiclesPtr, i); // NEW
             IntPtr agentIdPtr = StringFloatVectorMap_get_key(agentPositionsMap, i);
             string agentId = Marshal.PtrToStringAnsi(agentIdPtr);
 
@@ -551,7 +577,7 @@ public class TrafficManager : MonoBehaviour
             if (positionPtr == IntPtr.Zero || orientationPtr == IntPtr.Zero)
             {
                 //throw new Exception($"Failed to get position or orientation for agent {agentId}");
-                Debug.LogWarning($"Failed to get position or orientation for agent {agentId}");
+                //Debug.LogWarning($"Failed to get position or orientation for agent {agentId}");
                 continue;
             }
 
@@ -565,12 +591,18 @@ public class TrafficManager : MonoBehaviour
             if (agentInstances.TryGetValue(agentId, out TrafficAgent existingAgent))
             {
                 // Agent already exists, update its position and rotation
-                Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
+                //Debug.Log($"Agent ID: {agentId} already exists. Updating position and rotation.");
 
                 existingAgent.transform.SetPositionAndRotation(position, rotation);
                 existingAgent.transform.hasChanged = true;
                 updatedAgents.Add(agentId);
-                Debug.Log($"Updated agent: {agentId} Position: {position}, Rotation: {rotation.eulerAngles}");
+
+                // Update C++ simulation
+                Vehicle_setX(vehiclePtr, position.x); // NEW
+                Vehicle_setY(vehiclePtr, position.y); // NEW
+                Vehicle_setZ(vehiclePtr, position.z); // NEW
+
+                //Debug.Log($"Updated agent: {agentId} Position: {position}, Rotation: {rotation.eulerAngles}");
 
                 //UpdateColliderForExistingAgent(existingAgent.gameObject, agentId); // NOT ORIGINALLY INCLUDE (SHOULD IT BE??)
                 /*
@@ -639,20 +671,20 @@ public class TrafficManager : MonoBehaviour
         }
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::UpdateAgentPositions END ===");
+        //Debug.Log("=== TrafficManager::UpdateAgentPositions END ===");
         #endif
     }
 
     private void OnInitialAgentCountChanged(float newValue)
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::OnInitialAgentCountChanged START ===");
+        //Debug.Log("=== TrafficManager::OnInitialAgentCountChanged START ===");
         #endif
 
         int newAgentCount = Mathf.RoundToInt(newValue);
 
         #if UNITY_EDITOR
-        Debug.Log($"Received new initial agent count: {newAgentCount}");
+        //Debug.Log($"Received new initial agent count: {newAgentCount}");
         #endif
 
         if (newAgentCount != initialAgentCount)
@@ -660,27 +692,27 @@ public class TrafficManager : MonoBehaviour
             //initialAgentCount = newAgentCount;
             pendingAgentCount = newAgentCount; // NEW
             pendingAgentCountUpdate = true;
-            //Debug.Log($"New agent count set: {initialAgentCount}. Pending update.");
-            Debug.Log($"Pending agent count update: {pendingAgentCount}");
+            ////Debug.Log($"New agent count set: {initialAgentCount}. Pending update.");
+            //Debug.Log($"Pending agent count update: {pendingAgentCount}");
 
         }
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::OnInitialAgentCountChanged END ===");
+        //Debug.Log("=== TrafficManager::OnInitialAgentCountChanged END ===");
         #endif
     }
 
-    private void EnvironmentReset()
+    public void EnvironmentReset()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::EnvironmentReset START ===");
-        Debug.Log($"Current agent count: {initialAgentCount}, Pending update: {pendingAgentCountUpdate}");
-        Debug.Log($"Environment reset called. Current agent count: {initialAgentCount}");
+        //Debug.Log("=== TrafficManager::EnvironmentReset START ===");
+        //Debug.Log($"Current agent count: {initialAgentCount}, Pending update: {pendingAgentCountUpdate}");
+        //Debug.Log($"Environment reset called. Current agent count: {initialAgentCount}");
         #endif
 
         if (pendingAgentCountUpdate)
         {
-            Debug.Log($"Environment reset called. Current agent count: {initialAgentCount}, Pending update: {pendingAgentCountUpdate}");
+            //Debug.Log($"Environment reset called. Current agent count: {initialAgentCount}, Pending update: {pendingAgentCountUpdate}");
             initialAgentCount = pendingAgentCount; // NEW
 
             try
@@ -688,7 +720,7 @@ public class TrafficManager : MonoBehaviour
                 // Perform any necessary reset logic here
                 RestartSimulation();
 
-                Debug.Log($"Applying pending update. New agent count: {initialAgentCount}");
+                //Debug.Log($"Applying pending update. New agent count: {initialAgentCount}");
 
                 for (int i = 0; i < initialAgentCount; i++) // (pendingAgentCount - initialAgentCount) some agents might still be drving
                 {
@@ -696,7 +728,7 @@ public class TrafficManager : MonoBehaviour
                 }
 
                 pendingAgentCountUpdate = false;
-                Debug.Log($"Successfully updated to {initialAgentCount} agents");
+                //Debug.Log($"Successfully updated to {initialAgentCount} agents");
             }
             catch (Exception e)
             {
@@ -709,17 +741,17 @@ public class TrafficManager : MonoBehaviour
         }
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::EnvironmentReset END ===");
+        //Debug.Log("=== TrafficManager::EnvironmentReset END ===");
         #endif
     }
 
-    private void RestartSimulation()
+    public void RestartSimulation()
     {
         // Reset your simulation state here
         // This method should prepare the environment for a new episode
         // without fully cleaning up or disposing of objects
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::RestartSimulation START ===");
+        //Debug.Log("=== TrafficManager::RestartSimulation START ===");
         #endif
 
         try
@@ -759,28 +791,48 @@ public class TrafficManager : MonoBehaviour
         }
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::RestartSimulation END ===");
+        //Debug.Log("=== TrafficManager::RestartSimulation END ===");
         #endif
+    }
+
+    public void UpdateAgentRegistry(string agentName, TrafficAgent agent, Vector3 position, Quaternion rotation)
+    {
+        Debug.Log($"Updating registry for agent {agentName} - Position: {position}, Rotation: {rotation.eulerAngles}");
+
+        agentInstances[agentName] = agent;
+
+        // Update the agent's transform
+        agent.transform.SetPositionAndRotation(position, rotation);
+
+        // Update the collider if it exists
+        if (agentColliders.TryGetValue(agentName, out Collider agentCollider))
+        {
+            agentCollider.transform.SetPositionAndRotation(position, rotation);
+        }
+        else
+        {
+            Debug.LogWarning($"Collider not found for agent {agentName}");
+        }
     }
 
     private void OnEnable()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::OnEnable START ===");
+        //Debug.Log("=== TrafficManager::OnEnable START ===");
         #endif
         if (Academy.Instance != null)
         {
             Academy.Instance.OnEnvironmentReset += EnvironmentReset;
         }
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::OnEnable END ===");
+        //Debug.Log("=== TrafficManager::OnEnable END ===");
         #endif
     }
 
     private void OnDisable()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::OnDisable START ===");
+        //Debug.Log("=== TrafficManager::OnDisable START ===");
         #endif
 
         if (Academy.IsInitialized)
@@ -788,14 +840,14 @@ public class TrafficManager : MonoBehaviour
             Academy.Instance.OnEnvironmentReset -= EnvironmentReset;
         }
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::OnDisable END ===");
+        //Debug.Log("=== TrafficManager::OnDisable END ===");
         #endif
     }
 
     private void CleanUpSimulation()
     {
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::CleanUpSimulation START ===");
+        //Debug.Log("=== TrafficManager::CleanUpSimulation START ===");
         #endif
         if (_hasCleanedUp) return;
 
@@ -832,7 +884,7 @@ public class TrafficManager : MonoBehaviour
         }
 
         #if UNITY_EDITOR
-        Debug.Log("=== TrafficManager::CleanUpSimulation END ===");
+        //Debug.Log("=== TrafficManager::CleanUpSimulation END ===");
         #endif
         _hasCleanedUp = true;
 
@@ -841,18 +893,18 @@ public class TrafficManager : MonoBehaviour
     private void OnDestroy()
     {
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::OnDestroy START --");
+        //Debug.Log("-- TrafficManager::OnDestroy START --");
         #endif
         CleanUpSimulation();
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::OnDestroy END --");
+        //Debug.Log("-- TrafficManager::OnDestroy END --");
         #endif
     }
 
     private void CleanUpMap(ref IntPtr map)
     {
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::CleanUpMap START --");
+        //Debug.Log("-- TrafficManager::CleanUpMap START --");
         #endif
         if (map != IntPtr.Zero)
         {
@@ -860,25 +912,25 @@ public class TrafficManager : MonoBehaviour
             map = IntPtr.Zero;
         }
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::CleanUpMap END --");
+        //Debug.Log("-- TrafficManager::CleanUpMap END --");
         #endif
     }
 
     private void OnApplicationQuit()
     {
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::OnApplicationQuit START --");
+        //Debug.Log("-- TrafficManager::OnApplicationQuit START --");
         #endif
         CleanUpSimulation();
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::OnApplicationQuit END --");
+        //Debug.Log("-- TrafficManager::OnApplicationQuit END --");
         #endif
     }
 
     public void Dispose()
     {
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::Dispose --");
+        //Debug.Log("-- TrafficManager::Dispose --");
         #endif
         if (!isDisposed)
         {
@@ -887,18 +939,18 @@ public class TrafficManager : MonoBehaviour
             GC.SuppressFinalize(this);
         }
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::Dispose END --");
+        //Debug.Log("-- TrafficManager::Dispose END --");
         #endif
     }
 
     ~TrafficManager()
     {
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::~TrafficManager START --");
+        //Debug.Log("-- TrafficManager::~TrafficManager START --");
         #endif
         Dispose();
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficManager::~TrafficManager END --");
+        //Debug.Log("-- TrafficManager::~TrafficManager END --");
         #endif
     }
 }

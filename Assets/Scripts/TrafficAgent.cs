@@ -51,6 +51,13 @@ public class TrafficAgent : Agent
     [SerializeField]
     private float collisionWithOtherAgentPenalty = -1.0f;
 
+    [SerializeField]
+    private float penaltyInterval = 0.5f; // Interval in seconds between penalties
+
+    [SerializeField]
+    private float lastPenaltyTime = 0f; // Time when the last penalty was applied
+
+
     /// <summary>
     /// Awake is called when the script instance is being loaded.
     /// This is called when the script instance is being loaded, before any Start() method is called.
@@ -59,7 +66,7 @@ public class TrafficAgent : Agent
     private void Awake()
     {
         #if UNITY_EDITOR
-        Debug.Log("--- TrafficAgent::Awake Start START ---");
+        //Debug.Log("--- TrafficAgent::Awake Start START ---");
         #endif
 
         if (trafficManager == null)
@@ -81,7 +88,7 @@ public class TrafficAgent : Agent
         lowLevelActions = new float[3];
 
         #if UNITY_EDITOR
-        Debug.Log("--- TrafficAgent::Awake END ---");
+        //Debug.Log("--- TrafficAgent::Awake END ---");
         #endif
     }
 
@@ -95,17 +102,19 @@ public class TrafficAgent : Agent
     public override void Initialize()
     {
         #if UNITY_EDITOR
-        Debug.Log("--- TrafficAgent::Initialize START ---");
+        //Debug.Log("--- TrafficAgent::Initialize START ---");
         // Get the initial agent positions and create agent instances
-        Debug.Log($"TrafficAgent Initialize called on {gameObject.name}");
+        //Debug.Log($"TrafficAgent Initialize called on {gameObject.name}");
         #endif
 
         // Initialize your agent-specific variables here
         base.Initialize();
-        ResetActions();
+        ResetAgentActions();
+
+        MaxStep = 100; // Set the value directly
 
         #if UNITY_EDITOR
-        Debug.Log("--- TrafficAgent::Initialize END ---");
+        //Debug.Log("--- TrafficAgent::Initialize END ---");
         #endif
 
     }
@@ -118,24 +127,26 @@ public class TrafficAgent : Agent
     public override void OnEpisodeBegin()
     {
         #if UNITY_EDITOR
-        Debug.Log("--- OnEpisodeBegin START ---");
+        //Debug.Log("--- OnEpisodeBegin START ---");
         #endif
 
         base.OnEpisodeBegin();
-        ResetActions();
-        //ResetPosition();
+        ResetAgentActions();
+        //ResetAgentPosition();
+        //trafficManager.pendingAgentCountUpdate = true;
+        //trafficManager.EnvironmentReset(); // TODO: Review the implementation of this!!
 
         #if UNITY_EDITOR
-        Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
-        Debug.Log($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
-        Debug.Log("--- OnEpisodeBegin END ---");
-        #endif
+        //Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
+        //Debug.Log($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
+        //Debug.Log("--- OnEpisodeBegin END ---");
+#endif
     }
 
     /// <summary>
     /// Randomly select action values
     /// </summary>
-    private void ResetActions()
+    private void ResetAgentActions()
     {
         float minAngleRad = -0.610865f;
         float maxAngleRad = 0.610865f;
@@ -144,41 +155,36 @@ public class TrafficAgent : Agent
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f);
     }
 
-    private void ResetPosition()
+    public void ResetAgentPosition()
     {
-        // Check traffic manager exists
         if (trafficManager != null)
         {
-            // Get a random position within the spawn area
             Vector3 randomPosition = new Vector3(
                 UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2),
                 trafficManager.spawnHeight,
                 UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2)
             );
-            // Set a random rotation
             Quaternion randomRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
 
-            // Apply the new position and rotation
-            transform.SetPositionAndRotation(randomPosition, randomRotation);
+            Debug.Log($"Resetting agent {gameObject.name} to position: {randomPosition}, rotation: {randomRotation.eulerAngles}");
 
-            // Update the agent's position in the TrafficManager if necessary
-            if (trafficManager.agentInstances.ContainsKey(gameObject.name))
-            {
-                trafficManager.agentInstances[gameObject.name] = this;
-            }
+            // Update the agent's position in the TrafficManager
+            UpdateAgentPosition(randomPosition, randomRotation);
 
-            // Update the collider position if it's separate from the main GameObject
-            if (trafficManager.agentColliders.TryGetValue(gameObject.name, out Collider agentCollider))
-            {
-                if (agentCollider.transform != transform)
-                {
-                    agentCollider.transform.SetPositionAndRotation(randomPosition, randomRotation);
-                }
-            }
+        }
+        else
+        {
+            Debug.LogError($"TrafficManager is null for agent {gameObject.name}");
         }
     }
 
+    public void UpdateAgentPosition(Vector3 position, Quaternion rotation)
+    {
+        Debug.Log($"Updating agent {gameObject.name} position to {position}, rotation to {rotation.eulerAngles}");
 
+        // Instead of updating its own position, let the TrafficManager handle it
+        trafficManager.UpdateAgentRegistry(gameObject.name, this, position, rotation);
+    }
 
     /// <summary>
     /// Collect observations from the environment
@@ -187,13 +193,13 @@ public class TrafficAgent : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         #if UNITY_EDITOR
-        Debug.Log("--- CollectObservations Start ---");
+        //Debug.Log("--- CollectObservations Start ---");
 
-        Debug.Log($"CollectObservations called. trafficManager null? {trafficManager == null}");
-        Debug.Log($"trafficManager.agentColliders null? {trafficManager.agentColliders == null}");
-        Debug.Log($"trafficManager.agentColliders count: {trafficManager.agentColliders?.Count ?? 0}");
-        Debug.Log($"Number of agent colliders: {trafficManager.agentColliders.Count}");
-        Debug.Log($"Collected {sensor.ObservationSize()} observations");
+        //Debug.Log($"CollectObservations called. trafficManager null? {trafficManager == null}");
+        //Debug.Log($"trafficManager.agentColliders null? {trafficManager.agentColliders == null}");
+        //Debug.Log($"trafficManager.agentColliders count: {trafficManager.agentColliders?.Count ?? 0}");
+        //Debug.Log($"Number of agent colliders: {trafficManager.agentColliders.Count}");
+        //Debug.Log($"Collected {sensor.ObservationSize()} observations");
         #endif
 
         if (trafficManager == null || !trafficManager.agentColliders.ContainsKey(gameObject.name))
@@ -242,7 +248,7 @@ public class TrafficAgent : Agent
             }
         }
 
-        Debug.Log($"CollectObservations: Euler angles: Pitch={transform.rotation.eulerAngles.x}, Yaw={transform.rotation.eulerAngles.y}, Roll={transform.rotation.eulerAngles.z}");
+        //Debug.Log($"CollectObservations: Euler angles: Pitch={transform.rotation.eulerAngles.x}, Yaw={transform.rotation.eulerAngles.y}, Roll={transform.rotation.eulerAngles.z}");
 
         // Add agent's position and rotation as observations
         sensor.AddObservation(transform.position);
@@ -252,6 +258,9 @@ public class TrafficAgent : Agent
 
         // Agent's own speed and orientation
         Rigidbody rb = GetComponent<Rigidbody>();
+        //rb.isKinematic = true;
+        //rb.useGravity = false;
+
         if (rb != null)
         {
             sensor.AddObservation(rb.velocity.magnitude / 50.0f); // Normalize speed (assuming max speed is 50)
@@ -264,9 +273,9 @@ public class TrafficAgent : Agent
 
         // Orientation (only y rotation, normalized to [-1, 1])
         sensor.AddObservation(transform.rotation.eulerAngles.y / 180.0f - 1.0f);
-        Debug.Log($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
+        //Debug.Log($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
 
-        Debug.Log("--- CollectObservations End ---");
+        //Debug.Log("--- CollectObservations End ---");
     }
 
     /// <summary>
@@ -279,7 +288,7 @@ public class TrafficAgent : Agent
     {
         // Debug logs to check method calls
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::Heuristic START --");
+        //Debug.Log("-- TrafficAgent::Heuristic START --");
         #endif
 
         // Get discrete actions array from ActionBuffers
@@ -301,12 +310,12 @@ public class TrafficAgent : Agent
         // Sample a random value for braking
         continuousActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Braking
 
-        Debug.Log("Heuristic method called. Discrete Actions: " +
-                  string.Join(", ", discreteActions) +
-                  " Continuous Actions: " + string.Join(", ", continuousActions));
+        //Debug.Log("Heuristic method called. Discrete Actions: " +
+        //          string.Join(", ", discreteActions) +
+        //          " Continuous Actions: " + string.Join(", ", continuousActions));
 
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::Heuristic END --");
+        //Debug.Log("-- TrafficAgent::Heuristic END --");
         #endif
     }
 
@@ -317,10 +326,10 @@ public class TrafficAgent : Agent
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::OnActionReceived --");
+        //Debug.Log("-- TrafficAgent::OnActionReceived --");
 
-        Debug.Log($"Discrete actions: {string.Join(", ", actionBuffers.DiscreteActions)}");
-        Debug.Log($"Continuous actions: {string.Join(", ", actionBuffers.ContinuousActions)}");
+        //Debug.Log($"Discrete actions: {string.Join(", ", actionBuffers.DiscreteActions)}");
+        //Debug.Log($"Continuous actions: {string.Join(", ", actionBuffers.ContinuousActions)}");
         #endif
 
         // Process Discrete (High-Level) Actions
@@ -354,7 +363,7 @@ public class TrafficAgent : Agent
         // transform.Rotate(Vector3.up, lowLevelActions[0] * Time.fixedDeltaTime);
 
         #if UNITY_EDITOR
-        Debug.Log("-- OnActionReceived END --");
+        //Debug.Log("-- OnActionReceived END --");
         #endif
     }
 
@@ -370,7 +379,7 @@ public class TrafficAgent : Agent
          * updating non-physics game logic, and rendering-related updates.
          */
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::FixedUpdate START --");
+        //Debug.Log("-- TrafficAgent::FixedUpdate START --");
         #endif
 
         // Only draw debug rays if visualization is enabled
@@ -380,7 +389,7 @@ public class TrafficAgent : Agent
         }
 
         #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::FixedUpdate END --");
+        //Debug.Log("-- TrafficAgent::FixedUpdate END --");
         #endif
     }
 
@@ -390,8 +399,16 @@ public class TrafficAgent : Agent
     void Update()
     {
         #if UNITY_EDITOR
-        Debug.Log($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
+        //Debug.Log($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
         #endif
+
+        /*
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 0.1f);
+        foreach (var hitCollider in hitColliders)
+        {
+            Debug.Log($"Overlapping with: {hitCollider.gameObject.name}");
+        }
+        */
     }
 
     /// <summary>
@@ -424,12 +441,12 @@ public class TrafficAgent : Agent
             if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
             {
                 Debug.DrawRay(rayStart, direction * hit.distance, hitColor, 0.0f);
-                Debug.Log($"Ray {i} hit at distance: {hit.distance}");
+                //Debug.Log($"Ray {i} hit at distance: {hit.distance}");
             }
             else
             {
                 Debug.DrawRay(rayStart, direction * trafficManager.rayLength, missColor, 0.0f);
-                Debug.Log($"Ray {i} did not hit");
+                //Debug.Log($"Ray {i} did not hit");
             }
         }
     }
@@ -465,6 +482,19 @@ public class TrafficAgent : Agent
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::OnCollisionEnter --");
         #endif
+        Debug.Log($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
+
+        if (collision.gameObject.CompareTag("RoadBoundary") ||
+            collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
+        {
+            Debug.Log("Collision with RoadBoundary detected!");
+            // Your existing code for handling the collision
+        }
+
+        /*
+        Note: Perhaps the best advice is to start simple and only add complexity as needed.
+        In general, you should reward results rather than actions you think will lead to the desired results.
+        */
 
         // Check the tag of the object we collided with
         switch (collision.gameObject.tag)
@@ -481,13 +511,8 @@ public class TrafficAgent : Agent
                 Debug.Log($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
                 break;
 
-                // ... (keep other cases from the original script)
-        }
-
-        /*
-        // Check the tag of the object we collided with
-        switch (collision.gameObject.tag) // collision.collider.CompareTag("boundary")
-        {
+            // ... (keep other cases from the original script)
+            /*
             case "Goal":
                 // Reward the agent for reaching the goal
                 AddReward(positiveReward);
@@ -527,21 +552,15 @@ public class TrafficAgent : Agent
                 AddReward(-0.1f);
                 Debug.Log("Unspecified collision! Small penalty added: -0.1");
                 break;
+            */
         }
-        */
     }
 
-    void GetRandomActions()
-    {
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
-
-        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
-    }
-
-    void OnCollisionStay(Collision collision)
+    /// <summary>
+    /// Called every fixed frame-rate frame for the duration of the collision
+    /// </summary>
+    /// <param name="collision">Information about the ongoing collision</param>
+    private void OnCollisionStay(Collision collision)
     {
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::OnCollisionStay --");
@@ -554,7 +573,11 @@ public class TrafficAgent : Agent
         }
     }
 
-    void OnCollisionExit(Collision collision)
+    /// <summary>
+    /// Called when the collider has stopped touching another collider
+    /// </summary>
+    /// <param name="collision">Information about the collision that has ended</param>
+    public void OnCollisionExit(Collision collision)
     {
         #if UNITY_EDITOR
         Debug.Log("-- TrafficAgent::OnCollisionExit --");
@@ -567,6 +590,122 @@ public class TrafficAgent : Agent
         }
     }
 
+    /// <summary>
+    /// Called when the Collider enters the trigger
+    /// </summary>
+    /// <param name="other">The other Collider involved in this collision</param>
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log($"Trigger entered with {other.gameObject.name}, tag: {other.gameObject.tag}, layer: {LayerMask.LayerToName(other.gameObject.layer)}");
+
+        // Check the tag of the object we triggered
+        if (other.gameObject.CompareTag("RoadBoundary"))
+        {
+            // Penalize the agent for going off the road
+            AddReward(offRoadPenalty);
+            Debug.Log($"Entered road boundary trigger! Penalty added: {offRoadPenalty}");
+        }
+
+        /*
+         * This method is called when a collider enters the trigger zone of another collider set as a trigger.
+         * Use cases:
+         *   - Detecting when an agent enters a specific area
+         *   - Activating events when an agent reaches a checkpoint
+         *   - Collecting items or power-ups
+         */
+        // Implementation here
+        /*
+        if (other.CompareTag("Agent"))
+        {
+            // Agent entered a checkpoint
+            AddReward(1.0f);
+            Debug.Log("Agent reached checkpoint!");
+        }
+        else if (other.CompareTag("Collectible"))
+        {
+            // Agent collected an item
+            AddReward(0.5f);
+            Destroy(other.gameObject);
+            Debug.Log("Item collected!");
+        }
+        */
+    }
+
+    /// <summary>
+    /// Called every fixed frame-rate frame for the duration the Collider stays in the trigger
+    /// </summary>
+    /// <param name="other">The other Collider involved in this collision</param>
+    private void OnTriggerStay(Collider other)
+    {
+        /*
+         * This method is called every fixed frame-rate frame while a collider remains inside the trigger zone.
+         * Use cases:
+         *   - Applying continuous effects while an agent is in an area
+         *   - Monitoring time spent in a specific zone
+         *   - Gradually increasing or decreasing a value based on presence in an area
+         */
+        // Implementation here
+        if (other.gameObject.CompareTag("RoadBoundary"))
+        {
+            // Check if enough time has passed since the last penalty
+            if (Time.time - lastPenaltyTime >= penaltyInterval)
+            {
+                // Apply the penalty
+                AddReward(offRoadPenalty);
+                lastPenaltyTime = Time.time;
+
+                #if UNITY_EDITOR
+                Debug.Log($"Staying in road boundary! Penalty added: {offRoadPenalty}");
+                #endif
+            }
+        }
+    }
+
+    /// <summary>
+    /// Called when the Collider has stopped touching the trigger
+    /// </summary>
+    /// <param name="other">The other Collider involved in this collision</param>
+    private void OnTriggerExit(Collider other)
+    {
+        /*
+         * This method is called when a collider exits the trigger zone.
+         * Use cases:
+         *    - Deactivating effects when an agent leaves an area
+         *    - Applying final rewards or penalties for leaving a zone
+         *    - Resetting states or counters when an agent exits an area
+         */
+        // Implementation here
+        if (other.gameObject.CompareTag("RoadBoundary"))
+        {
+            // Reset the last penalty time
+            lastPenaltyTime = 0f;
+
+            #if UNITY_EDITOR
+            Debug.Log("Exited road boundary area");
+            #endif
+
+            // Optionally, you could add a small reward for getting back on the road
+            // AddReward(backOnRoadReward);
+        }
+    }
+
+    void GetRandomActions()
+    {
+        float minAngleRad = -0.610865f; // -35 degrees in radians
+        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+
+        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
+    }
+
+    /*
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(transform.position, transform.localScale);
+    }
+    */
     private void LogToFile(string message)
     {
         string path = Application.dataPath + "/debug_log.txt";
