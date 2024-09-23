@@ -153,6 +153,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
   roadPhysicsMaterial: {fileID: 0}
+  roadWidth: 30
+  roadLength: 3250
+  boundaryHeight: 5
 --- !u!4 &102826275
 Transform:
   m_ObjectHideFlags: 0
@@ -221,9 +224,11 @@ MonoBehaviour:
   rayLength: 200
   raycastAngle: 90
   debugVisualization: 1
-  spawnAreaSize: 100
+  spawnAreaSize: 10
   spawnHeight: 0.5
   AngleStep: 0
+  pendingAgentCountUpdate: 0
+  trafficAgentLayerName: RoadBoundary
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

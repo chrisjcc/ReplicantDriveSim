@@ -112,7 +112,7 @@ public class TrafficAgent : Agent
         base.Initialize();
         ResetAgentActions();
 
-        MaxStep = 500; // Max number of steps
+        MaxStep = 2000; // Max number of steps
 
         #if UNITY_EDITOR
         //Debug.Log("--- TrafficAgent::Initialize END ---");
@@ -128,20 +128,20 @@ public class TrafficAgent : Agent
     public override void OnEpisodeBegin()
     {
         #if UNITY_EDITOR
-        //Debug.Log("--- OnEpisodeBegin START ---");
+        Debug.Log("--- OnEpisodeBegin START ---");
         #endif
 
         base.OnEpisodeBegin();
         ResetAgentActions();
-        //ResetAgentPosition();
+        ResetAgentPosition();
         //trafficManager.pendingAgentCountUpdate = true;
         //trafficManager.EnvironmentReset(); // TODO: Review the implementation of this!!
 
         #if UNITY_EDITOR
         //Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
         //Debug.Log($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
-        //Debug.Log("--- OnEpisodeBegin END ---");
-#endif
+        Debug.Log("--- OnEpisodeBegin END ---");
+        #endif
     }
 
     /// <summary>
@@ -167,24 +167,41 @@ public class TrafficAgent : Agent
             );
             Quaternion randomRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
 
-            Debug.Log($"Resetting agent {gameObject.name} to position: {randomPosition}, rotation: {randomRotation.eulerAngles}");
+            Debug.Log($"Resetting agent {gameObject.name} - Position: {randomPosition}, Rotation: {randomRotation.eulerAngles}");
 
-            // Update the agent's position in the TrafficManager
-            UpdateAgentPosition(randomPosition, randomRotation);
+            IntPtr vehiclePtr = TrafficManager.Traffic_get_agent_by_name(trafficManager.trafficSimulationPtr, gameObject.name);
 
+            // Update the agent's transform if it exists
+            if (trafficManager.agentInstances.TryGetValue(gameObject.name, out TrafficAgent agentInstances))
+            {
+                // Update the game object if it exists
+                agentInstances.transform.SetPositionAndRotation(randomPosition, randomRotation);
+
+            }
+            else
+            {
+                Debug.LogWarning($"Instance not found for agent {gameObject.name}");
+            }
+
+            // Update the collider if it exists
+            if (trafficManager.agentColliders.TryGetValue(gameObject.name, out Collider agentCollider))
+            {
+                agentCollider.transform.SetPositionAndRotation(randomPosition, randomRotation);
+            }
+            else
+            {
+                Debug.LogWarning($"Collider not found for agent {gameObject.name}");
+            }
+
+            // Update C++ simulation
+            TrafficManager.Vehicle_setX(vehiclePtr, randomPosition.x); // NEW
+            TrafficManager.Vehicle_setY(vehiclePtr, randomPosition.y); // NEW
+            TrafficManager.Vehicle_setZ(vehiclePtr, randomPosition.z); // NEW
         }
         else
         {
             Debug.LogError($"TrafficManager is null for agent {gameObject.name}");
         }
-    }
-
-    public void UpdateAgentPosition(Vector3 position, Quaternion rotation)
-    {
-        Debug.Log($"Updating agent {gameObject.name} position to {position}, rotation to {rotation.eulerAngles}");
-
-        // Instead of updating its own position, let the TrafficManager handle it
-        trafficManager.UpdateAgentRegistry(gameObject.name, this, position, rotation);
     }
 
     /// <summary>

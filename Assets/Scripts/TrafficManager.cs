@@ -50,6 +50,9 @@ public class TrafficManager : MonoBehaviour
     public static extern IntPtr Traffic_get_agents(IntPtr traffic);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr Traffic_get_agent_by_name(IntPtr traffic, string name);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void Vehicle_setX(IntPtr vehicle, float x);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -135,7 +138,7 @@ public class TrafficManager : MonoBehaviour
     public bool debugVisualization = false;
 
     [SerializeField]
-    public float spawnAreaSize = 50.0f;
+    public float spawnAreaSize = 10.0f;
 
     // Non-serialized Fields
     [HideInInspector]
@@ -794,6 +797,7 @@ public class TrafficManager : MonoBehaviour
         #endif
     }
 
+    /*
     public void UpdateAgentRegistry(string agentName, TrafficAgent agent, Vector3 position, Quaternion rotation)
     {
         Debug.Log($"Updating registry for agent {agentName} - Position: {position}, Rotation: {rotation.eulerAngles}");
@@ -813,6 +817,7 @@ public class TrafficManager : MonoBehaviour
             Debug.LogWarning($"Collider not found for agent {agentName}");
         }
     }
+    */
 
     private void OnEnable()
     {
