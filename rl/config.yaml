@@ -42,3 +42,6 @@ training:
 
 environment:
   disable_env_checking: true
+
+stop:
+  training_iteration: 1

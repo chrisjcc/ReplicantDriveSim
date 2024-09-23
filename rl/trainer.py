@@ -33,6 +33,10 @@ from utils import create_unity_env
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
 
+# Set it for the current notebook environment
+os.environ["RAY_AIR_NEW_OUTPUT"] = "0"
+os.environ['RAY_AIR_RICH_LAYOUT'] = "0"
+
 gym.logger.set_level(gym.logger.DISABLED)
 
 def validate_yaml_schema(data_path, schema_path):
@@ -72,7 +76,18 @@ def main():
     mlflow.set_experiment(config_data["mlflow"]["experiment_name"])
 
     # Initialize Ray
-    ray.init(ignore_reinit_error=True, num_cpus=config_data["ray"]["num_cpus"])
+    ray.init(
+        ignore_reinit_error=True,
+        num_cpus=config_data["ray"]["num_cpus"],
+        runtime_env={
+            "env_vars": {
+                "RAY_AIR_NEW_OUTPUT": "0",
+                "RAY_AIR_RICH_LAYOUT": "0"
+            }
+        }
+    )
+
+
 
     # Get the base directory by moving up one level (assuming the script is in 'rl' folder)
     base_dir = os.path.dirname(current_dir)
@@ -199,6 +214,7 @@ def main():
     results = tune.run(
         PPO,
         config=config,
+        name="PPO_Highway_Experiment",
         checkpoint_config=train.CheckpointConfig(
             num_to_keep=1,           # Number of checkpoints to keep
             checkpoint_frequency=1,  # Frequency of checkpointing
@@ -216,11 +232,10 @@ def main():
                 tags=tags,
             )
         ],
-        #resume="AUTO",
+        resume=False, # "AUTO",
         stop={"training_iteration": 1},
-        #storage_path=os.path.abspath("./mlruns"), # default ~/ray_results
         local_dir="./ray_results",
-        name="PPO_Highway_Experiment",
+        #storage_path=os.path.abspath("./mlruns"), # default ~/ray_results
     )
 
     # Print the results dictionary of the training to inspect the structure
@@ -236,6 +251,7 @@ def main():
         if best_trial and best_trial.checkpoint or last_checkpoint:
             # Load the model from the last checkpoint
             policy = Policy.from_checkpoint(checkpoint)["shared_policy"]
+            print(f"TODO: Loaded policy: {policy}")
 
             # The most recent experiment and run will be the first one
             experiment = mlflow.get_experiment_by_name(config_data["mlflow"]["experiment_name"])

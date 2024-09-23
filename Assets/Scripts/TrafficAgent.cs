@@ -36,15 +36,6 @@ public class TrafficAgent : Agent
     [HideInInspector]
     Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
 
-    [HideInInspector]
-    private bool isGrounded;
-
-    /*
-    private Rigidbody rb;
-    public float positiveReward = 1.0f;
-    public float negativeReward = -0.5f;
-    */
-
     [SerializeField]
     private float offRoadPenalty = -0.5f;
 
@@ -56,6 +47,16 @@ public class TrafficAgent : Agent
 
     [SerializeField]
     private float lastPenaltyTime = 0f; // Time when the last penalty was applied
+
+
+    [HideInInspector]
+    private bool isGrounded;
+
+    /*
+    private Rigidbody rb;
+    public float positiveReward = 1.0f;
+    public float negativeReward = -0.5f;
+    */
 
 
     /// <summary>
@@ -111,7 +112,7 @@ public class TrafficAgent : Agent
         base.Initialize();
         ResetAgentActions();
 
-        MaxStep = 100; // Set the value directly
+        MaxStep = 500; // Max number of steps
 
         #if UNITY_EDITOR
         //Debug.Log("--- TrafficAgent::Initialize END ---");
@@ -350,13 +351,6 @@ public class TrafficAgent : Agent
 
         //SetReward(reward); // To set the reward to a specific value at a particular point in time.
         AddReward(reward); // To incrementally build up the reward over time
-
-        /*
-        if (done)
-        {
-            EndEpisode();
-        }
-        */
 
         // Move this to FixedUpdate
         // rb.MovePosition(transform.position + transform.forward * lowLevelActions[1] * Time.fixedDeltaTime);
@@ -699,13 +693,6 @@ public class TrafficAgent : Agent
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
     }
 
-    /*
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(transform.position, transform.localScale);
-    }
-    */
     private void LogToFile(string message)
     {
         string path = Application.dataPath + "/debug_log.txt";

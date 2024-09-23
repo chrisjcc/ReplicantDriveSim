@@ -134,11 +134,10 @@ public class TrafficManager : MonoBehaviour
     [SerializeField]
     public bool debugVisualization = false;
 
-    // Non-serialized Fields
-    //[HideInInspector]
     [SerializeField]
     public float spawnAreaSize = 50.0f;
 
+    // Non-serialized Fields
     [HideInInspector]
     public float spawnHeight = 0.5f;
 
@@ -167,7 +166,7 @@ public class TrafficManager : MonoBehaviour
     private bool _hasCleanedUp = false;
 
     // The layer you want to assign to TrafficAgents
-    public string trafficAgentLayerName = "RoadBoundary"; //"TrafficAgent"; //"NISSAN-GTR";
+    public string trafficAgentLayerName = "RoadBoundary";
 
 
     private void Awake()
