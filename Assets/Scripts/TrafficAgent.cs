@@ -563,7 +563,21 @@ public class TrafficAgent : Agent
         // Check if we're colliding with the road
         if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
         {
-            isGrounded = true;
+            // Small positive reward for staying on the road
+            AddReward(0.01f);
+
+            #if UNITY_EDITOR
+            Debug.Log("Agent rewarded for staying on the road");
+            #endif
+        }
+        else
+        {
+            // Penalize the agent for being off the road
+            AddReward(-0.1f);
+
+            #if UNITY_EDITOR
+            Debug.Log("Agent penalized for being off the road");
+            #endif
         }
     }
 
