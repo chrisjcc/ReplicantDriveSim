@@ -235,6 +235,8 @@ public class TrafficManager : MonoBehaviour
         // Subscribe to the OnFloatPropertiesChanged event
         floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
 
+        floatPropertiesChannel.RegisterCallback("MaxSteps", MaxEpisodeSteps);
+
         // Get the initialAgentCount parameter from the environment parameters
         //var envParameters = Academy.Instance.EnvironmentParameters;
         //initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 3.0f));
@@ -1748,6 +1750,15 @@ public class TrafficManager : MonoBehaviour
         }
 
         LogDebug("TrafficManager::OnInitialAgentCountChanged completely successfully.");
+    }
+
+    private void MaxEpisodeSteps(float newValue)
+    {
+        LogDebug("TrafficManager::MaxEpisodeSteps started.");
+
+        MaxSteps = Mathf.RoundToInt(newValue);
+
+        LogDebug("TrafficManager::MaxEpisodeSteps completely successfully.");
     }
 
     /// <summary>

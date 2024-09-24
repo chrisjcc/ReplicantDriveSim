@@ -25,10 +25,12 @@ from ray.tune.registry import register_env
 from environment import CustomUnityMultiAgentEnv
 from utils import create_unity_env
 
+from mlflow.models.signature import ModelSignature
+from mlflow.types.schema import Schema, TensorSpec
 
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
-version = "0"
+version = "0" # Default "1"
 os.environ["RAY_AIR_NEW_OUTPUT"] = version
 os.environ['RAY_AIR_RICH_LAYOUT'] = version
 gym.logger.set_level(gym.logger.DISABLED)
@@ -193,11 +195,20 @@ def main():
             run_id = runs.iloc[0].run_id
             run_name = f"PPO_CustomUnityMultiAgentEnv_{best_result.metrics['trial_id']}"
 
+            input_schema = Schema([
+                TensorSpec(np.dtype(np.float32), (-1, env.size_of_single_agent_obs), agent_id)
+                for agent_id in env._agent_ids
+            ])
+
+            model_signature = ModelSignature(inputs=input_schema)
+
             with mlflow.start_run(run_name=run_name, experiment_id=experiment_id, run_id=run_id, tags=tags) as run:
                 mlflow.pytorch.log_model(
-                    policy.model,
-                    "ppo_model",
+                    pytorch_model=policy.model,
+                    artifact_path="ppo_model",
                     registered_model_name="PPO_Highway_Model",
+                    #input_example=env.observation_space_sample(),
+                    signature=model_signature, #False,
                 )
                 print(f"Model registered with run ID: {run.info.run_id}")
         else:

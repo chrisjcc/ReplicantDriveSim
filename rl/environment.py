@@ -43,7 +43,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self.initial_agent_count = config.get("initial_agent_count", 2)
 
         # Reset entire env every this number of step calls.
-        self.episode_horizon = config.get("episode_horizon", 1000)
+        self.max_episode_steps = config.get("episode_horizon", 1000)
 
         # Keep track of how many times we have called `step` so far.
         self.episode_timesteps = 0
@@ -55,6 +55,13 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         ray.get(
             self.unity_env_handle.set_float_property.remote(
                 "initialAgentCount", self.initial_agent_count
+            )
+        )
+
+        # Set the max number steps per episode
+        ray.get(
+            self.unity_env_handle.set_float_property.remote(
+                "MaxSteps", self.max_episode_steps
             )
         )
 
@@ -377,7 +384,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         # can reset. Set all agents' individual `truncated` to True as well.
         self.episode_timesteps += 1
 
-        if self.episode_timesteps > self.episode_horizon:
+        if self.episode_timesteps > self.max_episode_steps:
             truncateds_dict =  dict({"__all__": True}, **{agent_id: True for agent_id in self._agent_ids})
 
         # Check if all agents are terminated
