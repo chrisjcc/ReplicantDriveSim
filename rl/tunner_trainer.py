@@ -1,6 +1,7 @@
 import os
 import yaml
 import yamale
+
 import gymnasium as gym
 import mlflow
 import numpy as np
@@ -22,8 +23,8 @@ from ray.train import RunConfig
 from ray.tune import Tuner
 from ray.tune.registry import register_env
 from environment import CustomUnityMultiAgentEnv
-from torchsummary import summary
 from utils import create_unity_env
+
 
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
@@ -146,7 +147,7 @@ def main():
             checkpoint_config=train.CheckpointConfig(
                 num_to_keep=1,
                 checkpoint_frequency=1,
-                checkpoint_at_end=True,
+                #checkpoint_at_end=True,
             ),
             callbacks=[
                 MLflowLoggerCallback(
@@ -175,11 +176,16 @@ def main():
     
     if best_result:
         checkpoint = best_result.checkpoint
+
         if checkpoint:
             policy = Policy.from_checkpoint(checkpoint)["shared_policy"]
             print(f"TODO: Loaded policy: {policy}")
-            #input_shape=(env.size_of_single_agent_obs,)
-            #print(f"{summary(policy.model, input_size=input_shape)}")
+
+            policy.export_model(
+                #f"{checkpoint}_saved_model",
+                "saved_model",
+                onnx=None, # OpSet 14-15: These are more recent versions that may include newer features.
+            )
 
             experiment = mlflow.get_experiment_by_name(config_data["mlflow"]["experiment_name"])
             experiment_id = experiment.experiment_id

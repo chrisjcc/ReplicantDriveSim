@@ -14,62 +14,48 @@ using Random = UnityEngine.Random;
 // Responsible for ML-Agents specific behaviors (collecting observations, receiving actions, etc.)
 public class TrafficAgent : Agent
 {
-    // Properties
-    [HideInInspector]
-    private TrafficManager trafficManager;
+    // Traffic Manager
+    [HideInInspector] private TrafficManager trafficManager;
 
-    [HideInInspector]
-    public int highLevelActions;
+    // Agent Actions
+    [HideInInspector] public int highLevelActions;
+    [HideInInspector] public float[] lowLevelActions;
 
-    [HideInInspector]
-    public float[] lowLevelActions;
+    // Visualization
+    [SerializeField] private Color hitColor = Color.red;
+    [SerializeField] private Color missColor = Color.green;
+    [SerializeField] private bool debugVisualization = false;
 
-    [SerializeField]
-    private Color hitColor = Color.red;
+    // Channel Identifier
+    [HideInInspector] private Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
 
-    [SerializeField]
-    private Color missColor = Color.green;
+    // Penalty Settings
+    [SerializeField] private float offRoadPenalty = -0.5f;
+    [SerializeField] private float collisionWithOtherAgentPenalty = -1.0f;
+    [SerializeField] private float penaltyInterval = 0.5f; // Interval in seconds between penalties
+    [SerializeField] private float lastPenaltyTime = 0f; // Time when the last penalty was applied
 
-    [SerializeField]
-    private bool debugVisualization = false;
+    // Collider
+    [HideInInspector] private Collider agentCollider;
 
-    [HideInInspector]
-    Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
-
-    [SerializeField]
-    private float offRoadPenalty = -0.5f;
-
-    [SerializeField]
-    private float collisionWithOtherAgentPenalty = -1.0f;
-
-    [SerializeField]
-    private float penaltyInterval = 0.5f; // Interval in seconds between penalties
-
-    [SerializeField]
-    private float lastPenaltyTime = 0f; // Time when the last penalty was applied
-
-
-    [HideInInspector]
-    private bool isGrounded;
-
-    /*
-    private Rigidbody rb;
-    public float positiveReward = 1.0f;
-    public float negativeReward = -0.5f;
-    */
-
+    // Grounding
+    [HideInInspector] private bool isGrounded;
 
     /// <summary>
-    /// Awake is called when the script instance is being loaded.
-    /// This is called when the script instance is being loaded, before any Start() method is called.
-    /// It is often used for initializing references to other objects that are already present in the scene.
+    /// Initializes the TrafficAgent when the script instance is being loaded.
+    ///
+    /// This method is called before any Start() method and is used for:
+    /// 1. Finding and validating the TrafficManager in the scene.
+    /// 2. Initializing the lowLevelActions array for steering, acceleration, and braking.
+    ///
+    /// Throws an exception if TrafficManager is not found in the scene.
+    ///
     /// </summary>
     private void Awake()
     {
-        #if UNITY_EDITOR
-        //Debug.Log("--- TrafficAgent::Awake Start START ---");
-        #endif
+        LogDebug("TrafficAgent::Awake Start started.");
 
+        // Try to find the TrafficManager in the scene
         if (trafficManager == null)
         {
             trafficManager = FindObjectOfType<TrafficManager>();
@@ -77,7 +63,7 @@ public class TrafficAgent : Agent
             if (trafficManager == null)
             {
                 Debug.LogError("TrafficManager not found in the scene. Please add a TrafficManager to the scene.");
-                return;
+                throw new Exception("TrafficManager not found in the scene.");
             }
             else
             {
@@ -88,64 +74,76 @@ public class TrafficAgent : Agent
         // Initialize lowLevelActions array with appropriate size (e.g., 3 for steering, acceleration, and braking)
         lowLevelActions = new float[3];
 
-        #if UNITY_EDITOR
-        //Debug.Log("--- TrafficAgent::Awake END ---");
-        #endif
+        LogDebug("TrafficAgent::Awake completed successfully.");
     }
 
     /// <summary>
-    /// Initialize is part of the ML-Agents specific setup details.
-    /// Initialize the agent and the traffic simulation.
-    /// This is an ML-Agents-specific method that is used to initialize the agent.
-    /// It is called once when the agent is first created.
-    /// This is a good place to initialize variables and set up the environment specific to the ML-Agents framework.
+    /// Initializes the TrafficAgent within the ML-Agents framework.
+    ///
+    /// This method is called once when the agent is first created and is responsible for:
+    /// 1. Setting up agent-specific variables and environment.
+    /// 2. Resetting agent actions to their initial state.
+    /// 3. Setting the maximum number of steps for the agent's episodes.
+    ///
+    /// It's a crucial part of the ML-Agents setup process, preparing the agent for training or inference.
+    ///
+    /// Overrides the base Initialize method from the ML-Agents framework.
     /// </summary>
     public override void Initialize()
     {
-        #if UNITY_EDITOR
-        //Debug.Log("--- TrafficAgent::Initialize START ---");
+        LogDebug("TrafficAgent::Initialize started");
+
         // Get the initial agent positions and create agent instances
-        //Debug.Log($"TrafficAgent Initialize called on {gameObject.name}");
-        #endif
+        LogDebug($"TrafficAgent Initialize called on {gameObject.name}");
 
         // Initialize your agent-specific variables here
         base.Initialize();
         ResetAgentActions();
 
-        MaxStep = 2000; // Max number of steps
+        MaxStep = trafficManager.MaxSteps; // Max number of steps
 
-        #if UNITY_EDITOR
-        //Debug.Log("--- TrafficAgent::Initialize END ---");
-        #endif
-
+        LogDebug("TrafficAgent::Initialize completed successfully.");
     }
 
     /// <summary>
-    ///  If you want to reset or randomize agent positions at the start of each episode,
-    ///  this is the ideal place to do so.It ensures that the agents start each episode in a fresh state,
-    ///  which is often a requirement in reinforcement learning to provide diverse training experiences.
+    /// Prepares the TrafficAgent for a new episode in the ML-Agents training process.
+    ///
+    /// This method is called at the start of each episode and is responsible for:
+    /// 1. Resetting the agent's actions to their initial state.
+    /// 2. Resetting the agent's position and rotation.
+    /// 3. Logging the current state of the agent and the traffic manager.
+    ///
+    /// It ensures that each episode starts with a consistent and potentially randomized state,
+    /// which is crucial for diverse and effective training experiences in reinforcement learning.
+    ///
+    /// Overrides the base OnEpisodeBegin method from the ML-Agents framework.
     /// </summary>
     public override void OnEpisodeBegin()
     {
-        #if UNITY_EDITOR
-        Debug.Log("--- OnEpisodeBegin START ---");
-        #endif
+        LogDebug("TrafficAgent::OnEpisodeBegin started");
 
         base.OnEpisodeBegin();
         ResetAgentActions();
-        ResetAgentPosition();
-        //trafficManager.pendingAgentCountUpdate = true;
-        //trafficManager.EnvironmentReset(); // TODO: Review the implementation of this!!
+        ResetAgentPositionAndRotation();
 
-        #if UNITY_EDITOR
-        //Debug.Log($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
-        //Debug.Log($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
-        Debug.Log("--- OnEpisodeBegin END ---");
-        #endif
+        LogDebug($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
+        LogDebug($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
+        LogDebug("TrafficAgent::OnEpisodeBegin completed successfully.");
     }
 
     /// <summary>
-    /// Randomly select action values
+    /// Resets the agent's low-level actions to random values within predefined ranges.
+    ///
+    /// This method initializes three action values:
+    /// 1. Steering angle (in radians): Range [-0.610865, 0.610865] (approximately ±35 degrees)
+    /// 2. Acceleration: Range [0.0, 4.5]
+    /// 3. Braking: Range [-4.0, 0.0]
+    ///
+    /// These randomized values help in creating diverse initial conditions for each episode,
+    /// which is crucial for effective reinforcement learning training.
+    ///
+    /// Note: The ranges are hardcoded and may need adjustment based on the specific requirements
+    /// of the traffic simulation or learning task.
     /// </summary>
     private void ResetAgentActions()
     {
@@ -156,84 +154,433 @@ public class TrafficAgent : Agent
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f);
     }
 
-    public void ResetAgentPosition()
+    /// <summary>
+    /// Resets the agent's position and rotation to a random location within the defined spawn area.
+    ///
+    /// This method is responsible for:
+    /// 1. Generating a random position and rotation for the agent.
+    /// 2. Updating the agent's transform in the Unity scene.
+    /// 3. Updating the agent's collider position and rotation.
+    /// 4. Synchronizing the agent's position with the C++ traffic simulation.
+    ///
+    /// Key Components:
+    /// - Random Position: Within a square defined by trafficManager.spawnAreaSize.
+    /// - Random Rotation: Around the Y-axis (0-360 degrees).
+    /// - Spawn Height: Determined by trafficManager.SpawnHeight.
+    ///
+    /// Synchronization:
+    /// - Updates Unity GameObject transform.
+    /// - Updates Unity Collider transform.
+    /// - Updates C++ simulation vehicle position.
+    ///
+    /// Error Handling:
+    /// - Checks for null TrafficManager.
+    /// - Logs warnings if agent instance or collider is not found.
+    ///
+    /// Dependencies:
+    /// - Requires a properly initialized TrafficManager.
+    /// - Relies on TrafficManager's native plugin methods for C++ simulation updates.
+    ///
+    /// Usage:
+    /// Call this method to reset the agent's position, typically at the start of a new episode
+    /// or when the agent needs to be repositioned.
+    ///
+    /// Note:
+    /// - Ensure trafficManager is properly initialized before calling this method.
+    /// - The method assumes the existence of a C++ backend (TrafficManager.Traffic_get_agent_by_name).
+    /// - Consider adding checks or handling for potential errors in C++ method calls.
+    ///
+    /// </summary>
+    public void ResetAgentPositionAndRotation()
     {
+        LogDebug("TrafficManager::ResetAgentPositionAndRotation started.");
+
         if (trafficManager != null)
         {
-            Vector3 randomPosition = new Vector3(
-                UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2),
-                trafficManager.spawnHeight,
-                UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2)
-            );
-            Quaternion randomRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
-
+            Vector3 randomPosition = GenerateRandomPosition();
+            Quaternion randomRotation = GenerateRandomRotation();
             Debug.Log($"Resetting agent {gameObject.name} - Position: {randomPosition}, Rotation: {randomRotation.eulerAngles}");
 
-            IntPtr vehiclePtr = TrafficManager.Traffic_get_agent_by_name(trafficManager.trafficSimulationPtr, gameObject.name);
+            UpdateAgentTransform(randomPosition, randomRotation);
+            UpdateAgentCollider(randomPosition, randomRotation);
 
-            // Update the agent's transform if it exists
-            if (trafficManager.agentInstances.TryGetValue(gameObject.name, out TrafficAgent agentInstances))
+            try
             {
-                // Update the game object if it exists
-                agentInstances.transform.SetPositionAndRotation(randomPosition, randomRotation);
-
+                UpdateCppSimulation(randomPosition);
             }
-            else
+            catch (Exception ex)
             {
-                Debug.LogWarning($"Instance not found for agent {gameObject.name}");
+                Debug.LogError($"Error updating C++ simulation for agent {gameObject.name}: {ex.Message}");
             }
-
-            // Update the collider if it exists
-            if (trafficManager.agentColliders.TryGetValue(gameObject.name, out Collider agentCollider))
-            {
-                agentCollider.transform.SetPositionAndRotation(randomPosition, randomRotation);
-            }
-            else
-            {
-                Debug.LogWarning($"Collider not found for agent {gameObject.name}");
-            }
-
-            // Update C++ simulation
-            TrafficManager.Vehicle_setX(vehiclePtr, randomPosition.x); // NEW
-            TrafficManager.Vehicle_setY(vehiclePtr, randomPosition.y); // NEW
-            TrafficManager.Vehicle_setZ(vehiclePtr, randomPosition.z); // NEW
         }
         else
         {
             Debug.LogError($"TrafficManager is null for agent {gameObject.name}");
         }
+
+        LogDebug("TrafficManager::ResetAgentPositionAndRotation completed successfully.");
     }
 
     /// <summary>
-    /// Collect observations from the environment
+    /// Generates a random 3D position for spawning or repositioning an agent within the defined spawn area.
+    ///
+    /// This method creates a Vector3 with:
+    /// - X: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
+    /// - Y: Fixed value defined by trafficManager.SpawnHeight
+    /// - Z: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
+    ///
+    /// Key Components:
+    /// - spawnAreaSize: Defines the square area in which agents can be positioned (from TrafficManager).
+    /// - SpawnHeight: Fixed Y-coordinate for spawning, ensuring consistent elevation (from TrafficManager).
+    ///
+    /// Usage:
+    /// Call this method when a new random position is needed, such as during agent initialization
+    /// or when resetting an agent's position.
+    ///
+    /// Dependencies:
+    /// - Requires a properly initialized TrafficManager with defined spawnAreaSize and SpawnHeight.
+    /// - Uses UnityEngine.Random for generating random values.
+    ///
+    /// Note:
+    /// - Ensures agents are spawned within a square area centered at (0, SpawnHeight, 0).
+    /// - The Y position is fixed, assuming a flat spawning plane.
+    /// - Consider adding checks for valid TrafficManager initialization before calling this method.
+    /// - For varied terrain, you might need to modify this to account for ground height.
+    ///
     /// </summary>
-    /// <param name="sensor">Collect observations</param>
+    /// <returns>A Vector3 representing a random position within the defined spawn area.</returns>
+    private Vector3 GenerateRandomPosition()
+    {
+        return new Vector3(
+            UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2),
+            trafficManager.SpawnHeight,
+            UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2)
+        );
+    }
+
+    /// <summary>
+    /// Generates a random 3D position for spawning or repositioning an agent within the defined spawn area.
+    ///
+    /// This method creates a Vector3 with:
+    /// - X: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
+    /// - Y: Fixed value defined by trafficManager.SpawnHeight
+    /// - Z: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
+    ///
+    /// Key Components:
+    /// - spawnAreaSize: Defines the square area in which agents can be positioned (from TrafficManager).
+    /// - SpawnHeight: Fixed Y-coordinate for spawning, ensuring consistent elevation (from TrafficManager).
+    ///
+    /// Usage:
+    /// Call this method when a new random position is needed, such as during agent initialization
+    /// or when resetting an agent's position.
+    ///
+    /// Dependencies:
+    /// - Requires a properly initialized TrafficManager with defined spawnAreaSize and SpawnHeight.
+    /// - Uses UnityEngine.Random for generating random values.
+    ///
+    /// Note:
+    /// - Ensures agents are spawned within a square area centered at (0, SpawnHeight, 0).
+    /// - The Y position is fixed, assuming a flat spawning plane.
+    /// - Consider adding checks for valid TrafficManager initialization before calling this method.
+    /// - For varied terrain, you might need to modify this to account for ground height.
+    ///
+    /// </summary>
+    /// <returns>A Vector3 representing a random position within the defined spawn area.</returns>
+    private Quaternion GenerateRandomRotation()
+    {
+        return Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
+    }
+
+    /// <summary>
+    /// Updates the transform (position and rotation) of the agent's instance in the Unity scene.
+    ///
+    /// This method attempts to:
+    /// 1. Retrieve the TrafficAgent instance associated with this agent's name.
+    /// 2. Set the position and rotation of the found instance to the provided values.
+    ///
+    /// Parameters:
+    /// - position: The new Vector3 position to set for the agent.
+    /// - rotation: The new Quaternion rotation to set for the agent.
+    ///
+    /// Error Handling:
+    /// - Logs a warning if the agent instance is not found in trafficManager.agentInstances.
+    ///
+    /// Usage:
+    /// Call this method when you need to update the agent's position and rotation in the Unity scene,
+    /// such as after calculating a new position or when resetting the agent.
+    ///
+    /// Dependencies:
+    /// - Requires a properly initialized TrafficManager with populated agentInstances dictionary.
+    /// - Assumes the current GameObject's name is used as the key in agentInstances.
+    ///
+    /// Note:
+    /// - This method only updates the Unity Transform component and does not affect any underlying
+    ///   simulation or physics state.
+    /// - Consider adding null checks for trafficManager if there's a possibility it might not be initialized.
+    /// - For comprehensive state updates, ensure this is called in conjunction with updates to
+    ///   colliders, rigid bodies, and any backend simulation state.
+    ///
+    /// </summary>
+    /// <param name="position">The new position to set for the agent.</param>
+    /// <param name="rotation">The new rotation to set for the agent.</param>
+    private void UpdateAgentTransform(Vector3 position, Quaternion rotation)
+    {
+        if (trafficManager.agentInstances.TryGetValue(gameObject.name, out TrafficAgent agentInstance))
+        {
+            agentInstance.transform.SetPositionAndRotation(position, rotation);
+        }
+        else
+        {
+            Debug.LogWarning($"Instance not found for agent {gameObject.name}");
+        }
+    }
+
+    /// <summary>
+    /// Updates the transform (position and rotation) of the agent's collider in the Unity scene.
+    ///
+    /// This method attempts to:
+    /// 1. Retrieve the Collider component associated with this agent's name from trafficManager.
+    /// 2. Set the position and rotation of the found collider's transform to the provided values.
+    ///
+    /// Parameters:
+    /// - position: The new Vector3 position to set for the agent's collider.
+    /// - rotation: The new Quaternion rotation to set for the agent's collider.
+    ///
+    /// Error Handling:
+    /// - Logs a warning if the agent's collider is not found in trafficManager.agentColliders.
+    ///
+    /// Usage:
+    /// Call this method when you need to update the agent's collider position and rotation,
+    /// typically in conjunction with updating the agent's main transform or during reset operations.
+    ///
+    /// Dependencies:
+    /// - Requires a properly initialized TrafficManager with populated agentColliders dictionary.
+    /// - Assumes the current GameObject's name is used as the key in agentColliders.
+    ///
+    /// Note:
+    /// - This method only updates the Unity Collider's transform and does not affect the agent's
+    ///   main transform or any underlying simulation state.
+    /// - Consider adding null checks for trafficManager if there's a possibility it might not be initialized.
+    /// - Ensure this method is called in coordination with other state update methods (e.g., UpdateAgentTransform)
+    ///   to maintain consistency across all representations of the agent.
+    /// - Updating the collider's transform directly might have implications for physics simulations;
+    ///   ensure this aligns with your intended physics behavior.
+    ///
+    /// </summary>
+    /// <param name="position">The new position to set for the agent's collider.</param>
+    /// <param name="rotation">The new rotation to set for the agent's collider.</param>
+    private void UpdateAgentCollider(Vector3 position, Quaternion rotation)
+    {
+        if (trafficManager.agentColliders.TryGetValue(gameObject.name, out Collider agentCollider))
+        {
+            agentCollider.transform.SetPositionAndRotation(position, rotation);
+        }
+        else
+        {
+            Debug.LogWarning($"Collider not found for agent {gameObject.name}");
+        }
+    }
+
+    /// <summary>
+    /// Updates the position of the agent in the C++ traffic simulation backend.
+    ///
+    /// This method performs the following operations:
+    /// 1. Retrieves a pointer to the agent's vehicle in the C++ simulation using its name.
+    /// 2. Sets the X, Y, and Z coordinates of the vehicle in the C++ simulation to match the provided position.
+    ///
+    /// Parameters:
+    /// - position: A Vector3 representing the new position to set in the C++ simulation.
+    ///
+    /// Dependencies:
+    /// - Requires a properly initialized TrafficManager with a valid trafficSimulationPtr.
+    /// - Relies on external C++ methods (likely from a native plugin) for interacting with the simulation:
+    ///   - TrafficManager.Traffic_get_agent_by_name
+    ///   - TrafficManager.Vehicle_setX/Y/Z
+    ///
+    /// Usage:
+    /// Call this method when you need to synchronize the agent's position in the Unity scene
+    /// with its representation in the C++ traffic simulation backend.
+    ///
+    /// Error Handling:
+    /// - This method doesn't include explicit error handling. Consider adding checks for null pointers
+    ///   or invalid states, especially if the C++ methods can fail or return error codes.
+    ///
+    /// Performance Considerations:
+    /// - This method makes multiple calls to external C++ functions, which may have performance implications
+    ///   if called frequently. Consider batching updates if possible.
+    ///
+    /// Note:
+    /// - Ensure that the C++ simulation is properly initialized before calling this method.
+    /// - The method assumes that the agent's name in Unity matches its identifier in the C++ simulation.
+    /// - Only position is updated; if rotation or other properties need synchronization, additional methods may be needed.
+    /// - Consider adding logging or debug options to track synchronization between Unity and C++ simulation.
+    ///
+    /// </summary>
+    /// <param name="position">The new position to set for the agent in the C++ simulation.</param>
+    private void UpdateCppSimulation(Vector3 position)
+    {
+        IntPtr vehiclePtr = TrafficManager.Traffic_get_agent_by_name(trafficManager.trafficSimulationPtr, gameObject.name);
+        TrafficManager.Vehicle_setX(vehiclePtr, position.x);
+        TrafficManager.Vehicle_setY(vehiclePtr, position.y);
+        TrafficManager.Vehicle_setZ(vehiclePtr, position.z);
+    }
+
+    /// <summary>
+    /// Collects and provides observations about the agent's environment to the ML-Agents neural network.
+    ///
+    /// This method is crucial for the agent's decision-making process, gathering information such as:
+    /// 1. Raycast data for detecting nearby agents and road boundaries.
+    /// 2. Agent's position and rotation.
+    /// 3. Agent's speed and orientation.
+    ///
+    /// Key Components:
+    /// - Raycast Observations:
+    ///   - Number of rays: Defined by trafficManager.numberOfRays
+    ///   - For each ray: Distance (normalized) and type of object hit (agent, boundary, or other)
+    /// - Position: Agent's current position in 3D space
+    /// - Rotation: Agent's yaw (y-axis rotation)
+    /// - Speed: Normalized velocity magnitude (assumes max speed of 50)
+    /// - Orientation: Normalized y-rotation to range [-1, 1]
+    ///
+    /// Error Handling:
+    /// - Checks for null TrafficManager and missing agent colliders
+    /// - Logs warnings for missing components (e.g., Rigidbody)
+    ///
+    /// Performance Considerations:
+    /// - Raycasting is computationally expensive; optimize the number of rays if needed
+    /// - Extensive debug logging is present; consider conditional logging for production
+    ///
+    /// Note:
+    /// - Ensure consistency between observations collected here and the neural network's input expectations
+    /// - Some observations are commented out (full rotation, roll, pitch); uncomment if needed
+    /// - The method assumes specific tags ("TrafficAgent", "RoadBoundary") for object identification
+    ///
+    /// </summary>
+    /// <param name="sensor">The VectorSensor used to collect and send observations to the neural network</param>
     public override void CollectObservations(VectorSensor sensor)
     {
-        #if UNITY_EDITOR
-        //Debug.Log("--- CollectObservations Start ---");
+        LogDebug("TrafficManager::CollectObservations started.");
 
-        //Debug.Log($"CollectObservations called. trafficManager null? {trafficManager == null}");
-        //Debug.Log($"trafficManager.agentColliders null? {trafficManager.agentColliders == null}");
-        //Debug.Log($"trafficManager.agentColliders count: {trafficManager.agentColliders?.Count ?? 0}");
-        //Debug.Log($"Number of agent colliders: {trafficManager.agentColliders.Count}");
-        //Debug.Log($"Collected {sensor.ObservationSize()} observations");
-        #endif
+        LogDebug($"CollectObservations called. trafficManager null? {trafficManager == null}");
+        LogDebug($"trafficManager.agentColliders null? {trafficManager.agentColliders == null}");
+        LogDebug($"trafficManager.agentColliders count: {trafficManager.agentColliders?.Count ?? 0}");
+        LogDebug($"Number of agent colliders: {trafficManager.agentColliders.Count}");
+        LogDebug($"Collected {sensor.ObservationSize()} observations");
 
+        if (!InitializeTrafficManager(sensor))
+            return;
+
+        CollectRaycastObservations(sensor);
+        CollectPositionAndRotationObservations(sensor);
+        CollectSpeedAndOrientationObservations(sensor);
+
+        LogDebug("TrafficManager::CollectObservations completed successfully.");
+    }
+
+    /// <summary>
+    /// Initializes and validates the TrafficManager and agent collider for the current agent.
+    ///
+    /// This method performs the following checks:
+    /// 1. Verifies that the TrafficManager is not null and contains a collider for this agent.
+    /// 2. Retrieves and stores the agent's collider from the TrafficManager.
+    /// 3. Confirms that the retrieved collider is not null.
+    ///
+    /// Parameters:
+    /// - sensor: A VectorSensor parameter, currently unused in the method body.
+    ///   Consider removing if not needed or document its intended future use.
+    ///
+    /// Returns:
+    /// - true if initialization is successful (TrafficManager and collider are valid).
+    /// - false if any initialization step fails.
+    ///
+    /// Error Handling:
+    /// - Logs a warning if TrafficManager is null or doesn't contain the agent's collider.
+    /// - Logs an error if the agent's collider is found in the dictionary but is null.
+    ///
+    /// Usage:
+    /// Call this method before performing operations that depend on TrafficManager or the agent's collider.
+    /// Typically used in initialization methods or before collecting observations.
+    ///
+    /// Dependencies:
+    /// - Requires a properly set up TrafficManager with populated agentColliders dictionary.
+    /// - Assumes the current GameObject's name is used as the key in agentColliders.
+    ///
+    /// Side Effects:
+    /// - Sets the agentCollider field if initialization is successful.
+    ///
+    /// Note:
+    /// - The method name suggests TrafficManager initialization, but it primarily validates existing setup.
+    /// - Consider renaming to "ValidateTrafficManagerSetup" for clarity if no actual initialization is performed.
+    /// - The VectorSensor parameter is currently unused; consider removing or implementing its use.
+    /// - Ensure this method is called at appropriate times to guarantee proper agent setup.
+    ///
+    /// </summary>
+    /// <param name="sensor">A VectorSensor, currently unused in the method.</param>
+    /// <returns>Boolean indicating successful initialization/validation of TrafficManager and agent collider.</returns>
+    private bool InitializeTrafficManager(VectorSensor sensor)
+    {
         if (trafficManager == null || !trafficManager.agentColliders.ContainsKey(gameObject.name))
         {
             Debug.LogWarning($"TrafficManager or agent collider not properly initialized for {gameObject.name}");
-            return;
+            return false;
         }
 
-        Collider agentCollider = trafficManager.agentColliders[gameObject.name];
+        agentCollider = trafficManager.agentColliders[gameObject.name];
+
         if (agentCollider == null)
         {
             Debug.LogError($"Agent collider not found for {gameObject.name}");
-            return;
+            return false;
         }
 
-        // Raycast observations (e.e.g observations for nearby agents and road boundaries)
+        return true;
+    }
+
+    /// <summary>
+    /// Collects and adds raycast-based observations to the agent's sensor.
+    ///
+    /// This method performs the following operations:
+    /// 1. Determines the starting point for raycasts based on the agent's collider.
+    /// 2. Casts multiple rays in a fan pattern around the agent.
+    /// 3. For each ray, adds observations about:
+    ///    - The normalized distance to the hit point (or max distance if no hit).
+    ///    - The type of object hit (agent, road boundary, or other).
+    ///
+    /// Raycast Configuration:
+    /// - Number of rays: Defined by trafficManager.numberOfRays
+    /// - Angle between rays: Calculated using trafficManager.AngleStep
+    /// - Total angle covered: trafficManager.raycastAngle
+    /// - Ray length: trafficManager.rayLength
+    ///
+    /// Observation Encoding:
+    /// - Distance: Normalized value between 0 and 1 (hit distance / max ray length)
+    /// - Hit Type:
+    ///   1.0 for TrafficAgent
+    ///   2.0 for RoadBoundary
+    ///   0.0 for other objects or no hit
+    ///
+    /// Dependencies:
+    /// - Requires initialized TrafficManager with proper raycast configuration.
+    /// - Uses Unity's Physics.Raycast for collision detection.
+    ///
+    /// Performance Considerations:
+    /// - Multiple raycasts per frame can be computationally expensive. Optimize ray count if needed.
+    ///
+    /// Usage:
+    /// Call this method as part of the agent's observation collection process, typically within a larger
+    /// CollectObservations method.
+    ///
+    /// Note:
+    /// - Ensure consistent use of tags ("TrafficAgent", "RoadBoundary") across the project.
+    /// - The method logs debug information about the agent's rotation; consider making this conditional.
+    /// - Adjust the observation encoding if more detailed hit information is required.
+    /// - Consider visualizing these raycasts in debug mode for easier understanding and troubleshooting.
+    ///
+    /// </summary>
+    /// <param name="sensor">The VectorSensor to which observations are added.</param>
+    private void CollectRaycastObservations(VectorSensor sensor)
+    {
+        // Raycast observations (e.g., observations for nearby agents and road boundaries)
         Vector3 rayStart = GetRayStartPosition(agentCollider);
 
         for (int i = 0; i < trafficManager.numberOfRays; i++)
@@ -266,14 +613,94 @@ public class TrafficAgent : Agent
             }
         }
 
-        //Debug.Log($"CollectObservations: Euler angles: Pitch={transform.rotation.eulerAngles.x}, Yaw={transform.rotation.eulerAngles.y}, Roll={transform.rotation.eulerAngles.z}");
+        LogDebug($"CollectObservations: Euler angles: Pitch={transform.rotation.eulerAngles.x}, Yaw={transform.rotation.eulerAngles.y}, Roll={transform.rotation.eulerAngles.z}");
+    }
 
+    /// <summary>
+    /// Collects and adds the agent's position and rotation observations to the sensor.
+    ///
+    /// This method performs the following operations:
+    /// 1. Adds the agent's current position (Vector3) as an observation.
+    /// 2. Adds the agent's rotation around the Y-axis (yaw) as an observation.
+    ///
+    /// Observations added:
+    /// - Position: Vector3 (x, y, z coordinates)
+    /// - Rotation: Float (y-axis rotation in degrees)
+    ///
+    /// Note on rotation:
+    /// - Only the Y-axis rotation (yaw) is currently observed.
+    /// - Full rotation (Quaternion) and Euler angles (Vector3) observations are commented out.
+    ///
+    /// Usage:
+    /// Call this method as part of the agent's observation collection process, typically within
+    /// a larger CollectObservations method.
+    ///
+    /// Customization Options:
+    /// - Uncomment transform.rotation to observe full rotation as a Quaternion (4 float values).
+    /// - Uncomment transform.rotation.eulerAngles to observe rotation as Euler angles (3 float values).
+    ///
+    /// Performance Considerations:
+    /// - Adding observations increases the size of the agent's observation space.
+    /// - Balance the amount of information with the complexity of the learning task.
+    ///
+    /// Note:
+    /// - Ensure the neural network model is configured to handle the number of observations provided.
+    /// - Consider normalizing position values if the agent operates in a large world space.
+    /// - The choice of rotation representation (Euler angle vs Quaternion) can affect learning;
+    ///   choose based on your specific requirements and the nature of the task.
+    /// - If only Y-rotation is relevant to your task, the current setup is appropriate.
+    ///   Otherwise, consider including full rotation information.
+    ///
+    /// </summary>
+    /// <param name="sensor">The VectorSensor to which observations are added.</param>
+    private void CollectPositionAndRotationObservations(VectorSensor sensor)
+    {
         // Add agent's position and rotation as observations
         sensor.AddObservation(transform.position);
         //sensor.AddObservation(transform.rotation);
         //sensor.AddObservation(transform.rotation.eulerAngles);
         sensor.AddObservation(transform.rotation.eulerAngles.y);
+    }
 
+    /// <summary>
+    /// Collects and adds the agent's position and rotation observations to the sensor.
+    ///
+    /// This method performs the following operations:
+    /// 1. Adds the agent's current position (Vector3) as an observation.
+    /// 2. Adds the agent's rotation around the Y-axis (yaw) as an observation.
+    ///
+    /// Observations added:
+    /// - Position: Vector3 (x, y, z coordinates)
+    /// - Rotation: Float (y-axis rotation in degrees)
+    ///
+    /// Note on rotation:
+    /// - Only the Y-axis rotation (yaw) is currently observed.
+    /// - Full rotation (Quaternion) and Euler angles (Vector3) observations are commented out.
+    ///
+    /// Usage:
+    /// Call this method as part of the agent's observation collection process, typically within
+    /// a larger CollectObservations method.
+    ///
+    /// Customization Options:
+    /// - Uncomment transform.rotation to observe full rotation as a Quaternion (4 float values).
+    /// - Uncomment transform.rotation.eulerAngles to observe rotation as Euler angles (3 float values).
+    ///
+    /// Performance Considerations:
+    /// - Adding observations increases the size of the agent's observation space.
+    /// - Balance the amount of information with the complexity of the learning task.
+    ///
+    /// Note:
+    /// - Ensure the neural network model is configured to handle the number of observations provided.
+    /// - Consider normalizing position values if the agent operates in a large world space.
+    /// - The choice of rotation representation (Euler angle vs Quaternion) can affect learning;
+    ///   choose based on your specific requirements and the nature of the task.
+    /// - If only Y-rotation is relevant to your task, the current setup is appropriate.
+    ///   Otherwise, consider including full rotation information.
+    ///
+    /// </summary>
+    /// <param name="sensor">The VectorSensor to which observations are added.</param>
+    private void CollectSpeedAndOrientationObservations(VectorSensor sensor)
+    {
         // Agent's own speed and orientation
         Rigidbody rb = GetComponent<Rigidbody>();
         //rb.isKinematic = true;
@@ -291,23 +718,41 @@ public class TrafficAgent : Agent
 
         // Orientation (only y rotation, normalized to [-1, 1])
         sensor.AddObservation(transform.rotation.eulerAngles.y / 180.0f - 1.0f);
-        //Debug.Log($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
-
-        //Debug.Log("--- CollectObservations End ---");
+        LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
     }
 
     /// <summary>
-    /// When Behavior Type is set to "Heuristic Only" on the agent's Behavior Parameters,
-    /// this function will be called. Its return value will be fed into
-    /// <see cref="OnActionReceived(float[])"/> instead of using the neural network
+    /// Generates heuristic actions for the agent when the Behavior Type is set to "Heuristic Only".
+    ///
+    /// This method serves as a fallback or testing mechanism, providing manually defined or random actions
+    /// instead of using the trained neural network. It's responsible for:
+    /// 1. Generating a random discrete action (high-level decision).
+    /// 2. Generating random continuous actions for steering, acceleration, and braking.
+    ///
+    /// Action Breakdown:
+    /// - Discrete Action:
+    ///   - Index 0: Random integer between 0 and 4 (inclusive)
+    /// - Continuous Actions:
+    ///   - Index 0: Steering angle in radians (range: -35 to 35 degrees, converted to radians)
+    ///   - Index 1: Acceleration (range: 0.0 to 4.5)
+    ///   - Index 2: Braking (range: -4.0 to 0.0)
+    ///
+    /// Usage:
+    /// - Automatically called by ML-Agents when Behavior Type is "Heuristic Only".
+    /// - Useful for debugging, testing agent behavior, or providing a baseline performance.
+    ///
+    /// Note:
+    /// - Ensure the action ranges here match those expected by OnActionReceived and the training configuration.
+    /// - The random nature of actions may lead to erratic behavior - this is expected in heuristic mode.
+    /// - Consider implementing more sophisticated heuristics for better baseline performance if needed.
+    /// - Logging of actions may impact performance; consider using conditional logging for extensive testing.
+    ///
     /// </summary>
-    /// <param name="actionsOut">An output action array</param>
+    /// <param name="actionsOut">Buffer to store the generated actions. Contains both discrete and continuous action arrays.</param>
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         // Debug logs to check method calls
-        #if UNITY_EDITOR
-        //Debug.Log("-- TrafficAgent::Heuristic START --");
-        #endif
+        LogDebug("TrafficManager::Heuristic started.");
 
         // Get discrete actions array from ActionBuffers
         var discreteActions = actionsOut.DiscreteActions;
@@ -328,27 +773,49 @@ public class TrafficAgent : Agent
         // Sample a random value for braking
         continuousActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Braking
 
-        //Debug.Log("Heuristic method called. Discrete Actions: " +
-        //          string.Join(", ", discreteActions) +
-        //          " Continuous Actions: " + string.Join(", ", continuousActions));
+        LogDebug("Heuristic method called. Discrete Actions: " +
+                 string.Join(", ", discreteActions) +
+                " Continuous Actions: " + string.Join(", ", continuousActions)
+        );
 
-        #if UNITY_EDITOR
-        //Debug.Log("-- TrafficAgent::Heuristic END --");
-        #endif
+        LogDebug("TrafficManager::Heuristic completed successfully.");
     }
 
     /// <summary>
-    /// Execute the actions decided by the ML model
+    /// Processes and applies actions received from the machine learning model to the agent.
+    ///
+    /// This method is a key part of the ML-Agents reinforcement learning loop, responsible for:
+    /// 1. Receiving action decisions from the trained model.
+    /// 2. Processing both discrete (high-level) and continuous (low-level) actions.
+    /// 3. Storing these actions for later use in agent behavior.
+    ///
+    /// Action Breakdown:
+    /// - Discrete Actions: Stored in highLevelActions (currently using only the first discrete action).
+    /// - Continuous Actions: Stored in lowLevelActions array (e.g., steering, acceleration, braking).
+    ///
+    /// Key Points:
+    /// - Overrides the base OnActionReceived method from ML-Agents.
+    /// - Logs received actions for debugging purposes.
+    /// - Does not directly apply physical movements (commented out code suggests this was moved to FixedUpdate).
+    ///
+    /// Usage:
+    /// This method is automatically called by the ML-Agents framework when new actions are decided.
+    /// The stored actions should be used in physics update methods (like FixedUpdate) to control the agent.
+    ///
+    /// Note:
+    /// - Ensure that the sizes of actionBuffers match the expected action space defined in your training configuration.
+    /// - The commented-out movement code indicates a separation of decision-making and physics application, which is a good practice.
+    /// - Consider adding validation or clamping of received actions if necessary.
+    /// - Logging of actions may impact performance; consider using conditional logging for production.
+    ///
     /// </summary>
-    /// <param name="actionBuffers">The actions to take</param>
+    /// <param name="actionBuffers">Contains the discrete and continuous actions decided by the ML model.</param>
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-        #if UNITY_EDITOR
-        //Debug.Log("-- TrafficAgent::OnActionReceived --");
+        LogDebug("TrafficManager::OnActionReceived started.");
 
-        //Debug.Log($"Discrete actions: {string.Join(", ", actionBuffers.DiscreteActions)}");
-        //Debug.Log($"Continuous actions: {string.Join(", ", actionBuffers.ContinuousActions)}");
-        #endif
+        LogDebug($"Discrete actions: {string.Join(", ", actionBuffers.DiscreteActions)}");
+        LogDebug($"Continuous actions: {string.Join(", ", actionBuffers.ContinuousActions)}");
 
         // Process Discrete (High-Level) Actions
         highLevelActions = actionBuffers.DiscreteActions[0];
@@ -362,25 +829,35 @@ public class TrafficAgent : Agent
             lowLevelActions[i] = actionBuffers.ContinuousActions[i];
         }
 
-        // Calculate reward and determine if the episode should end
-        float reward = CalculateReward();  // Implement your actual reward calculation logic
-        bool done = CheckIfEpisodeIsDone();  // Implement your actual done condition logic
-
-        //SetReward(reward); // To set the reward to a specific value at a particular point in time.
-        AddReward(reward); // To incrementally build up the reward over time
-
         // Move this to FixedUpdate
         // rb.MovePosition(transform.position + transform.forward * lowLevelActions[1] * Time.fixedDeltaTime);
         // transform.Rotate(Vector3.up, lowLevelActions[0] * Time.fixedDeltaTime);
 
-        #if UNITY_EDITOR
-        //Debug.Log("-- OnActionReceived END --");
-        #endif
+        LogDebug("TrafficManager::OnActionReceived completed successfully.");
     }
 
     /// <summary>
-    /// Called every .02 seconds.
-    /// This method is only for visualization and doesn't affect agent movement.
+    /// Executes at a fixed time interval (default 0.02 seconds) for consistent updates, primarily used for debugging visualization.
+    ///
+    /// This method is responsible for:
+    /// 1. Logging debug information at the start and end of each fixed update cycle.
+    /// 2. Conditionally calling DrawDebugRays() for visual debugging when enabled.
+    ///
+    /// Key points:
+    /// - Runs at a fixed time step, independent of frame rate.
+    /// - Used for visualization purposes only; does not affect agent movement or physics.
+    /// - Debug ray visualization is controlled by either local or TrafficManager debug flags.
+    ///
+    /// Visualization Control:
+    /// - Local control: debugVisualization (boolean field in this class)
+    /// - Global control: trafficManager.debugVisualization (if TrafficManager is available)
+    ///
+    /// Note:
+    /// - FixedUpdate is ideal for physics-related code, though not used for that purpose here.
+    /// - Ensure DrawDebugRays() is optimized, as it runs frequently when debugging is enabled.
+    /// - Consider adding more debug visualizations here if needed, but be mindful of performance.
+    /// - The commented explanation about Update() vs FixedUpdate() provides useful context for developers.
+    ///
     /// </summary>
     private void FixedUpdate()
     {
@@ -389,9 +866,7 @@ public class TrafficAgent : Agent
          * that need to be executed in sync with the frame rate, such as processing user input,
          * updating non-physics game logic, and rendering-related updates.
          */
-        #if UNITY_EDITOR
-        //Debug.Log("-- TrafficAgent::FixedUpdate START --");
-        #endif
+        LogDebug("TrafficManager::FixedUpdate started.");
 
         // Only draw debug rays if visualization is enabled
         if (debugVisualization || (trafficManager != null && trafficManager.debugVisualization))
@@ -399,19 +874,33 @@ public class TrafficAgent : Agent
             DrawDebugRays();
         }
 
-        #if UNITY_EDITOR
-        //Debug.Log("-- TrafficAgent::FixedUpdate END --");
-        #endif
+        LogDebug("TrafficManager::FixedUpdate completed successfully.");
     }
 
     /// <summary>
-    /// For debugging purposes
+    /// Executes debugging operations every frame in the Unity Editor.
+    ///
+    /// This method is currently set up for potential debugging use, with its main functionality commented out.
+    /// It's designed to run only in the Unity Editor environment, not in built applications.
+    ///
+    /// Current (Commented) Functionality:
+    /// - Logs the rotation (in Euler angles) of the agent every frame.
+    ///
+    /// Usage:
+    /// - Uncomment the Debug.Log line to activate rotation logging.
+    /// - Add other debugging operations as needed for development and testing.
+    ///
+    /// Note:
+    /// - This method runs every frame, so be cautious about performance impact when adding debug operations.
+    /// - The #if UNITY_EDITOR directive ensures these debug operations only occur in the Unity Editor.
+    /// - Consider using this method to visualize or log other important agent states or behaviors during development.
+    /// - For extensive debugging, consider creating a separate debug mode toggle to avoid cluttering this method.
+    ///
     /// </summary>
     void Update()
     {
-        #if UNITY_EDITOR
-        //Debug.Log($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
-        #endif
+        LogDebug("TrafficManager::Update started.");
+        LogDebug($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
 
         /*
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, 0.1f);
@@ -420,10 +909,38 @@ public class TrafficAgent : Agent
             Debug.Log($"Overlapping with: {hitCollider.gameObject.name}");
         }
         */
+
+        LogDebug("TrafficManager::Update completed successfully.");
     }
 
     /// <summary>
-    /// Draw Raycast in scene
+    /// Visualizes raycasts in the Unity scene view for debugging and development purposes.
+    ///
+    /// This method performs the following operations:
+    /// 1. Validates the TrafficManager and agent's collider.
+    /// 2. Calculates the starting position for raycasts using the agent's collider.
+    /// 3. Casts multiple rays in a fan-like pattern in front of the agent.
+    /// 4. Visualizes these rays in the scene view, with different colors for hits and misses.
+    ///
+    /// Key components:
+    /// - trafficManager: Provides configuration for raycasting (angle, number of rays, ray length).
+    /// - agentCollider: Used to determine the starting point of raycasts.
+    /// - hitColor and missColor: Colors used to visualize ray hits and misses respectively.
+    ///
+    /// Raycast Configuration:
+    /// - Number of rays: Defined by trafficManager.numberOfRays
+    /// - Total angle covered: trafficManager.raycastAngle
+    /// - Ray length: trafficManager.rayLength
+    ///
+    /// Usage:
+    /// Call this method in Update() or a similar frequent update loop when debugging is needed.
+    /// Only visible in the Unity Editor's Scene view.
+    ///
+    /// Note:
+    /// - Ensure TrafficManager is properly initialized and contains the agent's collider information.
+    /// - This method is computationally expensive and should be used for debugging only.
+    /// - Consider adding a debug flag to enable/disable this visualization easily.
+    ///
     /// </summary>
     private void DrawDebugRays()
     {
@@ -449,51 +966,74 @@ public class TrafficAgent : Agent
             float angle = delta_angle * i;
             Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raycastAngle / 2, 0) * Vector3.forward);
 
+            // Ray hit at a certain distance
             if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
             {
                 Debug.DrawRay(rayStart, direction * hit.distance, hitColor, 0.0f);
-                //Debug.Log($"Ray {i} hit at distance: {hit.distance}");
             }
-            else
+            else // Ray did not hit
             {
                 Debug.DrawRay(rayStart, direction * trafficManager.rayLength, missColor, 0.0f);
-                //Debug.Log($"Ray {i} did not hit");
             }
         }
     }
 
     /// <summary>
-    /// Calculate reward singal
+    /// Calculates the starting position for raycasting from the top center of a Collider's bounding box.
+    ///
+    /// This helper method determines an optimal point to start raycasts from the given Collider:
+    /// - Uses the center of the Collider's bounding box as a base.
+    /// - Offsets the position upwards by half the height of the bounding box.
+    ///
+    /// Use cases:
+    /// - Ideal for initiating raycasts for object detection or environment sensing.
+    /// - Useful in scenarios like detecting overhead obstacles or performing top-down environment scans.
+    ///
+    /// Note:
+    /// - The method assumes the Collider's up direction is aligned with the desired "up" for the raycast.
+    /// - For non-uniform or rotated Colliders, consider additional adjustments if needed.
+    /// - Ensure the Collider parameter is not null before calling this method.
+    ///
     /// </summary>
-    /// <returns></returns>
-    private float CalculateReward()
-    {
-        // Implement your actual reward logic here
-        return 0f;  // Placeholder
-    }
-
-    private bool CheckIfEpisodeIsDone()
-    {
-        // Implement your actual done condition logic here
-        return false;  // Placeholder
-    }
-
-    // Helper method to get the ray start position (center of the bounding box)
+    /// <param name="collider">The Collider used to determine the raycast start position. Must not be null.</param>
+    /// <returns>A Vector3 representing the top-center point of the Collider's bounding box.</returns>
     private Vector3 GetRayStartPosition(Collider collider)
     {
         return collider.bounds.center + collider.transform.up * (collider.bounds.size.y / 2);
     }
 
     /// <summary>
-    /// Called when the agent collides with something solid
+    /// Handles the initial collision between the agent and other objects in the environment.
+    ///
+    /// This method is called once when the agent first collides with another Collider. It manages:
+    /// 1. Collision Detection and Logging:
+    ///    - Logs detailed information about the collision for debugging purposes.
+    ///    - Specifically checks for collisions with objects tagged or layered as "RoadBoundary".
+    /// 2. Collision-based Rewards/Penalties:
+    ///    - RoadBoundary: Applies offRoadPenalty for going off the designated path.
+    ///    - TrafficAgent: Applies collisionWithOtherAgentPenalty for colliding with other agents.
+    ///    - (Commented out) Default case: Can apply a small penalty for unspecified collisions.
+    ///
+    /// Key components:
+    /// - offRoadPenalty: Penalty for leaving the road.
+    /// - collisionWithOtherAgentPenalty: Penalty for colliding with other agents.
+    /// - AddReward: Method assumed to be part of a reinforcement learning framework (e.g., ML-Agents).
+    ///
+    /// Usage:
+    /// This method is automatically called by Unity's physics system when a collision begins.
+    /// No manual invocation is needed.
+    ///
+    /// Note:
+    /// - Ensure proper tagging and layer assignment of objects in the Unity editor.
+    /// - The commented section suggests starting simple and focusing on rewarding results rather than actions.
+    /// - Penalty values can be adjusted to fine-tune the agent's learning process.
+    /// - Consider uncommenting and customizing the default case if needed for comprehensive collision handling.
     /// </summary>
-    /// <param name="collision">The collision info</param>
+    /// <param name="collision">Contains information about the collision, including references to the colliding objects.</param>
     private void OnCollisionEnter(Collision collision)
     {
-        #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::OnCollisionEnter --");
-        #endif
-        Debug.Log($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
+        LogDebug("TrafficManager::OnCollisionEnter started.");
+        LogDebug($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
 
         if (collision.gameObject.CompareTag("RoadBoundary") ||
             collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
@@ -516,7 +1056,7 @@ public class TrafficAgent : Agent
                 Debug.Log($"Hit road boundary! Penalty added: {offRoadPenalty}");
                 break;
 
-            case "TrafficAgent":
+            case "TrafficAgent": // "Obstacle"
                 // Penalize the agent for colliding with another traffic participant
                 AddReward(collisionWithOtherAgentPenalty);
                 Debug.Log($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
@@ -524,40 +1064,6 @@ public class TrafficAgent : Agent
 
             // ... (keep other cases from the original script)
             /*
-            case "Goal":
-                // Reward the agent for reaching the goal
-                AddReward(positiveReward);
-                Debug.Log("Goal reached! Reward added: " + positiveReward);
-                EndEpisode();
-                break;
-
-            case "Obstacle":
-                // Penalize the agent for hitting an obstacle
-                AddReward(negativeReward);
-                Debug.Log("Hit obstacle! Penalty added: " + negativeReward);
-                break;
-
-            case "Collectible":
-                // Reward the agent for collecting an item
-                AddReward(0.5f);
-                Debug.Log("Item collected! Reward added: 0.5");
-                // Optionally destroy the collectible
-                Destroy(collision.gameObject);
-                break;
-
-            case "DeathZone":
-                // End the episode if the agent enters a death zone
-                AddReward(-1.0f);
-                Debug.Log("Entered death zone! Episode ended with penalty: -1.0");
-                EndEpisode();
-                break;
-
-            case "IsOnRoad":
-                // Example reward based on staying on the road
-                AddReward(0.1f); //-1.0f
-                //EndEpisode();
-                break;
-
             default:
                 // For any other collision, we might want to add a small negative reward
                 AddReward(-0.1f);
@@ -565,17 +1071,41 @@ public class TrafficAgent : Agent
                 break;
             */
         }
+
+        LogDebug("TrafficManager::OnCollisionEnter completed successfully.");
     }
 
     /// <summary>
-    /// Called every fixed frame-rate frame for the duration of the collision
+    /// Handles continuous collision between the agent and other objects in the environment.
+    ///
+    /// This method is called every fixed frame-rate frame while a collision is ongoing. It manages:
+    /// 1. Road Interaction:
+    ///    - Applies a small positive reward (0.01) when the agent is on the "Road" layer.
+    ///    - Encourages the agent to stay on the designated driving surface.
+    /// 2. Off-Road Penalty:
+    ///    - Applies a larger negative reward (-0.1) when the agent is not on the "Road" layer.
+    ///    - Discourages the agent from leaving the designated driving area.
+    ///
+    /// Key components:
+    /// - Road Layer: Used to identify the proper driving surface.
+    /// - AddReward: Method assumed to be part of a reinforcement learning framework (e.g., ML-Agents).
+    ///
+    /// Usage:
+    /// This method is automatically called by Unity's physics system during ongoing collisions.
+    /// No manual invocation is needed.
+    ///
+    /// Note:
+    /// - Ensure that road objects are assigned to the "Road" layer in the Unity editor.
+    /// - The reward values (0.01 for on-road, -0.1 for off-road) can be adjusted to fine-tune
+    ///   the agent's behavior and learning process.
+    /// - Continuous reward/penalty application can significantly impact the agent's learning,
+    ///   so careful balancing may be required.
     /// </summary>
-    /// <param name="collision">Information about the ongoing collision</param>
+    /// <param name="collision">Contains information about the ongoing collision,
+    /// including references to the colliding objects.</param>
     private void OnCollisionStay(Collision collision)
     {
-        #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::OnCollisionStay --");
-        #endif
+        LogDebug("TrafficAgent::OnCollisionStay started.");
 
         // Check if we're colliding with the road
         if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
@@ -583,52 +1113,89 @@ public class TrafficAgent : Agent
             // Small positive reward for staying on the road
             AddReward(0.01f);
 
-            #if UNITY_EDITOR
-            Debug.Log("Agent rewarded for staying on the road");
-            #endif
+            LogDebug("Agent rewarded for staying on the road");
         }
         else
         {
             // Penalize the agent for being off the road
             AddReward(-0.1f);
 
-            #if UNITY_EDITOR
-            Debug.Log("Agent penalized for being off the road");
-            #endif
+            LogDebug("Agent penalized for being off the road");
         }
+
+        LogDebug("TrafficManager::OnCollisionStay completed successfully.");
     }
 
     /// <summary>
-    /// Called when the collider has stopped touching another collider
+    /// Handles the event when the agent's Collider stops colliding with another Collider.
+    ///
+    /// This method specifically checks for the end of collisions with objects on the "Road" layer:
+    /// - When the agent stops colliding with a road object, it sets isGrounded to false.
+    /// - This can be used to detect when the agent has left the designated driving surface.
+    ///
+    /// Key components:
+    /// - isGrounded: A boolean flag indicating whether the agent is on the road surface.
+    ///
+    /// Usage:
+    /// This method is automatically called by Unity's physics system when a collision ends.
+    /// No manual invocation is needed.
+    ///
+    /// Note:
+    /// - Ensure that road objects are assigned to the "Road" layer in the Unity editor.
+    /// - The isGrounded variable should be defined elsewhere in the class and used appropriately
+    ///   in other methods to affect the agent's behavior or scoring.
+    /// - This method uses Unity's built-in layer system for efficient collision detection.
     /// </summary>
-    /// <param name="collision">Information about the collision that has ended</param>
+    /// <param name="collision">Contains information about the collision that has ended,
+    /// including references to the colliding objects.</param>
     public void OnCollisionExit(Collision collision)
     {
-        #if UNITY_EDITOR
-        Debug.Log("-- TrafficAgent::OnCollisionExit --");
-        #endif
+        LogDebug("TrafficAgent::OnCollisionExit started.");
 
         // Check if we've left the road
         if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
         {
             isGrounded = false;
+            LogDebug("Agent left the road");
         }
+
+        LogDebug("TrafficManager::OnCollisionExit completed successfully.");
     }
 
     /// <summary>
-    /// Called when the Collider enters the trigger
+    /// Handles the event when the agent's Collider first enters another Collider's trigger zone.
+    ///
+    /// This method specifically manages interactions with objects tagged as "RoadBoundary":
+    /// - Applies an immediate penalty (offRoadPenalty) when the agent enters a road boundary area.
+    /// - Logs detailed information about the triggered object for debugging purposes.
+    ///
+    /// Key components:
+    /// - offRoadPenalty: The reward adjustment applied for entering off-road areas.
+    /// - AddReward: Method assumed to be part of a reinforcement learning framework (e.g., ML-Agents).
+    ///
+    /// Usage:
+    /// This method is automatically called by Unity's physics system when the agent's Collider
+    /// enters a trigger Collider. No manual invocation is needed.
+    ///
+    /// Note:
+    /// - Ensure that road boundary objects are properly tagged as "RoadBoundary" in the Unity editor.
+    /// - The logging provides detailed information about the triggered object, which can be
+    ///   valuable for debugging and understanding the agent's interactions.
+    /// - Adjust offRoadPenalty as needed to appropriately influence the agent's learning process.
     /// </summary>
-    /// <param name="other">The other Collider involved in this collision</param>
+    /// <param name="other">The Collider that the agent has entered. This Collider must be set as a trigger.</param>
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"Trigger entered with {other.gameObject.name}, tag: {other.gameObject.tag}, layer: {LayerMask.LayerToName(other.gameObject.layer)}");
+        LogDebug("TrafficManager::OnTriggerEnter started.");
+
+        LogDebug($"Trigger entered with {other.gameObject.name}, tag: {other.gameObject.tag}, layer: {LayerMask.LayerToName(other.gameObject.layer)}");
 
         // Check the tag of the object we triggered
         if (other.gameObject.CompareTag("RoadBoundary"))
         {
             // Penalize the agent for going off the road
             AddReward(offRoadPenalty);
-            Debug.Log($"Entered road boundary trigger! Penalty added: {offRoadPenalty}");
+            LogDebug($"Entered road boundary trigger! Penalty added: {offRoadPenalty}");
         }
 
         /*
@@ -654,14 +1221,38 @@ public class TrafficAgent : Agent
             Debug.Log("Item collected!");
         }
         */
+
+        LogDebug("TrafficManager::OnTriggerEnter completed successfully.");
     }
 
     /// <summary>
-    /// Called every fixed frame-rate frame for the duration the Collider stays in the trigger
+    /// Handles continuous interaction between the agent's Collider and another Collider's trigger.
+    ///
+    /// This method is called every fixed frame-rate frame while the agent remains within a trigger zone.
+    /// It specifically manages the agent's interaction with "RoadBoundary" tagged objects:
+    ///
+    /// - Applies a periodic penalty (offRoadPenalty) when the agent is within a road boundary area.
+    /// - Uses a time-based interval (penaltyInterval) to control the frequency of penalty application.
+    /// - Updates the lastPenaltyTime to track when the last penalty was applied.
+    ///
+    /// Key components:
+    /// - offRoadPenalty: The reward adjustment applied for being off-road.
+    /// - penaltyInterval: The minimum time between penalty applications.
+    /// - lastPenaltyTime: Tracks the time of the last applied penalty.
+    ///
+    /// Usage:
+    /// This method is automatically called by Unity's physics system. No manual invocation is needed.
+    ///
+    /// Note:
+    /// - Ensure road boundary objects are tagged as "RoadBoundary" in the Unity editor.
+    /// - The AddReward method is assumed to be part of a reinforcement learning framework (e.g., ML-Agents).
+    /// - Adjust offRoadPenalty and penaltyInterval as needed for desired agent behavior.
     /// </summary>
-    /// <param name="other">The other Collider involved in this collision</param>
+    /// <param name="other">The Collider that the agent is continuously interacting with. This Collider must be set as a trigger.</param>
     private void OnTriggerStay(Collider other)
     {
+        LogDebug("TrafficManager::OnTriggerStay started.");
+
         /*
          * This method is called every fixed frame-rate frame while a collider remains inside the trigger zone.
          * Use cases:
@@ -679,19 +1270,33 @@ public class TrafficAgent : Agent
                 AddReward(offRoadPenalty);
                 lastPenaltyTime = Time.time;
 
-                #if UNITY_EDITOR
-                Debug.Log($"Staying in road boundary! Penalty added: {offRoadPenalty}");
-                #endif
+                LogDebug($"Staying in road boundary! Penalty added: {offRoadPenalty}");
             }
         }
+
+        LogDebug("TrafficManager::OnTriggerStay completed successfully.");
     }
 
     /// <summary>
-    /// Called when the Collider has stopped touching the trigger
+    /// Handles the event when the agent's Collider stops touching another Collider's trigger.
+    ///
+    /// This method specifically checks for interactions with objects tagged as "RoadBoundary":
+    /// - When the agent exits a road boundary area, it resets the lastPenaltyTime to 0.
+    /// - This reset allows for new penalties to be applied if the agent re-enters a boundary area.
+    ///
+    /// Usage:
+    /// This method is automatically called by Unity's physics system when the
+    /// agent's Collider exits a trigger Collider. No manual invocation is needed.
+    ///
+    /// Note:
+    /// - Ensure that road boundary objects are properly tagged as "RoadBoundary" in the Unity editor.
+    /// - The lastPenaltyTime variable should be defined elsewhere in the class.
     /// </summary>
-    /// <param name="other">The other Collider involved in this collision</param>
+    /// <param name="other">The Collider that the agent has stopped touching. This Collider must be set as a trigger.</param>
     private void OnTriggerExit(Collider other)
     {
+        LogDebug("TrafficManager::OnTriggerExit started.");
+
         /*
          * This method is called when a collider exits the trigger zone.
          * Use cases:
@@ -705,25 +1310,100 @@ public class TrafficAgent : Agent
             // Reset the last penalty time
             lastPenaltyTime = 0f;
 
-            #if UNITY_EDITOR
-            Debug.Log("Exited road boundary area");
-            #endif
-
-            // Optionally, you could add a small reward for getting back on the road
-            // AddReward(backOnRoadReward);
+            LogDebug("Exited road boundary area");
         }
+
+        LogDebug("TrafficManager::OnTriggerExit completed successfully.");
     }
 
+    /// <summary>
+    /// Generates random values for the agent's low-level actions within predefined ranges.
+    ///
+    /// This method sets three action values in the lowLevelActions array:
+    /// 1. Index 0 - Steering angle: Range [-0.610865, 0.610865] radians (approximately ±35 degrees)
+    /// 2. Index 1 - Acceleration: Range [0.0, 4.5]
+    /// 3. Index 2 - Braking: Range [-4.0, 0.0]
+    ///
+    /// These randomized values can be used to:
+    /// - Initialize the agent's actions at the start of an episode
+    /// - Generate exploratory actions during training
+    /// - Create diverse scenarios for testing or simulation
+    ///
+    /// Note: The ranges are hardcoded and may need adjustment based on the specific
+    /// requirements of the traffic simulation or learning task.
+    /// </summary>
     void GetRandomActions()
     {
+        LogDebug("TrafficManager::GetRandomActions started.");
+
         float minAngleRad = -0.610865f; // -35 degrees in radians
         float maxAngleRad = 0.610865f;  // 35 degrees in radians
 
         lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
+
+        LogDebug("TrafficManager::GetRandomActions completed successfully.");
     }
 
+    /// <summary>
+    /// Logs a debug message to the Unity console, but only when running in the Unity Editor.
+    /// This method provides a centralized and controlled way to output debug information.
+    ///
+    /// The method performs the following action:
+    /// 1. If running in the Unity Editor, logs the provided message using Unity's Debug.Log
+    ///
+    /// Key aspects of this method:
+    /// - Uses conditional compilation to ensure debug logs only appear in the Unity Editor
+    /// - Centralizes debug logging, making it easier to manage and control debug output
+    /// - Helps prevent debug logs from affecting performance in builds
+    ///
+    /// This method is useful for:
+    /// - Debugging and development purposes within the Unity Editor
+    /// - Providing insights into the simulation's behavior during development
+    /// - Allowing for easy enabling/disabling of debug logs across the entire project
+    ///
+    /// Usage:
+    /// - Call this method instead of Debug.Log directly throughout the codebase
+    /// - Ideal for temporary debugging or for logging non-critical information
+    ///
+    /// Considerations:
+    /// - Debug messages will not appear in builds, ensuring clean release versions
+    /// - Using this method allows for easy future expansion of logging functionality
+    /// - Consider adding log levels or additional conditionals if more complex logging is needed
+    ///
+    /// Developers should be aware that:
+    /// - Overuse of logging can impact editor performance during play mode
+    /// - This method should not be used for logging critical errors that need to be visible in builds
+    /// - It's a good practice to remove or comment out unnecessary debug logs before final release
+    ///
+    /// Note: While this method provides a convenient way to add debug logs, it's important to use
+    /// logging judiciously to maintain code readability and performance, especially in frequently
+    /// called methods or performance-critical sections of code.
+    /// </summary>
+    /// <param name="message">The debug message to be logged</param>
+    private void LogDebug(string message)
+    {
+        #if UNITY_EDITOR
+        Debug.Log(message);
+        #endif
+    }
+
+    /// <summary>
+    /// Appends a debug message to a log file in the application's data directory.
+    ///
+    /// This method:
+    /// 1. Constructs the full path to the log file named "debug_log.txt" in the application's data folder.
+    /// 2. Appends the provided message to the file, followed by a newline character.
+    ///
+    /// Usage:
+    ///     LogToFile("Debug message here");
+    ///
+    /// Note: This method will create the file if it doesn't exist, or append to it if it does.
+    /// Be aware that frequent writes to disk may impact performance in a production environment.
+    ///
+    /// </summary>
+    /// <param name="message">The debug message to be logged to the file.</param>
     private void LogToFile(string message)
     {
         string path = Application.dataPath + "/debug_log.txt";
