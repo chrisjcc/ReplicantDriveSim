@@ -44,6 +44,8 @@ training:
 environment:
   disable_env_checking: bool()
 
+stop:
+  training_iteration: int(min=1)
 ---
 policy:
   # Define the structure of a policy if needed

@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - Road
+  - TrafficAgent
+  - RoadBoundary
   layers:
   - Default
   - TransparentFX
@@ -12,8 +14,8 @@ TagManager:
   - Road
   - Water
   - UI
-  - 
-  - 
+  - RoadBoundary
+  - TrafficAgent
   - 
   - 
   - 

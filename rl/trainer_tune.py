@@ -548,11 +548,20 @@ def main():
     Returns:
         None
     """
+   # Determine the current directory where the script is running
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Get the base directory by moving up one level (assuming the script is in 'rl' folder)
+    base_dir = os.path.dirname(current_dir)
+
+    # Construct the full path to the Unity executable
+    unity_executable_path = os.path.join(base_dir, "libReplicantDriveSim.app")
+
     # Initialize Ray
     ray.init(ignore_reinit_error=True)
 
     unity_env_handle = create_unity_env(
-        file_name="libReplicantDriveSim.app",  # Path to your Unity executable
+        file_name=unity_executable_path,  # Path to your Unity executable
         worker_id=0,
         base_port=5004,
         no_graphics=False,
