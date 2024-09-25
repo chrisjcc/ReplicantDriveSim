@@ -1,0 +1,21 @@
+# Build settings
+remote_theme: pmarsceill/just-the-docs
+title: Replicant Drive Simulation
+description: This project aims to develop a simulated traffic driver agent using a combination of imitation learning and reinforcement learning techniques.
+url: "https://chrisjcc.github.io"
+baseurl: "/ReplicantDriveSim"
+favicon: /favicon.ico
+plugins:
+  - jekyll-readme-index
+  - jekyll-remote-theme
+readme_index:
+  enabled: true
+  remove_originals: false
+  with_frontmatter: true
+include:
+  - External
+defaults:
+  - scope:
+      path: "External"
+    values:
+      image: true

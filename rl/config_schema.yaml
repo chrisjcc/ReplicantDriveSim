@@ -1,0 +1,54 @@
+# config_schema.yaml
+
+mlflow:
+  experiment_name: str()
+
+ray:
+  num_cpus: int(min=1)
+
+unity_env:
+  base_port: int(min=1024, max=65535)
+  no_graphics: bool()
+
+env_config:
+  initial_agent_count: int(min=1)
+  episode_horizon: int(min=1)
+
+ppo_config:
+  framework: enum('torch', 'tf', 'tf2')
+  num_gpus: int(min=0)
+
+multi_agent:
+  policies:
+    shared_policy: any()  # Allow any value, as it will be set programmatically
+
+rollouts:
+  num_rollout_workers: int(min=0)
+  num_envs_per_worker: int(min=1)
+  rollout_fragment_length: int(min=1)
+  batch_mode: enum('truncate_episodes', 'complete_episodes')
+
+training:
+  train_batch_size: int(min=1)
+  sgd_minibatch_size: int(min=1)
+  num_sgd_iter: int(min=1)
+  lr: num(min=0)
+  gamma: num(min=0, max=1)
+  lambda: num(min=0, max=1)
+  clip_param: num(min=0)
+  vf_clip_param: num(min=0)
+  entropy_coeff: num(min=0)
+  kl_coeff: num(min=0)
+  vf_loss_coeff: num(min=0)
+
+environment:
+  disable_env_checking: bool()
+
+stop:
+  training_iteration: int(min=1)
+---
+policy:
+  # Define the structure of a policy if needed
+  # This is a placeholder and should be adjusted based on your actual policy structure
+  observation_space: any()
+  action_space: any()

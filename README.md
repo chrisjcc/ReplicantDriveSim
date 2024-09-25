@@ -1,90 +1,66 @@
+---
+layout: default
+title: "ReplicantDriveSim"
+permalink: /
+---
+
+![Workflow Status](https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/publish-gh-pages.yml/badge.svg?branch=main)
+
 # ReplicantDriveSim
 
 ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research. It leverages reinforcement learning, imitation learning, and computer vision to create realistic traffic scenarios and synthetic driving data. The simulation environment is built using Pygame for visualization and Miniforge for Python package management, ensuring a seamless development and deployment experience. This Docker image provides a fully configured environment with all necessary dependencies, enabling efficient experimentation and development of autonomous driving algorithms.
 
-# Environment setup
-```shell
-conda env create -f environment.yml
-conda activate drive
-```
+[Traffic Simulation Documentation](https://chrisjcc.github.io/ReplicantDriveSim/)
 
-# Build and check setup
-```shell
-python -m build -v
-unzip -l dist/traffic_simulation-*.whl
-```
+[Doxygen Documentation](https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/)
 
-or configure and build a stand alone traffic library
-```shell
-mkdir build
-cd build
-cmake ..
-make
-cd ..
-```
+[AI Page](https://chrisjcc.github.io/ReplicantDriveSim/rl/)
 
-# Install Traffic Simulation
-```python
-pip install --force-reinstall dist/traffic_simulation-*.whl
-```
+[GitHub Page](https://github.com/chrisjcc/ReplicantDriveSim/)
 
-## Example Usage
+[Read the Docs](https://replicantdrivesim.readthedocs.io/en/latest/)
 
-```python
-# Import the compiled C++ module
-import traffic_simulation
+![Nissan GTR](https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim.png)
 
-# Create a traffic environment
-simulation = traffic_simulation.TrafficSimulation(2)
+## Project Setup
 
-# Retrieve the current states of agents in the traffic environment
-states = simulation.get_agent_positions()
+### Required Unity Version
 
-# Display the states of agents in the traffic environment
-for agent, state in states.items():
-    print(f"{agent} state: {state}")
+This project was developed using Unity 2022.3.39f1 (LTS). To ensure compatibility, please use this version or later Long-Term Support (LTS) versions of Unity. You can download the specific version from the Unity Hub or the Unity Archive.
 
-# Advance the environment by one step
-simulation.step([1, 0], [[0.1, 0.2, 0.3], [0.0, 0.0, 0.0]])
+#### Installation:
 
-# Update the states of agents in the traffic environment
-states = simulation.get_agent_positions()
+1. Clone the repository:
+    ```shell
+    git clone git@github.com:chrisjcc/ReplicantDriveSim.git
+    ```
+2. Open the project in Unity Hub and select Unity version 2022.3.39f1.
+3. Let Unity install any necessary packages and dependencies.
 
-# Display the updated states of agents in the traffic environment
-for agent, state in states.items():
-    print(f"{agent} state: {state}")
-```
+## Generate Doxygen Documentation
 
-## Docker build
-```shell
-# Build docker image
-export DOCKER_BUILDKIT=1 
-docker-compose up --build
-# Run docker image
-docker run -it --rm -v $(pwd)/data:/app/repo/data replicantdrivesim-app bash
+To generate the documentation for this project using Doxygen, follow these steps:
 
-# Alternative build method
-DOCKER_BUILDKIT=1 docker build --ssh default -t replicantdrivesim-app .
+### Prerequisites
 
-# Close docker container
-docker-compose down
-docker-compose down --volumes
-docker-compose down --volumes --remove-orphans
+Make sure Doxygen is installed on your local machine. You can install it using the following commands:
 
-docker system prune -a
-docker system prune -a --volumes
+- **Ubuntu:**
+    ```bash
+    sudo apt-get install doxygen
+    sudo apt-get install graphviz
+    ```
+- **macOS:**
+    ```bash
+    brew install doxygen
+    brew install graphviz
+    ```
 
-docker-compose ps -a
-docker-compose logs
+### Generate Documentation
 
-# Exec into the Running Container (app is name of service in docker-compose.yml)
-docker-compose exec app bash
-```
-
-```python
-python simulacrum.py
-
-# Or
-
-python trainer.py
-```
+1. Navigate to the root directory of your project where the Doxyfile is located.
+2. Run the Doxygen command with your Doxyfile to generate the documentation:
+    ```bash
+    doxygen Doxyfile
+    ```
+3. The generated HTML files can be found in the directory specified by the OUTPUT_DIRECTORY setting in the Doxyfile (typically docs/html).
