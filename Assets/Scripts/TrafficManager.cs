@@ -30,7 +30,7 @@ public class TrafficManager : MonoBehaviour
     [SerializeField] public float spawnAreaSize = 10.0f;
     //[HideInInspector] public float MoveSpeed { get; set; } = 5f;
     //[HideInInspector] public float RotationSpeed { get; set; } = 100f;
-    [HideInInspector] public float SpawnHeight { get; set; } = 0.5f;
+    [HideInInspector] public float SpawnHeight { get; set; } = 0.1f;
     [HideInInspector] public float AngleStep { get; private set; }
     [HideInInspector] public bool PendingAgentCountUpdate { get; set; } = false;
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "RoadBoundary"; // Layer assigned to TrafficAgents
