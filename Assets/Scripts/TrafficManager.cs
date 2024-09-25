@@ -30,7 +30,7 @@ public class TrafficManager : MonoBehaviour
     [SerializeField] public float spawnAreaSize = 10.0f;
     //[HideInInspector] public float MoveSpeed { get; set; } = 5f;
     //[HideInInspector] public float RotationSpeed { get; set; } = 100f;
-    [HideInInspector] public float SpawnHeight { get; set; } = 0.5f;
+    [HideInInspector] public float SpawnHeight { get; set; } = 0.1f;
     [HideInInspector] public float AngleStep { get; private set; }
     [HideInInspector] public bool PendingAgentCountUpdate { get; set; } = false;
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "RoadBoundary"; // Layer assigned to TrafficAgents
@@ -234,6 +234,8 @@ public class TrafficManager : MonoBehaviour
 
         // Subscribe to the OnFloatPropertiesChanged event
         floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
+
+        floatPropertiesChannel.RegisterCallback("MaxSteps", MaxEpisodeSteps);
 
         // Get the initialAgentCount parameter from the environment parameters
         //var envParameters = Academy.Instance.EnvironmentParameters;
@@ -1748,6 +1750,15 @@ public class TrafficManager : MonoBehaviour
         }
 
         LogDebug("TrafficManager::OnInitialAgentCountChanged completely successfully.");
+    }
+
+    private void MaxEpisodeSteps(float newValue)
+    {
+        LogDebug("TrafficManager::MaxEpisodeSteps started.");
+
+        MaxSteps = Mathf.RoundToInt(newValue);
+
+        LogDebug("TrafficManager::MaxEpisodeSteps completely successfully.");
     }
 
     /// <summary>
