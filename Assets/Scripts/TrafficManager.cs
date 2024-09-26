@@ -1,4 +1,4 @@
-using System;
+using System; // IntPtr
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -17,10 +17,12 @@ public class TrafficManager : MonoBehaviour
     private const string DllName = "ReplicantDriveSim";
 
 
-    // Serialized Fields (Unity Inspector variables)
+    // Serialized Fields for Unity Editor (Unity Inspector variables)
     [SerializeField] private GameObject agentPrefab; // e.g., NISSAN-GTR)
     [SerializeField] private int initialAgentCount = 2;
     [SerializeField] private uint seed = 42;
+    [SerializeField] private float timeStep = 0.02f;
+    [SerializeField] private float maxVelocity = 60.0f;
 
     // Public Properties
     [SerializeField] public int numberOfRays = 15;
@@ -138,6 +140,19 @@ public class TrafficManager : MonoBehaviour
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void FreeString(IntPtr str);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern float Traffic_getTimeStep(IntPtr traffic);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void Traffic_setTimeStep(IntPtr traffic, float timeStep);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern float Traffic_getMaxVelocity(IntPtr traffic);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void Traffic_setMaxVelocity(IntPtr traffic, float maxVelocity);
+
 
     /// <summary>
     /// Initializes the TrafficManager component when the script instance is being loaded.
@@ -268,6 +283,10 @@ public class TrafficManager : MonoBehaviour
         {
             throw new InvalidOperationException("Failed to create traffic simulation.");
         }
+
+        // Set initial values from Unity Editor to the C++ simulation
+        Traffic_setTimeStep(trafficSimulationPtr, timeStep);
+        Traffic_setMaxVelocity(trafficSimulationPtr, maxVelocity);
 
         UpdateAgentMaps();
     }
@@ -1430,6 +1449,8 @@ public class TrafficManager : MonoBehaviour
     private void Update()
     {
         UpdateAgentPositions();
+
+        Debug.Log($"Time Step: {timeStep}, Max Velocity: {maxVelocity}"); // NEW
     }
 
     /// <summary>
@@ -2093,7 +2114,7 @@ public class TrafficManager : MonoBehaviour
             floatPropertiesChannel = null; // NEW
         }
 
-        LogDebug("TrafficManager::CleanUpSimulation END  completely successfully.");
+        LogDebug("TrafficManager::CleanUpSimulation completely successfully.");
 
         hasCleanedUp = true;
     }
@@ -2189,6 +2210,8 @@ public class TrafficManager : MonoBehaviour
         LogDebug("TrafficManager::OnDestroy started.");
 
         CleanUpSimulation();
+
+        Traffic_destroy(trafficSimulationPtr); // NEW
 
         LogDebug("TrafficManager::OnDestroy completely successfully.");
     }
@@ -2314,7 +2337,7 @@ public class TrafficManager : MonoBehaviour
             GC.SuppressFinalize(this);
         }
 
-        LogDebug("TrafficManager::Dispose END completely successfully.");
+        LogDebug("TrafficManager::Dispose completely successfully.");
     }
 
     /// <summary>

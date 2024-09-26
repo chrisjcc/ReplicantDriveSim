@@ -153,9 +153,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
   roadPhysicsMaterial: {fileID: 0}
-  roadWidth: 30
+  numberOfLanes: 2
+  laneWidth: 3.5
+  roadWidth: 8
   roadLength: 3250
   boundaryHeight: 5
+  shoulderWidth: 1.5
 --- !u!4 &102826275
 Transform:
   m_ObjectHideFlags: 0
@@ -215,20 +218,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bd63a84cb8ab439ba5a902a73f51f97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 5
-  rotationSpeed: 100
   agentPrefab: {fileID: 4109849008543767089, guid: d82982a893aaf4a29b195b5d5b95b7fb, type: 3}
   initialAgentCount: 2
   seed: 42
+  timeStep: 0.02
+  maxVelocity: 60
   numberOfRays: 15
   rayLength: 200
   raycastAngle: 90
   debugVisualization: 1
-  spawnAreaSize: 10
-  spawnHeight: 0.5
-  AngleStep: 0
-  pendingAgentCountUpdate: 0
-  trafficAgentLayerName: RoadBoundary
+  spawnAreaSize: 2
+  MaxSteps: 2000
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

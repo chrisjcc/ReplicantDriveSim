@@ -96,6 +96,13 @@ EXPORT int VehiclePtrVector_size(const VehiclePtrVector* vector);
 EXPORT const Vehicle* VehiclePtrVector_get(const VehiclePtrVector* vector, int index);
 EXPORT void VehiclePtrVector_destroy(VehiclePtrVector* vector);
 
+// Traffic configuration functions
+EXPORT float Traffic_getTimeStep(Traffic* traffic);
+EXPORT void Traffic_setTimeStep(Traffic* traffic, float new_time_step);
+EXPORT float Traffic_getMaxVelocity(Traffic* traffic);
+EXPORT void Traffic_setMaxVelocity(Traffic* traffic, float new_max_velocity);
+
+
 // Utility function
 EXPORT void FreeString(const char* str);
 

@@ -174,11 +174,6 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // Acceleration (m/s^2)
     float braking = clamp(low_level_action[2], -8.0f, 0.0f); // Braking deceleration (m/s^2)
     float net_acceleration = 0.0f;
-    
-    // Time step (assuming a fixed time step, adjust as necessary)
-    float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
-
-    const float max_velocity = 60.0f; // Maximum velocity (m/s)
 
     // Process high-level actions
     switch (high_level_action) {
@@ -229,6 +224,42 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
 
     // Constrain vertically within the road
     //vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
+}
+
+/**
+* @brief Getter for the time step.
+* @return Current time step value.
+*/
+float Traffic::getTimeStep() const {
+    return time_step;
+}
+
+/**
+* @brief Setter for the time step.
+* @param new_time_step New time step value. Must be greater than 0.
+*/
+void Traffic::setTimeStep(float new_time_step) {
+    if (new_time_step > 0) { // Ensure valid positive time step
+        time_step = new_time_step;
+    }
+}
+
+/**
+* @brief Getter for the maximum velocity.
+* @return Current maximum velocity value.
+*/
+float Traffic::getMaxVelocity() const {
+    return max_velocity;
+}
+
+/**
+     * @brief Setter for the maximum velocity.
+     * @param new_max_velocity New maximum velocity value. Must be positive.
+*/
+void Traffic::setMaxVelocity(float new_max_velocity) {
+    if (new_max_velocity > 0) { // Ensure velocity is positive
+        max_velocity = new_max_velocity;
+    }
 }
 
 /**

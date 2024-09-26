@@ -253,3 +253,39 @@ EXPORT float FloatVector_get(const FloatVector* vector, int index) {
 EXPORT void FloatVector_destroy(FloatVector* vector) {
     delete vector;
 }
+
+/**
+ * @brief Gets the time step from a Traffic object.
+ * @param traffic Pointer to the Traffic object.
+ * @return The current time step.
+ */
+EXPORT float Traffic_getTimeStep(Traffic* traffic) {
+    return traffic->getTimeStep();
+}
+
+/**
+ * @brief Sets the time step in a Traffic object.
+ * @param traffic Pointer to the Traffic object.
+ * @param new_time_step The new time step value to set.
+ */
+EXPORT void Traffic_setTimeStep(Traffic* traffic, float new_time_step) {
+    traffic->setTimeStep(new_time_step);
+}
+
+/**
+ * @brief Gets the maximum velocity from a Traffic object.
+ * @param traffic Pointer to the Traffic object.
+ * @return The current maximum velocity.
+ */
+EXPORT float Traffic_getMaxVelocity(Traffic* traffic) {
+    return traffic->getMaxVelocity();
+}
+
+/**
+ * @brief Sets the maximum velocity in a Traffic object.
+ * @param traffic Pointer to the Traffic object.
+ * @param new_max_velocity The new maximum velocity value to set.
+ */
+EXPORT void Traffic_setMaxVelocity(Traffic* traffic, float new_max_velocity) {
+    traffic->setMaxVelocity(new_max_velocity);
+}
