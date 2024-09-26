@@ -2,6 +2,7 @@
 ## Unity Life Cycle & Unity ML-Agents Execution Order
 
 This section provides a comprehensive overview of the sequence in which Unity's event functions and ML-Agents methods are executed during gameplay. Understanding this execution order is crucial for developers, as it influences how scripts interact with one another and how agents behave within their environments.
+
 By following the specified order, developers can ensure that their game logic operates smoothly and predictably, avoiding potential issues that arise from relying on unguaranteed execution sequences. This section outlines each method's role in the lifecycle of Unity objects and ML-Agents, helping developers to effectively manage their scripts and optimize agent behaviors for training and simulation.
 
 1. `Awake()`: Called for all objects in the scene.
