@@ -328,7 +328,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         # Reset the environment only once (ideally)
         ray.get(self.unity_env_handle.reset.remote())
-        # ray.get(self.unity_env_handle.reset.remote())
+        # ray.get(self.unity_env_handle.reset.remote()) # TODO: REMOVE
 
         # Get decision steps after the reset
         decision_steps, _ = ray.get(
@@ -376,7 +376,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         )
 
         # Step the Unity environment
-        ray.get(self.unity_env_handle.step.remote())
+        for _ in range(25):
+            ray.get(self.unity_env_handle.step.remote())
 
         obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict = self._get_step_results()
 
