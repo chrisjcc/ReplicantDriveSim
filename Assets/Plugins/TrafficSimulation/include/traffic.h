@@ -12,7 +12,7 @@
 
 /**
  * @brief The Traffic class manages a simulation of multiple vehicles with
- *        their positions and velocities, along with collision detection and perception.
+ *        their positions and velocities.
  */
 class Traffic {
 public:
@@ -130,12 +130,6 @@ private:
      * @param low_level_action The low-level actions to apply.
      */
     void updatePosition(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action);
-
-    /**
-     * @brief Checks for collisions between agents.
-     * If two agents are within the vehicle width of each other, their velocities are set to zero.
-     */
-    void checkCollisions();
 
     /**
      * @brief Generates a random float within a specified range.

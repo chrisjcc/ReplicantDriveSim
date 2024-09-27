@@ -276,28 +276,6 @@ void Traffic::setMaxVelocity(float new_max_velocity) {
 }
 
 /**
- * @brief Checks for collisions between agents.
- * If two agents are within the vehicle width of each other, their velocities are set to zero.
- */
-void Traffic::checkCollisions() {
-    for (int i = 0; i < num_agents; ++i) {
-        for (int j = i + 1; j < num_agents; ++j) {
-            float distance = std::hypot(agents[i].getZ() - agents[j].getZ(), agents[i].getX() - agents[j].getX());
-            if (distance < VEHICLE_WIDTH) {
-                // Handle collision by setting velocities to zero
-                /*
-                agents[i].setVx(0.0f);
-                agents[i].setVy(0.0f);
-                agents[j].setVx(0.0f);
-                agents[j].setVy(0.0f);
-                */
-                std::cout << "*** Collision Detected *** (distance gap " << distance << ")" << std::endl;
-            }
-        }
-    }
-}
-
-/**
  * @brief Generates a random float within a specified range.
  * @param a Lower bound of the range.
  * @param b Upper bound of the range.
