@@ -40,8 +40,7 @@ PYBIND11_MODULE(simulation, m) {
         .def("get_agent_positions", &Traffic::get_agent_positions, "Get the positions of all agents")
         .def("get_agent_velocities", &Traffic::get_agent_velocities, "Get the velocities of all agents")
         .def("get_previous_positions", &Traffic::get_previous_positions, "Get the previous positions of all agents")
-        .def("get_agent_orientations", &Traffic::get_agent_orientations, "Get the orientations of all agents")
-        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles, py::return_value_policy::reference_internal, "Get nearby vehicles for each agent");
+        .def("get_agent_orientations", &Traffic::get_agent_orientations, "Get the orientations of all agents");
 
     // Bind vector of shared_ptr<Vehicle> using a custom caster
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")

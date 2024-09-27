@@ -243,57 +243,12 @@ float Traffic::getMaxVelocity() const {
 }
 
 /**
-     * @brief Setter for the maximum velocity.
-     * @param new_max_velocity New maximum velocity value. Must be positive.
+ * @brief Setter for the maximum velocity.
+ * @param new_max_velocity New maximum velocity value. Must be positive.
 */
 void Traffic::setMaxVelocity(float new_max_velocity) {
     if (new_max_velocity > 0) { // Ensure velocity is positive
         max_velocity = new_max_velocity;
-    }
-}
-
-/**
- * @brief Retrieves nearby vehicles for a given agent.
- * @param agent_name The name of the agent.
- * @return Vector of shared pointers to nearby vehicles.
- */
- std::vector<Vehicle> Traffic::getNearbyVehicles(const std::string& agent_name) const {
-    // Find the vehicle corresponding to the given agent ID
-    const Vehicle* ego_vehicle = nullptr;
-
-    for (const auto& vehicle : agents) {
-
-        if (vehicle.getName() == agent_name) {
-            ego_vehicle = &vehicle;
-            break;
-        }
-    }
-
-    // If the vehicle with the given agent ID is not found, return an empty vector
-    if (ego_vehicle == nullptr) {
-        return std::vector<Vehicle>();
-    }
-}
-
-/**
- * @brief Checks for collisions between agents.
- * If two agents are within the vehicle width of each other, their velocities are set to zero.
- */
-void Traffic::checkCollisions() {
-    for (int i = 0; i < num_agents; ++i) {
-        for (int j = i + 1; j < num_agents; ++j) {
-            float distance = std::hypot(agents[i].getZ() - agents[j].getZ(), agents[i].getX() - agents[j].getX());
-            if (distance < VEHICLE_WIDTH) {
-                // Handle collision by setting velocities to zero
-                /*
-                agents[i].setVx(0.0f);
-                agents[i].setVy(0.0f);
-                agents[j].setVx(0.0f);
-                agents[j].setVy(0.0f);
-                */
-                std::cout << "*** Collision Detected *** (distance gap " << distance << ")" << std::endl;
-            }
-        }
     }
 }
 
