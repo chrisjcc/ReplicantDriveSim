@@ -252,7 +252,6 @@ void Traffic::setMaxVelocity(float new_max_velocity) {
     }
 }
 
-/**
  * @brief Generates a random float within a specified range.
  * @param a Lower bound of the range.
  * @param b Upper bound of the range.
