@@ -1,5 +1,4 @@
 #include "traffic.h"
-#include "perception_module.h"
 
 #include <iostream>
 #include <algorithm> // for std::max and std::min
@@ -29,8 +28,6 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
 
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
-
-    perceptionModule = std::make_unique<PerceptionModule>(*this); // Initialize the pointer
 
     // Initialize agents with random positions and attributes
     for (int i = 0; i < num_agents; ++i) {
@@ -63,7 +60,6 @@ Traffic::~Traffic() {
 /**
  * @brief Performs a simulation step.
  * Updates agent positions based on high-level and low-level actions,
- * updates perceptions, and checks for collisions.
  * @param high_level_actions High-level actions for each agent.
  * @param low_level_actions Low-level actions for each agent.
  */
@@ -72,12 +68,6 @@ void Traffic::step(const std::vector<int>& high_level_actions, const std::vector
     for (auto& agent : agents) {
         updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
     }
-
-    // Update perceptions
-    //perceptionModule->updatePerceptions();
-
-    // Check for collisions between agents
-    //checkCollisions(); // Collision detection
 }
 
 /**
@@ -283,9 +273,6 @@ void Traffic::setMaxVelocity(float new_max_velocity) {
     if (ego_vehicle == nullptr) {
         return std::vector<Vehicle>();
     }
-
-    // Call the PerceptionModule method to detect nearby vehicles
-    return perceptionModule->detectNearbyVehicles(*ego_vehicle);
 }
 
 /**

@@ -1,7 +1,6 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
-#include "perception_module.h"
 #include "traffic.h"
 
 class Simulation {
@@ -12,7 +11,6 @@ public:
 
 private:
     Traffic trafficSimulation;
-    PerceptionModule perceptionModule;
 };
 
 #endif // SIMULATION_H
