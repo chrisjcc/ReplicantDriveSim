@@ -10,7 +10,7 @@ unity_env:
 
 env_config:
   initial_agent_count: 2
-  episode_horizon: 2000
+  episode_horizon: 1000
 
 ppo_config:
   framework: "torch"

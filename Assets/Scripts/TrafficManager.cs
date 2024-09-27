@@ -8,6 +8,7 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.SideChannels;
 using System.Linq;
 
+using CustomSideChannel;
 
 
 // Responsible for stepping the traffic simulation and updating all agents
@@ -21,7 +22,7 @@ public class TrafficManager : MonoBehaviour
     [SerializeField] private GameObject agentPrefab; // e.g., NISSAN-GTR)
     [SerializeField] private int initialAgentCount = 2;
     [SerializeField] private uint seed = 42;
-    [SerializeField] private float timeStep = 0.02f;
+    [SerializeField] private float simTimeStep = 0.04f;
     [SerializeField] private float maxVelocity = 60.0f;
 
     // Public Properties
@@ -51,6 +52,7 @@ public class TrafficManager : MonoBehaviour
     private List<int> highLevelActions;
     private List<float[]> lowLevelActions;
     private FloatPropertiesChannel floatPropertiesChannel;
+    private FieldValueChannel sideChannel;
     private int pendingAgentCount = 0;
     private bool isDisposed = false;
     private bool hasCleanedUp = false;
@@ -145,14 +147,13 @@ public class TrafficManager : MonoBehaviour
     private static extern float Traffic_getTimeStep(IntPtr traffic);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void Traffic_setTimeStep(IntPtr traffic, float timeStep);
+    private static extern void Traffic_setTimeStep(IntPtr traffic, float simTimeStep);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     private static extern float Traffic_getMaxVelocity(IntPtr traffic);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     private static extern void Traffic_setMaxVelocity(IntPtr traffic, float maxVelocity);
-
 
     /// <summary>
     /// Initializes the TrafficManager component when the script instance is being loaded.
@@ -242,7 +243,8 @@ public class TrafficManager : MonoBehaviour
     private void SetupFloatPropertiesChannel()
     {
         // Create the FloatPropertiesChannel
-        floatPropertiesChannel = new FloatPropertiesChannel(new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7"));
+        Guid floatPropertiesChannelGuid = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
+        floatPropertiesChannel = new FloatPropertiesChannel(floatPropertiesChannelGuid);
 
         // Register the channel
         SideChannelManager.RegisterSideChannel(floatPropertiesChannel);
@@ -250,7 +252,18 @@ public class TrafficManager : MonoBehaviour
         // Subscribe to the OnFloatPropertiesChanged event
         floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
 
+        // Subscribe to the MaxSteps envet
         floatPropertiesChannel.RegisterCallback("MaxSteps", MaxEpisodeSteps);
+
+        // Inject a custom Guid at instantiation or use the default one
+        Guid sideChannelGuid = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f8");
+
+        // Create the FieldValueChannel
+        sideChannel = new FieldValueChannel(sideChannelGuid);
+        SideChannelManager.RegisterSideChannel(sideChannel);
+
+        // Sending a field value (e.g., current FPS)
+        sideChannel.SendFieldValue("FramesPerSecond", 1.0f / simTimeStep);
 
         // Get the initialAgentCount parameter from the environment parameters
         //var envParameters = Academy.Instance.EnvironmentParameters;
@@ -285,7 +298,7 @@ public class TrafficManager : MonoBehaviour
         }
 
         // Set initial values from Unity Editor to the C++ simulation
-        Traffic_setTimeStep(trafficSimulationPtr, timeStep);
+        Traffic_setTimeStep(trafficSimulationPtr, simTimeStep);
         Traffic_setMaxVelocity(trafficSimulationPtr, maxVelocity);
 
         UpdateAgentMaps();
@@ -1450,7 +1463,7 @@ public class TrafficManager : MonoBehaviour
     {
         UpdateAgentPositions();
 
-        Debug.Log($"Time Step: {timeStep}, Max Velocity: {maxVelocity}"); // NEW
+        Debug.Log($"Time Step: {simTimeStep}, Max Velocity: {maxVelocity}"); // NEW
     }
 
     /// <summary>
@@ -2113,6 +2126,13 @@ public class TrafficManager : MonoBehaviour
             SideChannelManager.UnregisterSideChannel(floatPropertiesChannel);
             floatPropertiesChannel = null; // NEW
         }
+
+        if(sideChannel != null)
+        {
+            SideChannelManager.UnregisterSideChannel(sideChannel);
+            sideChannel = null;
+        }
+
 
         LogDebug("TrafficManager::CleanUpSimulation completely successfully.");
 

@@ -2,8 +2,8 @@ import os
 import yaml
 import ray
 import argparse
-from rl.environment import CustomUnityMultiAgentEnv
-from rl.utils import create_unity_env
+from environment import CustomUnityMultiAgentEnv
+from unity_env_resource import create_unity_env
 
 def load_config(config_path, config_schema_path):
     """Load and validate configuration files."""
@@ -14,13 +14,14 @@ def load_config(config_path, config_schema_path):
 
 def create_env(config_data, unity_executable_path):
     """Create a Unity environment using the given configuration."""
+
     unity_env_handle = create_unity_env(
         file_name=unity_executable_path,
         worker_id=0,
         base_port=config_data["unity_env"]["base_port"],
         no_graphics=config_data["unity_env"]["no_graphics"],
     )
- 
+
     env_config = {
         "initial_agent_count": config_data["env_config"]["initial_agent_count"],
         "unity_env_handle": unity_env_handle,
@@ -85,7 +86,7 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Set YAML file paths
-    config_path = os.path.join(current_dir, "rl", "config.yaml")
+    config_path = os.path.join(current_dir, "config.yaml")
     config_schema_path = os.path.join(current_dir, "config_schema.yaml")
 
     # Load configuration from YAML
@@ -96,7 +97,7 @@ def main():
 
     # Construct the full path to the Unity executable
     unity_executable_path = os.path.join(
-        base_dir, "UnityDriveSimulation", "libReplicantDriveSim.app"
+        base_dir, "libReplicantDriveSim.app"
     )
 
     # Initialize Ray
