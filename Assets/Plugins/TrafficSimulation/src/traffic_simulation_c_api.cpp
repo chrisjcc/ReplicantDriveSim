@@ -201,10 +201,6 @@ EXPORT StringFloatVectorMap* Traffic_get_agent_orientations(const Traffic* traff
     return reinterpret_cast<StringFloatVectorMap*>(new std::unordered_map<std::string, std::vector<float>>(traffic->get_agent_orientations()));
 }
 
-EXPORT VehiclePtrVector* Traffic_get_nearby_vehicles(const Traffic* traffic, const char* agent_name) {
-    return reinterpret_cast<VehiclePtrVector*>(new std::vector<Vehicle>(traffic->getNearbyVehicles(std::string(agent_name))));
-}
-
 // VehiclePtrVector functions
 EXPORT int VehiclePtrVector_size(const VehiclePtrVector* vector) {
     return static_cast<int>(reinterpret_cast<const std::vector<Vehicle>*>(vector)->size());

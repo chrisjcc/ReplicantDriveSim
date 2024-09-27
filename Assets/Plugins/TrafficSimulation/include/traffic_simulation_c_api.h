@@ -78,7 +78,6 @@ EXPORT StringFloatVectorMap* Traffic_get_agent_positions(const Traffic* traffic)
 EXPORT StringFloatVectorMap* Traffic_get_agent_velocities(const Traffic* traffic);
 EXPORT StringFloatVectorMap* Traffic_get_previous_positions(const Traffic* traffic);
 EXPORT StringFloatVectorMap* Traffic_get_agent_orientations(const Traffic* traffic);
-EXPORT VehiclePtrVector* Traffic_get_nearby_vehicles(const Traffic* traffic, const char* agent_name);
 
 // StringFloatVectorMap functions
 EXPORT int StringFloatVectorMap_size(const StringFloatVectorMap* map);
