@@ -81,13 +81,6 @@ public:
     std::unordered_map<std::string, std::vector<float>> get_agent_orientations() const;
 
     /**
-     * @brief Retrieves nearby vehicles for a given agent.
-     * @param agent_id The ID of the agent.
-     * @return Vector of nearby vehicles.
-     */
-    std::vector<Vehicle> getNearbyVehicles(const std::string& agent_id) const;
-
-    /**
      * @brief Getter for the time step.
      * @return Current time step value.
      */

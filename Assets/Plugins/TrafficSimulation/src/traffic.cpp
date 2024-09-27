@@ -252,30 +252,6 @@ void Traffic::setMaxVelocity(float new_max_velocity) {
     }
 }
 
-/**
- * @brief Retrieves nearby vehicles for a given agent.
- * @param agent_name The name of the agent.
- * @return Vector of shared pointers to nearby vehicles.
- */
- std::vector<Vehicle> Traffic::getNearbyVehicles(const std::string& agent_name) const {
-    // Find the vehicle corresponding to the given agent ID
-    const Vehicle* ego_vehicle = nullptr;
-
-    for (const auto& vehicle : agents) {
-
-        if (vehicle.getName() == agent_name) {
-            ego_vehicle = &vehicle;
-            break;
-        }
-    }
-
-    // If the vehicle with the given agent ID is not found, return an empty vector
-    if (ego_vehicle == nullptr) {
-        return std::vector<Vehicle>();
-    }
-}
-
-/**
  * @brief Generates a random float within a specified range.
  * @param a Lower bound of the range.
  * @param b Upper bound of the range.
