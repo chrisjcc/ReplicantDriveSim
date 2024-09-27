@@ -2,16 +2,12 @@
 #define TRAFFIC_H
 
 #include "vehicle.h"
-#include "perception_module.h"
 
 #include <vector>
 #include <unordered_map>
 #include <string>
 #include <memory> // for std::shared_ptr
 #include <random>
-
-// Forward declaration of PerceptionModule
-class PerceptionModule;
 
 
 /**
@@ -122,7 +118,6 @@ private:
     int num_agents; ///< Number of agents in the simulation.
     std::vector<Vehicle> agents; ///< Vector of all agents in the simulation.
     std::vector<Vehicle> previous_positions; ///< Vector of previous positions of all agents.
-    std::unique_ptr<PerceptionModule> perceptionModule; ///< Pointer to the PerceptionModule for perception calculations.
     unsigned int seed;  ///< Seed value used in generator engine
     std::mt19937 generator;  ///< Separate generator for each vehicle. Alternative, std::default_random_engine
 

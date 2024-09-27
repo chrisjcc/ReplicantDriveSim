@@ -44,16 +44,13 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/traffic.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/vehicle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/perception_module.cpp
+
 )
 
 message(STATUS "SOURCE_FILES is ${SOURCE_FILES}")
 
 # Create a static library for the traffic simulation
 add_library(simulation_static STATIC ${SOURCE_FILES})
-
-# Create a static or shared library
-add_library(perception_module OBJECT perception_module.cpp)  # Object library if used by multiple targets
 
 # Add the pybind11 module
 pybind11_add_module(simulation ${SOURCE_FILES})
