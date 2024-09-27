@@ -208,40 +208,32 @@ def main():
         ),
     )
 
+    # Result grid
     results = tuner.fit()
 
     # Print the results dictionary of the training to inspect the structure
-    print("Training results: ", results)
+    print(f"Training results: {results}")
 
     # Check if results is not empty
     if results:
-        # Get all checkpoints
-        checkpoints = results.get_checkpoints()
+        # Try to get the best result
+        try:
+            # Get the best result based on a particular metric.
+            best_result = results.get_best_result(
+                metric="episode_reward_mean", mode="max"
+            )
 
-        if checkpoints:
-            # Get the last checkpoint
-            last_checkpoint = checkpoints[-1]
-            checkpoint_to_use = last_checkpoint
+            if best_result and best_result.checkpoint:
+                checkpoint_to_use = best_result.checkpoint
+                print("Setting the checkpoint to load the best trial result")
 
-            # Try to get the best result
-            try:
-                best_result = results.get_best_result(
-                    metric="episode_reward_mean", mode="max"
-                )
-                if best_result and best_result.checkpoint:
-                    print("Setting the checkpoint to load the best trial result")
-                    checkpoint_to_use = best_result.checkpoint
-            except Exception as e:
-                print(f"Error getting best result: {e}. Using last checkpoint.")
-
-            # Load the policy from the selected checkpoint
-            try:
+                # Load the policy from the selected checkpoint
                 policy = Policy.from_checkpoint(checkpoint_to_use)["shared_policy"]
                 print(f"Loaded policy: {policy}")
 
                 policy.export_model(
                     "saved_model",
-                    onnx=None,  # OpSet 14-15: These are more recent versions that may include newer features.
+                    onnx=9,  # In most cases, use ONNX opset=9, because it has wider coverage in Barracuda.
                 )
 
                 # The most recent experiment and run will be the first one
@@ -273,6 +265,7 @@ def main():
                     run_id=run_id,
                     tags=tags,
                 ) as run:
+                    # Register model
                     mlflow.pytorch.log_model(
                         pytorch_model=policy.model,
                         artifact_path="ppo_model",
@@ -280,10 +273,10 @@ def main():
                         signature=model_signature,
                     )
                     print(f"Model registered with run ID: {run.info.run_id}")
-            except Exception as e:
-                print(f"Error loading policy or registering model: {e}")
-        else:
-            print("No checkpoints found. Model registration skipped.")
+            else:
+                print("No best checkpoint found. Model registration skipped.")
+        except Exception as e:
+            print(f"Error getting best result or loading policy: {e}")
     else:
         print("No results returned from tuner.fit(). Model registration skipped.")
 
