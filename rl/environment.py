@@ -1,25 +1,12 @@
 from typing import Any, Dict, Optional, Tuple, Union
 
 import gymnasium as gym
-import mlflow
 import numpy as np
-
-from mlagents_envs.base_env import ActionTuple
-from mlagents_envs.environment import UnityEnvironment
-from mlagents_envs.side_channel.engine_configuration_channel import (
-    EngineConfigurationChannel,
-)
 import ray
-from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
-from ray import tune
-from ray.air.integrations.mlflow import MLflowLoggerCallback
-from ray.rllib.algorithms.ppo import PPO
+from mlagents_envs.base_env import ActionTuple
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import AgentID, MultiAgentDict, PolicyID
-from ray.train import RunConfig
-from ray.tune import Tuner
-from ray.tune.registry import register_env
 
 
 class CustomUnityMultiAgentEnv(MultiAgentEnv):
@@ -49,6 +36,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self.episode_timesteps = 0
 
         self.unity_env_handle = config["unity_env_handle"]
+
         self.current_agent_count = self.initial_agent_count
 
         # Set the initial agent count in the Unity environment
@@ -139,9 +127,12 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self.api_version = api_version_string.split(".")
         self.api_version = [int(s) for s in self.api_version]
 
+        # Get the simulation time step (i.e., frames per second)
+        self.fps = int(ray.get(self.unity_env_handle.get_field_value.remote("FramesPerSecond")).get("FramesPerSecond", 25))
+
     @property
     def single_agent_obs_space(self):
-    # Define and return the observation space for a single agent
+        # Define and return the observation space for a single agent
         return self._single_agent_obs_space
 
     @property
@@ -159,8 +150,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         # Populate observation_spaces and action_spaces for each agent
         for i in range(self.num_agents):
             agent_key = f"agent_{i}"
-            self.observation_spaces[agent_key] =  self.single_agent_obs_space
-            self.action_spaces[agent_key] =  self.single_agent_action_space
+            self.observation_spaces[agent_key] = self.single_agent_obs_space
+            self.action_spaces[agent_key] = self.single_agent_action_space
 
         self.observation_space = {
             f"agent_{i}": self.single_agent_obs_space for i in range(self.num_agents)
@@ -328,7 +319,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         # Reset the environment only once (ideally)
         ray.get(self.unity_env_handle.reset.remote())
-        # ray.get(self.unity_env_handle.reset.remote())
 
         # Get decision steps after the reset
         decision_steps, _ = ray.get(
@@ -376,16 +366,21 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         )
 
         # Step the Unity environment
-        ray.get(self.unity_env_handle.step.remote())
+        for _ in range(self.fps):
+            ray.get(self.unity_env_handle.step.remote())
 
-        obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict = self._get_step_results()
+        obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict = (
+            self._get_step_results()
+        )
 
         # Global horizon reached? -> Return __all__ truncated=True, so user
         # can reset. Set all agents' individual `truncated` to True as well.
         self.episode_timesteps += 1
 
         if self.episode_timesteps > self.max_episode_steps:
-            truncateds_dict =  dict({"__all__": True}, **{agent_id: True for agent_id in self._agent_ids})
+            truncateds_dict = dict(
+                {"__all__": True}, **{agent_id: True for agent_id in self._agent_ids}
+            )
 
         # Check if all agents are terminated
         terminateds_dict["__all__"] = all(terminateds_dict.values())
@@ -437,7 +432,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             terminateds_dict[agent_key] = True
             truncateds_dict[agent_key] = terminal_steps[agent_id].interrupted
             infos_dict[agent_key] = {}
-
 
         # All Agents Done Check: Only use dones if all agents are done, then we should do a reset.
         terminateds_dict["__all__"] = len(terminal_steps) == self.num_agents

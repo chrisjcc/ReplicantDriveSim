@@ -20,6 +20,12 @@ class PerceptionModule;
  */
 class Traffic {
 public:
+    // Time step (assuming a fixed time step, adjust as necessary)
+    float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
+
+    // Maximum velocity (m/s)
+    float max_velocity = 60.0f;
+
     /**
      * @brief Constructs a Traffic object with the specified number of agents.
      * @param num_agents Number of agents (vehicles) in the simulation.
@@ -84,6 +90,33 @@ public:
      * @return Vector of nearby vehicles.
      */
     std::vector<Vehicle> getNearbyVehicles(const std::string& agent_id) const;
+
+    /**
+     * @brief Getter for the time step.
+     * @return Current time step value.
+     */
+    float getTimeStep() const;
+
+    /**
+     * @brief Getter for the maximum velocity.
+     * @return Current maximum velocity value.
+     */
+    float getMaxVelocity() const;
+
+    // Setters
+
+    /**
+     * @brief Setter for the time step.
+     * @param new_time_step New time step value. Must be greater than 0.
+     */
+    void setTimeStep(float new_time_step);
+
+    /**
+     * @brief Setter for the maximum velocity.
+     * @param new_max_velocity New maximum velocity value. Must be positive.
+     */
+    void setMaxVelocity(float new_max_velocity);
+
 
 private:
     int num_agents; ///< Number of agents in the simulation.

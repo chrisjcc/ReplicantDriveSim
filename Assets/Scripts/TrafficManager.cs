@@ -1,4 +1,4 @@
-using System;
+using System; // IntPtr
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -8,6 +8,7 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.SideChannels;
 using System.Linq;
 
+using CustomSideChannel;
 
 
 // Responsible for stepping the traffic simulation and updating all agents
@@ -17,10 +18,12 @@ public class TrafficManager : MonoBehaviour
     private const string DllName = "ReplicantDriveSim";
 
 
-    // Serialized Fields (Unity Inspector variables)
+    // Serialized Fields for Unity Editor (Unity Inspector variables)
     [SerializeField] private GameObject agentPrefab; // e.g., NISSAN-GTR)
     [SerializeField] private int initialAgentCount = 2;
     [SerializeField] private uint seed = 42;
+    [SerializeField] private float simTimeStep = 0.04f;
+    [SerializeField] private float maxVelocity = 60.0f;
 
     // Public Properties
     [SerializeField] public int numberOfRays = 15;
@@ -49,6 +52,7 @@ public class TrafficManager : MonoBehaviour
     private List<int> highLevelActions;
     private List<float[]> lowLevelActions;
     private FloatPropertiesChannel floatPropertiesChannel;
+    private FieldValueChannel sideChannel;
     private int pendingAgentCount = 0;
     private bool isDisposed = false;
     private bool hasCleanedUp = false;
@@ -139,6 +143,18 @@ public class TrafficManager : MonoBehaviour
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void FreeString(IntPtr str);
 
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern float Traffic_getTimeStep(IntPtr traffic);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void Traffic_setTimeStep(IntPtr traffic, float simTimeStep);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern float Traffic_getMaxVelocity(IntPtr traffic);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void Traffic_setMaxVelocity(IntPtr traffic, float maxVelocity);
+
     /// <summary>
     /// Initializes the TrafficManager component when the script instance is being loaded.
     /// This method is called only once during the lifetime of the script instance.
@@ -227,7 +243,8 @@ public class TrafficManager : MonoBehaviour
     private void SetupFloatPropertiesChannel()
     {
         // Create the FloatPropertiesChannel
-        floatPropertiesChannel = new FloatPropertiesChannel(new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7"));
+        Guid floatPropertiesChannelGuid = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
+        floatPropertiesChannel = new FloatPropertiesChannel(floatPropertiesChannelGuid);
 
         // Register the channel
         SideChannelManager.RegisterSideChannel(floatPropertiesChannel);
@@ -235,7 +252,18 @@ public class TrafficManager : MonoBehaviour
         // Subscribe to the OnFloatPropertiesChanged event
         floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
 
+        // Subscribe to the MaxSteps envet
         floatPropertiesChannel.RegisterCallback("MaxSteps", MaxEpisodeSteps);
+
+        // Inject a custom Guid at instantiation or use the default one
+        Guid sideChannelGuid = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f8");
+
+        // Create the FieldValueChannel
+        sideChannel = new FieldValueChannel(sideChannelGuid);
+        SideChannelManager.RegisterSideChannel(sideChannel);
+
+        // Sending a field value (e.g., current FPS)
+        sideChannel.SendFieldValue("FramesPerSecond", 1.0f / simTimeStep);
 
         // Get the initialAgentCount parameter from the environment parameters
         //var envParameters = Academy.Instance.EnvironmentParameters;
@@ -268,6 +296,10 @@ public class TrafficManager : MonoBehaviour
         {
             throw new InvalidOperationException("Failed to create traffic simulation.");
         }
+
+        // Set initial values from Unity Editor to the C++ simulation
+        Traffic_setTimeStep(trafficSimulationPtr, simTimeStep);
+        Traffic_setMaxVelocity(trafficSimulationPtr, maxVelocity);
 
         UpdateAgentMaps();
     }
@@ -1430,6 +1462,8 @@ public class TrafficManager : MonoBehaviour
     private void Update()
     {
         UpdateAgentPositions();
+
+        Debug.Log($"Time Step: {simTimeStep}, Max Velocity: {maxVelocity}"); // NEW
     }
 
     /// <summary>
@@ -2093,7 +2127,14 @@ public class TrafficManager : MonoBehaviour
             floatPropertiesChannel = null; // NEW
         }
 
-        LogDebug("TrafficManager::CleanUpSimulation END  completely successfully.");
+        if(sideChannel != null)
+        {
+            SideChannelManager.UnregisterSideChannel(sideChannel);
+            sideChannel = null;
+        }
+
+
+        LogDebug("TrafficManager::CleanUpSimulation completely successfully.");
 
         hasCleanedUp = true;
     }
@@ -2189,6 +2230,8 @@ public class TrafficManager : MonoBehaviour
         LogDebug("TrafficManager::OnDestroy started.");
 
         CleanUpSimulation();
+
+        Traffic_destroy(trafficSimulationPtr); // NEW
 
         LogDebug("TrafficManager::OnDestroy completely successfully.");
     }
@@ -2314,7 +2357,7 @@ public class TrafficManager : MonoBehaviour
             GC.SuppressFinalize(this);
         }
 
-        LogDebug("TrafficManager::Dispose END completely successfully.");
+        LogDebug("TrafficManager::Dispose completely successfully.");
     }
 
     /// <summary>

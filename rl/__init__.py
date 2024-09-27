@@ -1,3 +1,5 @@
 # rl/__init__.py
 from .environment import CustomUnityMultiAgentEnv
-from .utils import create_unity_env
+from .unity_env_resource import CustomSideChannel
+from .unity_env_resource import create_unity_env
+from .utils import CustomSideChannel
