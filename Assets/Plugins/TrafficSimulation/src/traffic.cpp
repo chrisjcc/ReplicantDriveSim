@@ -243,8 +243,8 @@ float Traffic::getMaxVelocity() const {
 }
 
 /**
-     * @brief Setter for the maximum velocity.
-     * @param new_max_velocity New maximum velocity value. Must be positive.
+ * @brief Setter for the maximum velocity.
+ * @param new_max_velocity New maximum velocity value. Must be positive.
 */
 void Traffic::setMaxVelocity(float new_max_velocity) {
     if (new_max_velocity > 0) { // Ensure velocity is positive
@@ -252,6 +252,7 @@ void Traffic::setMaxVelocity(float new_max_velocity) {
     }
 }
 
+/**
  * @brief Generates a random float within a specified range.
  * @param a Lower bound of the range.
  * @param b Upper bound of the range.
