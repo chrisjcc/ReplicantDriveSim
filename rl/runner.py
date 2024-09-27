@@ -86,8 +86,8 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Set YAML file paths
-    config_path = os.path.join(current_dir, "config.yaml")
-    config_schema_path = os.path.join(current_dir, "config_schema.yaml")
+    config_path = os.path.join(current_dir, "configs", "config.yaml")
+    config_schema_path = os.path.join(current_dir, "configs", "config_schema.yaml")
 
     # Load configuration from YAML
     config_data = load_config(config_path, config_schema_path)
