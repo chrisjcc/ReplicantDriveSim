@@ -49,9 +49,19 @@ def validate_yaml_schema(data_path, schema_path):
 def env_creator(env_config):
     return CustomUnityMultiAgentEnv(env_config)
 
-
 def policy_mapping_fn(agent_id, episode, worker, **kwargs):
     return "shared_policy"
+
+
+def register_model(policy, model_name, run_name, experiment_id, run_id, model_signature):
+    with mlflow.start_run(run_name=run_name, experiment_id=experiment_id, run_id=run_id) as run:
+        mlflow.pytorch.log_model(
+            pytorch_model=policy.model,
+            artifact_path="ppo_model",
+            registered_model_name=model_name,
+            signature=model_signature,
+        )
+        print(f"Model {model_name} registered with run ID: {run.info.run_id}")
 
 
 def main():
@@ -185,7 +195,7 @@ def main():
             checkpoint_config=train.CheckpointConfig(
                 num_to_keep=1,
                 checkpoint_frequency=1,
-                # checkpoint_at_end=True,
+                checkpoint_at_end=True,
             ),
             callbacks=[
                 MLflowLoggerCallback(
@@ -215,75 +225,67 @@ def main():
 
     # Check if results is not empty
     if results:
-        # Get all checkpoints
-        checkpoints = results.get_checkpoints()
+        experiment = mlflow.get_experiment_by_name(config_data["mlflow"]["experiment_name"])
+        experiment_id = experiment.experiment_id
+        runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
+        run_id = runs.iloc[0].run_id
 
-        if checkpoints:
-            # Get the last checkpoint
-            last_checkpoint = checkpoints[-1]
-            checkpoint_to_use = last_checkpoint
+        input_schema = Schema([
+            TensorSpec(np.dtype(np.float32), (-1, env.size_of_single_agent_obs), agent_id)
+            for agent_id in env._agent_ids
+        ])
+        model_signature = ModelSignature(inputs=input_schema)
 
-            # Try to get the best result
-            try:
-                best_result = results.get_best_result(
-                    metric="episode_reward_mean", mode="max"
-                )
-                if best_result and best_result.checkpoint:
-                    print("Setting the checkpoint to load the best trial result")
-                    checkpoint_to_use = best_result.checkpoint
-            except Exception as e:
-                print(f"Error getting best result: {e}. Using last checkpoint.")
+        try:
+            # Model 1: Based on the best result (scope set to `last`)
+            best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope='last')
 
-            # Load the policy from the selected checkpoint
-            try:
-                policy = Policy.from_checkpoint(checkpoint_to_use)["shared_policy"]
-                print(f"Loaded policy: {policy}")
+            if best_result and best_result.checkpoint:
+                policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
+                register_model(policy, "PPO_Highway_Model_BestResult_scope_last", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
 
-                policy.export_model(
-                    "saved_model",
-                    onnx=None,  # OpSet 14-15: These are more recent versions that may include newer features.
-                )
+                #print(f"Best config: {best_result.config}")
+                #print(f"Best metrics: {best_result.metrics}")
+                #print(f"Best trial id: {best_result.trial_id}"
+                print(f"Best result last checkpoint path: {best_result.checkpoint}")
 
-                # The most recent experiment and run will be the first one
-                experiment = mlflow.get_experiment_by_name(
-                    config_data["mlflow"]["experiment_name"]
-                )
-                experiment_id = experiment.experiment_id
-                runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
-                run_id = runs.iloc[0].run_id
-                run_name = f"PPO_CustomUnityMultiAgentEnv_{checkpoint_to_use.trial_id}"
 
-                input_schema = Schema(
-                    [
-                        TensorSpec(
-                            np.dtype(np.float32),
-                            (-1, env.size_of_single_agent_obs),
-                            agent_id,
-                        )
-                        for agent_id in env._agent_ids
-                    ]
-                )
+            # Model 2: Based on the best result (scope set to `avg`)
+            best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope='avg')
 
-                model_signature = ModelSignature(inputs=input_schema)
+            if best_result and best_result.checkpoint:
+                policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
+                register_model(policy, "PPO_Highway_Model_BestResult_scope_avg", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
 
-                # Register the model, resume a run with the specified run ID
-                with mlflow.start_run(
-                    run_name=run_name,
-                    experiment_id=experiment_id,
-                    run_id=run_id,
-                    tags=tags,
-                ) as run:
-                    mlflow.pytorch.log_model(
-                        pytorch_model=policy.model,
-                        artifact_path="ppo_model",
-                        registered_model_name="PPO_Highway_Model",
-                        signature=model_signature,
-                    )
-                    print(f"Model registered with run ID: {run.info.run_id}")
-            except Exception as e:
-                print(f"Error loading policy or registering model: {e}")
-        else:
-            print("No checkpoints found. Model registration skipped.")
+                #print(f"Best config: {best_result.config}")
+                #print(f"Best metrics: {best_result.metrics}")
+                #print(f"Best trial id: {best_result.trial_id}"
+                print(f"Best result avg checkpoint path: {best_result.checkpoint}")
+
+            # Model 3: Based on the best result (scope set to `all`)
+            best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope='last')
+
+            if best_result and best_result.checkpoint:
+                policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
+                register_model(policy, "PPO_Highway_Model_BestResult_scope_all", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
+
+                #print(f"Best config: {best_result.config}")
+                #print(f"Best metrics: {best_result.metrics}")
+                #print(f"Best trial id: {best_result.trial_id}"
+                print(f"Best result all checkpoint path: {best_result.checkpoint}")
+
+            # Model 4: Based on the last checkpoint of all trials
+            all_checkpoints = [result.checkpoint for result in results if result.checkpoint]
+
+            if all_checkpoints:
+                last_checkpoint = all_checkpoints[-1]
+                policy = Policy.from_checkpoint(last_checkpoint)["shared_policy"]
+                register_model(policy, "PPO_Highway_Model_LastCheckpoint", "PPO_CustomUnityMultiAgentEnv_LastCheckpoint", experiment_id, run_id, model_signature)
+
+                print(f"Last checkpoint path: {last_checkpoint}")
+
+        except Exception as e:
+            print(f"Error loading policy or registering models: {e}")
     else:
         print("No results returned from tuner.fit(). Model registration skipped.")
 

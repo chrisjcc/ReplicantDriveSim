@@ -200,7 +200,7 @@ def create_unity_env(
 
     # Check if it's a directory
     if os.path.isdir(file_name):
-        print(f"\033[92mError\033[0m: '{file_name}' is a directory.")
+        print(f"\033[92mChecked\033[0m: '{file_name}' is a directory.")
     else:
         print(f"\033[91mError\033[0m: '{file_name}' is not a directory.")
         return None
