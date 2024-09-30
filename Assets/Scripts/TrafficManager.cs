@@ -9,6 +9,7 @@ using Unity.MLAgents.SideChannels;
 using System.Linq;
 
 using CustomSideChannel;
+using UnityEditor;
 
 
 // Responsible for stepping the traffic simulation and updating all agents
@@ -30,6 +31,13 @@ public class TrafficManager : MonoBehaviour
     [SerializeField] public float rayLength = 200f;
     [SerializeField] public float raycastAngle = 90f;
     [SerializeField] public bool debugVisualization = false;
+
+    // Color settings for ray visualization
+    [HideInInspector] public Color rayHitColor = Color.red;
+    [HideInInspector] public Color rayMissColor = Color.white;
+
+    //public RayPerceptionSensorComponent3D raySensor;
+
     [SerializeField] public float spawnAreaSize = 10.0f;
     //[HideInInspector] public float MoveSpeed { get; set; } = 5f;
     //[HideInInspector] public float RotationSpeed { get; set; } = 100f;
@@ -552,7 +560,12 @@ public class TrafficManager : MonoBehaviour
 
         SetAgentLayer(agentObject);
 
+
+        // Add RayPerceptionSensor to the traffic agent
+        AddRaySensorToAgent(agentObject); // NEW
+
         TrafficAgent agent = GetOrAddTrafficAgentComponent(agentObject);
+
         agent.Initialize();
         agentInstances.Add(agentId, agent);
         UpdateColliderForExistingAgent(agentObject, agentId);
@@ -638,6 +651,7 @@ public class TrafficManager : MonoBehaviour
         {
             InitializeTrafficSimulation();
             InitializeAgents();
+            //SetDebugColors(Color.red, Color.blue);
 
         }
         catch (Exception e)
@@ -2399,4 +2413,59 @@ public class TrafficManager : MonoBehaviour
 
         LogDebug("TrafficManager::~TrafficManager completely successfully.");
     }
+
+    /// <summary>
+    /// Adds a RayPerceptionSensorComponent3D to the specified agent GameObject.
+    /// Configures the sensor for detecting specified tags, and allows adjustment of sensor position relative to the agent.
+    /// </summary>
+    /// <param name="agent">The GameObject representing the traffic agent to which the ray sensor will be added.</param>
+    void AddRaySensorToAgent(GameObject agent)
+    {
+        Debug.Log($"Adding RaySensor to agent: {agent.name}");
+
+        // If you need to adjust the sensor's position relative to the car:
+        GameObject sensorObject = new GameObject("RaySensor");
+        sensorObject.transform.SetParent(agent.transform);
+        sensorObject.transform.localPosition = new Vector3(2.0f, 2.5f, 0.0f); // Adjust as needed
+        sensorObject.transform.localRotation = Quaternion.identity;
+
+        // Add and configure the RayPerceptionSensorComponent3D
+        RayPerceptionSensorComponent3D raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
+        //raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
+
+        // Configure the sensor
+        raySensor.SensorName = $"{agent.name}_RaySensor";
+        raySensor.DetectableTags = new List<string> { "RoadBoundary", "TrafficAgent"};
+        raySensor.RaysPerDirection = 15;
+        raySensor.MaxRayDegrees = 360;
+        raySensor.SphereCastRadius = 0.5f;
+        raySensor.RayLength = 50f;
+        raySensor.ObservationStacks = 1;
+
+        // Add a custom script for ray visualization
+        //RayVisualization rayVis = sensorObject.AddComponent<RayVisualization>();
+        //rayVis.raySensor = raySensor;
+        //rayVis.hitColor = rayHitColor;
+        //rayVis.missColor = rayMissColor;
+
+        Debug.Log($"Finished adding RaySensor to agent: {agent.name}");
+        Debug.Log($"RaySensor configuration: RaysPerDirection={raySensor.RaysPerDirection}, " +
+                  $"MaxRayDegrees={raySensor.MaxRayDegrees}, SphereCastRadius={raySensor.SphereCastRadius}, " +
+                  $"RayLength={raySensor.RayLength}");
+    }
+    /*
+    void SetDebugColors(Color hitColor, Color missColor)
+    {
+        SerializedObject serializedObject = new SerializedObject(raySensor);
+        SerializedProperty hitColorProperty = serializedObject.FindProperty("rayHitColor");
+        SerializedProperty missColorProperty = serializedObject.FindProperty("rayMissColor");
+
+        if (hitColorProperty != null && missColorProperty != null)
+        {
+            hitColorProperty.colorValue = hitColor;
+            missColorProperty.colorValue = missColor;
+            serializedObject.ApplyModifiedProperties();
+        }
+    }
+    */
 }

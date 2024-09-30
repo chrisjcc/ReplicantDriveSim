@@ -94,7 +94,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 36
+    VectorObservationSize: 5
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 3
@@ -129,13 +129,10 @@ MonoBehaviour:
   MaxStep: 2000
   highLevelActions: 0
   lowLevelActions: []
-  hitColor: {r: 1, g: 0, b: 0, a: 1}
-  missColor: {r: 0, g: 1, b: 0, a: 1}
   debugVisualization: 0
   offRoadPenalty: -0.5
   collisionWithOtherAgentPenalty: -1
   penaltyInterval: 0.5
-  lastPenaltyTime: 0
 --- !u!114 &8364270819945524939
 MonoBehaviour:
   m_ObjectHideFlags: 0
