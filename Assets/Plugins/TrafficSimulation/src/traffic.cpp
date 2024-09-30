@@ -6,7 +6,6 @@
 #include <random>
 
 const int SCREEN_WIDTH = 3000;
-const int VEHICLE_WIDTH = 2;
 const int LANE_WIDTH = 5;
 
 // Custom clamp function for C++11
@@ -36,7 +35,10 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
         agents[i].setWidth(2.0f);
         agents[i].setLength(5.0f);
         agents[i].setSensorRange(200.0f);
-        agents[i].setX(randFloat(-0.5 * (LANE_WIDTH - 0.5 * agents[i].getWidth()), 0.5 * (LANE_WIDTH - agents[i].getWidth())));
+
+        float delta = (LANE_WIDTH - agents[i].getWidth());
+
+        agents[i].setX(randFloat(-0.5 * delta, 0.5 * delta));
         agents[i].setY(0.0f);
         agents[i].setZ(randFloat(0.0f, 4.0f * agents[i].getLength()));
         agents[i].setVx(randNormal(0.0f, 0.5f));  // Initial lateral speed
@@ -192,8 +194,9 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     float acceleration_z = net_acceleration * std::cos(steering);
     float acceleration_x = net_acceleration * std::sin(steering);
 
-    float new_velocity_z = clamp(initial_velocity_z + acceleration_z * time_step, 0.0f, max_velocity);
-    float new_velocity_x = clamp(initial_velocity_x + acceleration_x * time_step, 0.0f, max_velocity);
+    // TODO: Remove constraints
+    float new_velocity_z = clamp(initial_velocity_z + acceleration_z * time_step, -max_velocity, max_velocity);
+    float new_velocity_x = clamp(initial_velocity_x + acceleration_x * time_step, -max_velocity / 10.0f, max_velocity / 10.0f);
 
     vehicle.setVz(new_velocity_z);
     vehicle.setVx(new_velocity_x);
@@ -213,7 +216,7 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     if (vehicle.getZ() >= SCREEN_WIDTH) vehicle.setZ(vehicle.getZ() - SCREEN_WIDTH);
 
     // Constrain vertically within the road
-    //vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - 0.5 * vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
+    //vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
 }
 
 /**
