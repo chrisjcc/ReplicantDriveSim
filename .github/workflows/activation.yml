@@ -19,7 +19,7 @@ jobs:
         with:
           #projectPath: ./
           #githubToken: ${{ secrets.GITHUB_TOKEN }}
-          unityVersion: 2022.3.33f1
+          unityVersion: 2022.3.3f1
 
       - name: Debug - Search for activation file
         run: |
