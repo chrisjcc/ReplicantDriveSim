@@ -47,6 +47,10 @@ jobs:
           UNITY_PASSWORD=${{ secrets.UNITY_PASSWORD }}
         secret-files: |
           "unity_license=unity_license.ulf"
+
+    - name: Check Disk Usage
+      run: df -h
+
     - name: Extract artifacts from Docker image
       run: |
         docker create --name temp ${{ steps.meta.outputs.tags }}

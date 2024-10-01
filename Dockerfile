@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     git
 
 # Clone the repository using HTTPS
-RUN git clone  --recurse-submodules --shallow-submodules https://github.com/chrisjcc/ReplicantDriveSim.git /app/repo
+RUN git clone --recurse-submodules --shallow-submodules https://github.com/chrisjcc/ReplicantDriveSim.git /app/repo
 
 # Stage 2: C++ build stage
 FROM ubuntu:22.04 as cpp-build
