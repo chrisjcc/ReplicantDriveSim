@@ -20,15 +20,22 @@ jobs:
           projectPath: ./
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Debug - List files
+      - name: Debug - Search for activation file
         run: |
-          echo "Current directory contents:"
-          ls -R
-          echo "Searching for ManualActivationFile.lic:"
-          find . -name "ManualActivationFile.lic"
+          echo "Searching for activation file (ManualActivationFile.lic):"
+          find . -name "*.lic" -type f
+          echo "Contents of _activate-license directory:"
+          ls -la ./_activate-license
+          echo "Contents of docs/_static directory:"
+          ls -la ./docs/_static
+
 
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: Manual Activation File
-          path: ./_activate-license/ManualActivationFile.lic
-          if-no-files-found: error
+          path: |
+            ./_activate-license/*.lic
+            ./docs/_static/*.lic
+          if-no-files-found: warn
+          #if-no-files-found: error
