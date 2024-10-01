@@ -51,7 +51,6 @@ RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
 RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda init bash && \
     conda update -n base -c defaults conda -y && \
-    ls -larth /app/repo/Assets/Plugins/TrafficSimulation/ && \
     conda env create -f /app/repo/Assets/Plugins/TrafficSimulation/environment.yml && \
     conda clean -afy"
 
