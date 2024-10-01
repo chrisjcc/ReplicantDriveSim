@@ -41,6 +41,59 @@ This project was developed using Unity 2022.3.39f1 (LTS). To ensure compatibilit
 
 To generate the documentation for this project using Doxygen, follow these steps:
 
+
+#### Building the Unity Project from Command Line
+
+To generate an executable for this Unity project without opening the Unity Editor, you can use the following command in your terminal:
+
+```bash
+/Applications/Unity/Hub/Editor/2022.3.33f1/Unity.app/Contents/MacOS/Unity \
+-quit \
+-batchmode \
+-nographics \
+-projectPath "/Users/christiancontrerascampana/Desktop/project/unity_traffic_simulation/reduce_git_lfs/UnityDriveSimulation" \
+-executeMethod UnityDriveSimulation.BuildTools.BuildScript.PerformMacOSBuild \
+-logFile "Logs/logfile.log"
+```
+
+##### Command Breakdown
+
+Let's break down what each part of this command does:
+
+1. `/Applications/Unity/Hub/Editor/2022.3.33f1/Unity.app/Contents/MacOS/Unity`
+   - This is the path to the Unity executable on macOS. Adjust this path if your Unity installation is in a different location or if you're using a different version.
+
+2. `-quit`
+   - This parameter tells Unity to quit after executing the build process. It ensures that Unity doesn't stay open after the build is complete.
+
+3. `-batchmode`
+   - This runs Unity in batch mode, which means it operates without launching the graphical user interface. This is essential for automated builds and running Unity from the command line.
+
+4. `-projectPath "/Users/christiancontrerascampana/Desktop/project/unity_traffic_simulation/reduce_git_lfs/UnityDriveSimulation"`
+   - This specifies the path to your Unity project. Replace this with the actual path to your project on your machine.
+
+5. `-executeMethod UnityDriveSimulation.BuildTools.BuildScript.PerformMacOSBuild`
+   - This tells Unity which method to execute to perform the build. In this case, it's calling the `PerformMacOSBuild` method from the `BuildScript` class in the `UnityDriveSimulation.BuildTools` namespace.
+
+6. `-logFile "Logs/logfile.log"`
+   - This specifies where Unity should output its log file. This is useful for debugging if something goes wrong during the build process.
+
+##### Usage
+
+To use this command:
+
+1. Open a terminal window.
+2. Navigate to the directory containing your Unity project.
+3. Copy and paste the above command, making sure to adjust the Unity executable path and project path as necessary for your system.
+4. Press Enter to run the command.
+
+The build process will start, and Unity will generate the executable based on your project settings and the build script you've defined in `UnityDriveSimulation.BuildTools.BuildScript.PerformMacOSBuild`.
+
+#### Note
+
+Ensure that the build script (`BuildScript.cs`) is properly set up in your Unity project and that the `PerformMacOSBuild` method is correctly implemented to build your project for macOS.
+
+
 ### Prerequisites
 
 Make sure Doxygen is installed on your local machine. You can install it using the following commands:

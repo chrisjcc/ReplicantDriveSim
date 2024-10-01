@@ -132,7 +132,7 @@ GameObject:
   m_Component:
   - component: {fileID: 102826275}
   - component: {fileID: 102826274}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: RoadManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -153,8 +153,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
   roadPhysicsMaterial: {fileID: 0}
+  roadLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  trafficAgentLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  singleRoadWidth: 15
   roadLength: 3250
   boundaryHeight: 5
+  medianWidth: 5
 --- !u!4 &102826275
 Transform:
   m_ObjectHideFlags: 0
@@ -164,7 +172,7 @@ Transform:
   m_GameObject: {fileID: 102826273}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1500}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -180,7 +188,7 @@ GameObject:
   m_Component:
   - component: {fileID: 257869386}
   - component: {fileID: 257869387}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: TrafficSimulationManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -222,7 +230,9 @@ MonoBehaviour:
   numberOfRays: 15
   rayLength: 200
   raycastAngle: 90
-  debugVisualization: 1
+  debugVisualization: 0
+  rayHitColor: {r: 1, g: 0, b: 0, a: 1}
+  rayMissColor: {r: 1, g: 1, b: 1, a: 1}
   spawnAreaSize: 2
   MaxSteps: 2000
 --- !u!1 &705507993
