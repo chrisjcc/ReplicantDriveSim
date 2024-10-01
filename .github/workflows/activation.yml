@@ -20,13 +20,15 @@ jobs:
           projectPath: ./
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Debug - List files
+        run: |
+          echo "Current directory contents:"
+          ls -R
+          echo "Searching for ManualActivationFile.lic:"
+          find . -name "ManualActivationFile.lic"
+
       - uses: actions/upload-artifact@v4
         with:
           name: Manual Activation File
           path: ./_activate-license/ManualActivationFile.lic
-
-      - name: Debug - Print file path
-        run: |
-          echo "File path output: ${{ steps.getManualLicenseFile.outputs.filePath }}"
-          echo "Listing contents of current directory:"
-          ls -R
+          if-no-files-found: error
