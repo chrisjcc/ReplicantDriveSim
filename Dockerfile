@@ -74,21 +74,29 @@ COPY --from=cpp-build /app/repo/Builds/macOS /unity-project/Assets/Plugins/
 
 # Create a build script that uses secrets
 RUN echo '#!/bin/bash\n\
-echo $UNITY_LICENSE > /root/.local/share/unity3d/Unity/Unity_lic.ulf\n\
-unity-editor \
-  -quit \
-  -batchmode \
-  -nographics \
-  -username "$UNITY_EMAIL" \
-  -password "$UNITY_PASSWORD" \
-  -projectPath "/unity-project" \
-  -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
-  -logFile "/unity-project/Logs/logfile.log"\n\
-mkdir -p /unity-project/output\n\
-if [ -d "/unity-project/Builds/macOS" ]; then \
-    cp -r /unity-project/Builds/macOS/* /unity-project/output/\n\
-else \
-    echo "Build directory not found. Check Unity logs for errors."\n\
+unity_license_file="/run/secrets/unity_license"\n\
+unity_email_file="/run/secrets/unity_email"\n\
+unity_password_file="/run/secrets/unity_password"\n\
+if [ -f "$unity_license_file" ] && [ -f "$unity_email_file" ] && [ -f "$unity_password_file" ]; then\n\
+    cp "$unity_license_file" /root/.local/share/unity3d/Unity/Unity_lic.ulf\n\
+    unity-editor \
+      -quit \
+      -batchmode \
+      -nographics \
+      -username "$(cat $unity_email_file)" \
+      -password "$(cat $unity_password_file)" \
+      -projectPath "/unity-project" \
+      -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
+      -logFile "/unity-project/Logs/logfile.log"\n\
+    mkdir -p /unity-project/output\n\
+    if [ -d "/unity-project/Builds/macOS" ]; then \
+        cp -r /unity-project/Builds/macOS/* /unity-project/output/\n\
+    else \
+        echo "Build directory not found. Check Unity logs for errors."\n\
+    fi\n\
+else\n\
+    echo "One or more required secret files are missing."\n\
+    exit 1\n\
 fi' > /build.sh \
 && chmod +x /build.sh
 
@@ -96,9 +104,6 @@ fi' > /build.sh \
 RUN --mount=type=secret,id=unity_license \
     --mount=type=secret,id=unity_email \
     --mount=type=secret,id=unity_password \
-    UNITY_LICENSE=$(cat /run/secrets/unity_license) \
-    UNITY_EMAIL=$(cat /run/secrets/unity_email) \
-    UNITY_PASSWORD=$(cat /run/secrets/unity_password) \
     /build.sh
 
 # Stage 4: Final stage (without secrets)
