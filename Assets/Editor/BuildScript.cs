@@ -11,10 +11,7 @@ namespace UnityDriveSimulation
         [MenuItem("Build/Perform macOS Build")]
         public static void PerformMacOSBuild()
         {
-            // Set the architecture to Apple Silicon (ARM64)
-            //PlayerSettings.SetArchitecture(BuildTargetGroup.Standalone, 1);  // 1 is for ARM64
-
-            // Set the target architecture to Apple Silicon (ARM64) only
+            // Set the target architecture to Apple Silicon (ARM64) only ("OSXUniversal" for Universal build (Intel + Apple Silicon))
             EditorUserBuildSettings.SetPlatformSettings("Standalone", "OSXArm64", "Architecture", "ARM64");
 
             PerformBuild(BuildTarget.StandaloneOSX, BuildOptions.None);
@@ -39,10 +36,6 @@ namespace UnityDriveSimulation
                     options = buildOptions
                 };
 
-                
-                // Universal build (Intel + Apple Silicon):
-                //EditorUserBuildSettings.SetPlatformSettings("Standalone", "OSXUniversal", "Architecture", "ARM64");
-
                 BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
                 BuildResult result = report.summary.result;
 
@@ -57,8 +50,7 @@ namespace UnityDriveSimulation
             }
             catch (System.Exception e)
             {
-                //Debug.LogError($"Error during build process: {e.Message}");
-                Debug.LogError($"Build failed with exception: {e.Message}");
+                Debug.LogError($"Build failed during build process with exception: {e.Message}");
             }
         }
 
