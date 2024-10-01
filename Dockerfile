@@ -39,6 +39,7 @@ COPY --from=cpp-intermediate /app/repo /app/repo
 # Install Miniforge
 ARG TARGETARCH
 ENV CONDA_DIR=/opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
 
 RUN echo "Building for architecture: ${TARGETARCH}"
 RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
@@ -53,6 +54,9 @@ RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
     conda update -n base -c defaults conda -y && \
     conda env create -f /app/repo/Assets/Plugins/TrafficSimulation/environment.yml && \
     conda clean -afy"
+
+# Activate the Conda environment
+SHELL ["conda", "run", "-n", "your_environment_name", "/bin/bash", "-c"]
 
 # Stage 3: Unity build stage
 FROM unityci/editor:ubuntu-2022.3.3f1-linux-il2cpp-2.0.0 as unity-build
