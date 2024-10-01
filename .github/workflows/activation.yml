@@ -9,7 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: game-ci/unity-activate@v2
+      - name: Request activation file
+        id: getManualLicenseFile
+        uses: game-ci/unity-activate@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -21,4 +23,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Manual Activation File
-          path: ${{ steps.getManualLicenseFile.outputs.filePath }}
+          path: ./_activate-license/ManualActivationFile.lic
+
+      - name: Debug - Print file path
+        run: |
+          echo "File path output: ${{ steps.getManualLicenseFile.outputs.filePath }}"
+          echo "Listing contents of current directory:"
+          ls -R
