@@ -83,6 +83,34 @@ ARG UNITY_EMAIL
 ARG UNITY_PASSWORD
 
 # Create a build script that uses secrets
+#RUN echo '#!/bin/bash\n\
+#unity_license_file="/run/secrets/unity_license"\n\
+#if [ -f "$unity_license_file" ]; then\n\
+#    mkdir -p /root/.local/share/unity3d/Unity\n\
+#    cp "$unity_license_file" /root/.local/share/unity3d/Unity/Unity_lic.ulf\n\
+#    unity-editor \
+#      -quit \
+#      -batchmode \
+#      -nographics \
+#      -username "$UNITY_EMAIL" \
+#      -password "$UNITY_PASSWORD" \
+#      -projectPath "/unity-project" \
+#      -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
+#      -logFile "/unity-project/Logs/logfile.log"\n\
+#    if [ -d "/unity-project/Builds/macOS" ]; then \
+#        mkdir -p /unity-project/output\n\
+#        cp -r /unity-project/Builds/macOS/* /unity-project/output/\n\
+#        echo "Build artifacts copied to /unity-project/output/"\n\
+#    else \
+#        echo "Build directory not found. Check Unity logs for errors."\n\
+#        exit 1\n\
+#    fi\n\
+#else\n\
+#    echo "Unity license file is missing."\n\
+#    exit 1\n\
+#fi' > /build.sh \
+#&& chmod +x /build.sh
+
 RUN echo '#!/bin/bash\n\
 unity_license_file="/run/secrets/unity_license"\n\
 if [ -f "$unity_license_file" ]; then\n\
@@ -96,14 +124,6 @@ if [ -f "$unity_license_file" ]; then\n\
       -password "$UNITY_PASSWORD" \
       -projectPath "/unity-project" \
       -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
-      -logFile "/unity-project/Logs/logfile.log"\n\
-    if [ -d "/unity-project/Builds/macOS" ]; then \
-        mkdir -p /unity-project/output\n\
-        cp -r /unity-project/Builds/macOS/* /unity-project/output/\n\
-        echo "Build artifacts copied to /unity-project/output/"\n\
-    else \
-        echo "Build directory not found. Check Unity logs for errors."\n\
-        exit 1\n\
     fi\n\
 else\n\
     echo "Unity license file is missing."\n\
