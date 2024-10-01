@@ -55,10 +55,10 @@ RUN /bin/bash -c "source $CONDA_DIR/bin/activate && conda init bash"
 RUN conda update -n base -c defaults conda -y
 
 # Create Conda environment without pip packages first
-RUN conda env create -f /app/repo/Assets/Plugins/TrafficSimulation/environment.yml --no-deps
+#RUN conda env create -f /app/repo/Assets/Plugins/TrafficSimulation/environment.yml
 
 # Activate the Conda environment
-SHELL ["conda", "run", "-n", "drive", "/bin/bash", "-c"]
+#SHELL ["conda", "run", "-n", "drive", "/bin/bash", "-c"]
 
 # Clean Conda
 RUN conda clean -afy
