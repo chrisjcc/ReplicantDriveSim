@@ -78,7 +78,6 @@ WORKDIR /unity-project
 
 # Copy your Unity project files and C++ build artifacts
 COPY . .
-COPY --from=cpp-build /app/repo/Builds/macOS /unity-project/Assets/Plugins/
 
 ARG UNITY_EMAIL
 ARG UNITY_PASSWORD
@@ -98,17 +97,20 @@ if [ -f "$unity_license_file" ]; then\n\
       -projectPath "/unity-project" \
       -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
       -logFile "/unity-project/Logs/logfile.log"\n\
-    mkdir -p /unity-project/output\n\
     if [ -d "/unity-project/Builds/macOS" ]; then \
+        mkdir -p /unity-project/output\n\
         cp -r /unity-project/Builds/macOS/* /unity-project/output/\n\
+        echo "Build artifacts copied to /unity-project/output/"\n\
     else \
         echo "Build directory not found. Check Unity logs for errors."\n\
+        exit 1\n\
     fi\n\
 else\n\
     echo "Unity license file is missing."\n\
     exit 1\n\
 fi' > /build.sh \
 && chmod +x /build.sh
+
 
 # Use Docker secrets to pass sensitive information
 RUN --mount=type=secret,id=unity_license \
