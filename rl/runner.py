@@ -48,9 +48,9 @@ def run_episodes(env, num_episodes):
  
                 # Modify the continuous actions
                 modified_continuous_actions = continuous_actions.copy()
-                modified_continuous_actions[0] = 0.0  # Set steering to zero
-                modified_continuous_actions[1] = 0.1  # Some other modification
-                modified_continuous_actions[2] = 0.0  # Another modification
+                #modified_continuous_actions[0] = 0.0  # Set steering to zero
+                #modified_continuous_actions[1] = 0.1  # Some other modification
+                #modified_continuous_actions[2] = 0.0  # Another modification
 
                 actions[agent] = (discrete_action, modified_continuous_actions)
 
@@ -97,7 +97,7 @@ def main():
 
     # Construct the full path to the Unity executable
     unity_executable_path = os.path.join(
-        base_dir, "libReplicantDriveSim.app"
+        base_dir, "Builds/macOS/libReplicantDriveSim.app"
     )
 
     # Initialize Ray

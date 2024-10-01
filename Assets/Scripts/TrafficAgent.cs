@@ -21,9 +21,10 @@ public class TrafficAgent : Agent
     [HideInInspector] public int highLevelActions;
     [HideInInspector] public float[] lowLevelActions;
 
-    // Visualization
-    [SerializeField] private Color hitColor = Color.red;
-    [SerializeField] private Color missColor = Color.green;
+    // Color settings for ray visualization
+    [HideInInspector] private Color rayHitColor = Color.red;
+    [HideInInspector] private Color rayMissColor = Color.green; // Default white
+
     [SerializeField] private bool debugVisualization = false;
 
     // Channel Identifier
@@ -33,13 +34,13 @@ public class TrafficAgent : Agent
     [SerializeField] private float offRoadPenalty = -0.5f;
     [SerializeField] private float collisionWithOtherAgentPenalty = -1.0f;
     [SerializeField] private float penaltyInterval = 0.5f; // Interval in seconds between penalties
-    [SerializeField] private float lastPenaltyTime = 0f; // Time when the last penalty was applied
+    [HideInInspector] private float lastPenaltyTime = 0f; // Time when the last penalty was applied
 
     // Collider
     [HideInInspector] private Collider agentCollider;
 
     // Grounding
-    [HideInInspector] private bool isGrounded;
+    //[HideInInspector] private bool isGrounded;
 
     /// <summary>
     /// Initializes the TrafficAgent when the script instance is being loaded.
@@ -470,9 +471,11 @@ public class TrafficAgent : Agent
         if (!InitializeTrafficManager(sensor))
             return;
 
-        CollectRaycastObservations(sensor);
+        // The RayPerceptionSensorComponent3D will automatically add its observations
+        //CollectRaycastObservations(sensor);
         CollectPositionAndRotationObservations(sensor);
-        CollectSpeedAndOrientationObservations(sensor);
+        CollectSpeedObservations(sensor);
+        //CollectNearbyAgentSpeedObservations(sensor);
 
         LogDebug("TrafficManager::CollectObservations completed successfully.");
     }
@@ -578,6 +581,7 @@ public class TrafficAgent : Agent
     ///
     /// </summary>
     /// <param name="sensor">The VectorSensor to which observations are added.</param>
+    /*
     private void CollectRaycastObservations(VectorSensor sensor)
     {
         // Raycast observations (e.g., observations for nearby agents and road boundaries)
@@ -615,6 +619,7 @@ public class TrafficAgent : Agent
 
         LogDebug($"CollectObservations: Euler angles: Pitch={transform.rotation.eulerAngles.x}, Yaw={transform.rotation.eulerAngles.y}, Roll={transform.rotation.eulerAngles.z}");
     }
+    */
 
     /// <summary>
     /// Collects and adds the agent's position and rotation observations to the sensor.
@@ -656,10 +661,19 @@ public class TrafficAgent : Agent
     private void CollectPositionAndRotationObservations(VectorSensor sensor)
     {
         // Add agent's position and rotation as observations
-        sensor.AddObservation(transform.position);
-        //sensor.AddObservation(transform.rotation);
-        //sensor.AddObservation(transform.rotation.eulerAngles);
-        sensor.AddObservation(transform.rotation.eulerAngles.y);
+        sensor.AddObservation(transform.position);    // Adds (x, y, z) in world space
+        //sensor.AddObservation(transform.localPosition); // Adds (x, y, z) relative to parent
+
+        // Add rotation observations (we might want to use Quaternion or Euler angles)
+        sensor.AddObservation(transform.rotation.eulerAngles.y); // Adds only the y-rotation, often represents the "yaw" or horizontal rotation.
+        // Orientation (only y rotation, normalized to [-1, 1])
+        //sensor.AddObservation(transform.rotation.eulerAngles.y / 180.0f - 1.0f);
+        //sensor.AddObservation(transform.rotation.eulerAngles); // Adds (x, y, z) Euler angles
+        //sensor.AddObservation(transform.rotation);     // Adds (x, y, z, w) quaternion in world space
+        //sensor.AddObservation(transform.localRotation); // Adds (x, y, z, w) quaternion relative to parent
+
+        // We might want to observe the agent's forward direction
+        //sensor.AddObservation(transform.forward); // Adds (x, y, z) direction vector. This adds the forward direction of the object as a normalized vector in world space. It's particularly useful for understanding the direction the agent is facing, regardless of its position.
     }
 
     /// <summary>
@@ -699,7 +713,7 @@ public class TrafficAgent : Agent
     ///
     /// </summary>
     /// <param name="sensor">The VectorSensor to which observations are added.</param>
-    private void CollectSpeedAndOrientationObservations(VectorSensor sensor)
+    private void CollectSpeedObservations(VectorSensor sensor)
     {
         // Agent's own speed and orientation
         Rigidbody rb = GetComponent<Rigidbody>();
@@ -708,7 +722,8 @@ public class TrafficAgent : Agent
 
         if (rb != null)
         {
-            sensor.AddObservation(rb.velocity.magnitude / 50.0f); // Normalize speed (assuming max speed is 50)
+            float speed = rb.velocity.magnitude / 50.0f; // Normalize speed (assuming max speed is 50)
+            sensor.AddObservation(speed);
         }
         else
         {
@@ -716,10 +731,37 @@ public class TrafficAgent : Agent
             Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
         }
 
-        // Orientation (only y rotation, normalized to [-1, 1])
-        sensor.AddObservation(transform.rotation.eulerAngles.y / 180.0f - 1.0f);
         LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="sensor"></param>
+    /*
+    private void CollectNearbyAgentSpeedObservations(VectorSensor sensor)
+    {
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius, LayerMask.GetMask("TrafficAgent"));
+
+        foreach (Collider collider in nearbyColliders)
+        {
+            if (collider.gameObject != gameObject)  // Exclude self
+            {
+                Rigidbody otherRb = collider.GetComponent<Rigidbody>();
+                if (otherRb != null)
+                {
+                    Vector3 relativeVelocity = otherRb.velocity - rb.velocity;
+                    float relativeSpeed = relativeVelocity.magnitude;
+                    Vector3 direction = (collider.transform.position - transform.position).normalized;
+                    float approachSpeed = Vector3.Dot(relativeVelocity, direction);
+
+                    sensor.AddObservation(relativeSpeed / maxRelativeSpeed);  // Normalized relative speed
+                    sensor.AddObservation(approachSpeed / maxRelativeSpeed);  // Normalized approach speed
+                }
+            }
+        }
+    }
+    */
 
     /// <summary>
     /// Generates heuristic actions for the agent when the Behavior Type is set to "Heuristic Only".
@@ -925,7 +967,7 @@ public class TrafficAgent : Agent
     /// Key components:
     /// - trafficManager: Provides configuration for raycasting (angle, number of rays, ray length).
     /// - agentCollider: Used to determine the starting point of raycasts.
-    /// - hitColor and missColor: Colors used to visualize ray hits and misses respectively.
+    /// - rayHitColor and rayMissColor: Colors used to visualize ray hits and misses respectively.
     ///
     /// Raycast Configuration:
     /// - Number of rays: Defined by trafficManager.numberOfRays
@@ -969,11 +1011,11 @@ public class TrafficAgent : Agent
             // Ray hit at a certain distance
             if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
             {
-                Debug.DrawRay(rayStart, direction * hit.distance, hitColor, 0.0f);
+                Debug.DrawRay(rayStart, direction * hit.distance, rayHitColor, 0.0f);
             }
             else // Ray did not hit
             {
-                Debug.DrawRay(rayStart, direction * trafficManager.rayLength, missColor, 0.0f);
+                Debug.DrawRay(rayStart, direction * trafficManager.rayLength, rayMissColor, 0.0f);
             }
         }
     }
@@ -1108,7 +1150,8 @@ public class TrafficAgent : Agent
         LogDebug("TrafficAgent::OnCollisionStay started.");
 
         // Check if we're colliding with the road
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
+        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
+        if (collision.gameObject.layer == roadMask)
         {
             // Small positive reward for staying on the road
             AddReward(0.01f);
@@ -1151,11 +1194,12 @@ public class TrafficAgent : Agent
     public void OnCollisionExit(Collision collision)
     {
         LogDebug("TrafficAgent::OnCollisionExit started.");
+        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
 
         // Check if we've left the road
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
+        if (collision.gameObject.layer == roadMask)
         {
-            isGrounded = false;
+            //isGrounded = false;
             LogDebug("Agent left the road");
         }
 

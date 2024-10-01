@@ -244,9 +244,8 @@ def main():
                 policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
                 register_model(policy, "PPO_Highway_Model_BestResult_scope_last", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
 
-                #print(f"Best config: {best_result.config}")
-                #print(f"Best metrics: {best_result.metrics}")
-                #print(f"Best trial id: {best_result.trial_id}"
+                print(f"Best config: {best_result.config}")
+                print(f"Best metrics: {best_result.metrics}")
                 print(f"Best result last checkpoint path: {best_result.checkpoint}")
 
 
@@ -257,9 +256,8 @@ def main():
                 policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
                 register_model(policy, "PPO_Highway_Model_BestResult_scope_avg", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
 
-                #print(f"Best config: {best_result.config}")
-                #print(f"Best metrics: {best_result.metrics}")
-                #print(f"Best trial id: {best_result.trial_id}"
+                print(f"Best config: {best_result.config}")
+                print(f"Best metrics: {best_result.metrics}")
                 print(f"Best result avg checkpoint path: {best_result.checkpoint}")
 
             # Model 3: Based on the best result (scope set to `all`)
@@ -269,9 +267,8 @@ def main():
                 policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
                 register_model(policy, "PPO_Highway_Model_BestResult_scope_all", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
 
-                #print(f"Best config: {best_result.config}")
-                #print(f"Best metrics: {best_result.metrics}")
-                #print(f"Best trial id: {best_result.trial_id}"
+                print(f"Best config: {best_result.config}")
+                print(f"Best metrics: {best_result.metrics}")
                 print(f"Best result all checkpoint path: {best_result.checkpoint}")
 
             # Model 4: Based on the last checkpoint of all trials
