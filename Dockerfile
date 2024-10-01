@@ -48,15 +48,20 @@ RUN ARCH=$(echo ${TARGETARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/') && \
     rm ~/miniforge.sh && \
     $CONDA_DIR/bin/conda clean -afy
 
-# Initialize Conda and create environment
-RUN /bin/bash -c "source $CONDA_DIR/bin/activate && \
-    conda init bash && \
-    conda update -n base -c defaults conda -y && \
-    conda env create -f /app/repo/Assets/Plugins/TrafficSimulation/environment.yml && \
-    conda clean -afy"
+# Initialize Conda
+RUN /bin/bash -c "source $CONDA_DIR/bin/activate && conda init bash"
+
+# Update Conda
+RUN conda update -n base -c defaults conda -y
+
+# Create Conda environment without pip packages first
+RUN conda env create -f /app/repo/Assets/Plugins/TrafficSimulation/environment.yml --no-deps
 
 # Activate the Conda environment
-SHELL ["conda", "run", "-n", "your_environment_name", "/bin/bash", "-c"]
+SHELL ["conda", "run", "-n", "drive", "/bin/bash", "-c"]
+
+# Clean Conda
+RUN conda clean -afy
 
 # Stage 3: Unity build stage
 FROM unityci/editor:ubuntu-2022.3.3f1-linux-il2cpp-2.0.0 as unity-build
