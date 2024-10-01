@@ -36,15 +36,13 @@ public class TrafficManager : MonoBehaviour
     [HideInInspector] public Color rayHitColor = Color.red;
     [HideInInspector] public Color rayMissColor = Color.white;
 
-    //public RayPerceptionSensorComponent3D raySensor;
-
     [SerializeField] public float spawnAreaSize = 10.0f;
     //[HideInInspector] public float MoveSpeed { get; set; } = 5f;
     //[HideInInspector] public float RotationSpeed { get; set; } = 100f;
     [HideInInspector] public float SpawnHeight { get; set; } = 0.1f;
     [HideInInspector] public float AngleStep { get; private set; }
     [HideInInspector] public bool PendingAgentCountUpdate { get; set; } = false;
-    [HideInInspector] public string TrafficAgentLayerName { get; set; } = "RoadBoundary"; // Layer assigned to TrafficAgents
+    [HideInInspector] public string TrafficAgentLayerName { get; set; } = "Road";
     [SerializeField] public int MaxSteps = 2000;
 
     // Public Fields
@@ -560,7 +558,6 @@ public class TrafficManager : MonoBehaviour
 
         SetAgentLayer(agentObject);
 
-
         // Add RayPerceptionSensor to the traffic agent
         AddRaySensorToAgent(agentObject); // NEW
 
@@ -590,10 +587,9 @@ public class TrafficManager : MonoBehaviour
     /// <param name="agentObject">The GameObject of the traffic agent to set the layer for</param>
     private void SetAgentLayer(GameObject agentObject)
     {
-        int layerIndex = LayerMask.NameToLayer(TrafficAgentLayerName);
-        agentObject.layer = layerIndex;
+        agentObject.layer = LayerMask.NameToLayer(TrafficAgentLayerName);
 
-        LogDebug($"Set layer for agent: {agentObject.name}, layer index: {layerIndex}");
+        LogDebug($"Set layer for agent: {agentObject.name}, layer index: {agentObject.layer}");
     }
 
     /// <summary>
@@ -1862,6 +1858,7 @@ public class TrafficManager : MonoBehaviour
             CleanUpSimulation();
             RecreateSimulation();
             ReinitializeSimulationData();
+
             // Reinitialize agents
             InitializeAgents();
             ValidateAgentCount();
@@ -2427,7 +2424,6 @@ public class TrafficManager : MonoBehaviour
         GameObject sensorObject = new GameObject("RaySensor");
         sensorObject.transform.SetParent(agent.transform);
         sensorObject.transform.localPosition = new Vector3(2.0f, 2.5f, 0.0f); // Adjust as needed
-        sensorObject.transform.localRotation = Quaternion.identity;
 
         // Add and configure the RayPerceptionSensorComponent3D
         RayPerceptionSensorComponent3D raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
@@ -2453,6 +2449,7 @@ public class TrafficManager : MonoBehaviour
                   $"MaxRayDegrees={raySensor.MaxRayDegrees}, SphereCastRadius={raySensor.SphereCastRadius}, " +
                   $"RayLength={raySensor.RayLength}");
     }
+
     /*
     void SetDebugColors(Color hitColor, Color missColor)
     {

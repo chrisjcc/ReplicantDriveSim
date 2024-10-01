@@ -4,7 +4,7 @@ using UnityEngine;
 using System.Linq;
 using UnityEditor.Build.Reporting;
 
-namespace UnityDriveSimulation.BuildTools
+namespace UnityDriveSimulation
 {
     public static class BuildScript
     {

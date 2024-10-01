@@ -1166,7 +1166,9 @@ public class TrafficAgent : Agent
         LogDebug("TrafficAgent::OnCollisionStay started.");
 
         // Check if we're colliding with the road
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
+        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
+        //if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
+        if (collision.gameObject.layer == roadMask)
         {
             // Small positive reward for staying on the road
             AddReward(0.01f);
@@ -1209,9 +1211,11 @@ public class TrafficAgent : Agent
     public void OnCollisionExit(Collision collision)
     {
         LogDebug("TrafficAgent::OnCollisionExit started.");
+        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
 
         // Check if we've left the road
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
+        //if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
+        if (collision.gameObject.layer == roadMask)
         {
             //isGrounded = false;
             LogDebug("Agent left the road");

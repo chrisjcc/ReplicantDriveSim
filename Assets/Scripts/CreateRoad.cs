@@ -50,6 +50,11 @@ public class CreateDualRoad : MonoBehaviour
 {
     public Texture2D roadTexture;
     public PhysicMaterial roadPhysicsMaterial;
+    public GameObject roadManager { get; private set; }
+
+    public LayerMask roadLayer;
+    public LayerMask trafficAgentLayer;
+
     public float singleRoadWidth = 15f; // Width for a single road (2 lanes)
     public float roadLength = 3250f;
     public float boundaryHeight = 5f;
@@ -57,6 +62,16 @@ public class CreateDualRoad : MonoBehaviour
 
     void Start()
     {
+        // Ensure layers are set correctly
+        roadLayer = LayerMask.NameToLayer("Road");
+        trafficAgentLayer = LayerMask.NameToLayer("TrafficAgent");
+
+        if (roadLayer == -1 || trafficAgentLayer == -1)
+        {
+            Debug.LogError("Required layers 'Road' or 'TrafficAgent' are missing. Please add them in Project Settings.");
+            return;
+        }
+
         CreateRoadSurfaces();
         CreateRoadBoundaries();
     }
@@ -79,6 +94,7 @@ public class CreateDualRoad : MonoBehaviour
     {
         GameObject road = GameObject.CreatePrimitive(PrimitiveType.Plane);
         road.name = name;
+        road.layer = roadLayer;
 
         road.transform.localScale = new Vector3(singleRoadWidth / 10f, 10, roadLength / 10f);
 
@@ -98,15 +114,8 @@ public class CreateDualRoad : MonoBehaviour
         roadCollider.isTrigger = false;
         roadCollider.material = roadPhysicsMaterial;
 
-        int roadLayer = LayerMask.NameToLayer("Road");
-        if (roadLayer != -1)
-        {
-            road.layer = roadLayer;
-        }
-        else
-        {
-            Debug.LogWarning("Layer 'Road' does not exist. Please add it in the Tags and Layers settings.");
-        }
+        // Set the parent to the GameObject this script is attached to
+        road.transform.SetParent(this.transform, false);
     }
 
     void CreateRoadBoundaries()
@@ -125,6 +134,7 @@ public class CreateDualRoad : MonoBehaviour
     {
         GameObject boundary = GameObject.CreatePrimitive(PrimitiveType.Cube);
         boundary.name = name;
+        boundary.layer = roadLayer; // Set to road layer instead of TrafficAgent
 
         // For the median, use the medianWidth. For outer boundaries, use a thin width.
         float width = (name == "MedianBoundary") ? medianWidth : 1f;
@@ -153,5 +163,7 @@ public class CreateDualRoad : MonoBehaviour
         {
             Debug.LogWarning("Layer 'TrafficAgent' does not exist. Using default layer.");
         }
+        // Set the parent to the GameObject this script is attached to
+        boundary.transform.SetParent(this.transform, false);
     }
 }
