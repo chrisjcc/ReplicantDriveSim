@@ -17,16 +17,9 @@ public class TrafficAgent : Agent
     // Traffic Manager
     [HideInInspector] private TrafficManager trafficManager;
 
-    // Perception sensor
-    [HideInInspector] private RayPerceptionSensorComponent3D raySensor;
-
     // Agent Actions
     [HideInInspector] public int highLevelActions;
     [HideInInspector] public float[] lowLevelActions;
-
-    // Visualization
-    //[SerializeField] private Color hitColor = Color.red;
-    //[SerializeField] private Color missColor = Color.green;
 
     // Color settings for ray visualization
     [HideInInspector] private Color rayHitColor = Color.red;
@@ -109,15 +102,6 @@ public class TrafficAgent : Agent
         ResetAgentActions();
 
         MaxStep = trafficManager.MaxSteps; // Max number of steps
-
-        /*
-        raySensor = GetComponentInChildren<RayPerceptionSensorComponent3D>();
-
-        if (raySensor == null)
-        {
-            Debug.LogError("RayPerceptionSensorComponent3D not found on the agent or its children.");
-        }
-        */
 
         LogDebug("TrafficAgent::Initialize completed successfully.");
     }
@@ -1167,7 +1151,6 @@ public class TrafficAgent : Agent
 
         // Check if we're colliding with the road
         LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
-        //if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
         if (collision.gameObject.layer == roadMask)
         {
             // Small positive reward for staying on the road
@@ -1214,7 +1197,6 @@ public class TrafficAgent : Agent
         LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
 
         // Check if we've left the road
-        //if (collision.gameObject.layer == LayerMask.NameToLayer("Road"))
         if (collision.gameObject.layer == roadMask)
         {
             //isGrounded = false;
