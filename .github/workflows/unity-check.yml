@@ -2,14 +2,18 @@ name: GameCI Template 🎮
 
 on: workflow_dispatch
 
-env:
-  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-
 jobs:
   checkLicense:
     name: Check for the Unity license
     runs-on: ubuntu-latest
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
     steps:
       - name: Fail - No license
-        if: ${{ !startsWith(secrets.UNITY_LICENSE, '<') }}
-        run: exit 1
+        if: ${{ !startsWith(env.UNITY_LICENSE, '<') }}
+        run: |
+          echo "No valid license found or license is not in the correct format"
+          exit 1
+      - name: License is valid
+        if: ${{ startsWith(env.UNITY_LICENSE, '<') }}
+        run: echo "Valid license found"
