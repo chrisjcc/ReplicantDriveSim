@@ -21,16 +21,19 @@ jobs:
           #githubToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: 2022.3.3f1
 
-      - name: Debug - Search for activation file
+      - name: Debug - Print Unity activation logs
+        if: failure()
         run: |
-          echo "Current directory:"
-          pwd
+          echo "Unity activation logs:"
+          cat /github/workspace/_activate-license/Unity_v2022.3.3f1.log || echo "Log file not found"
+
+      - name: Debug - Search for activation file
+        if: always()
+        run: |
           echo "Searching for .lic files:"
           find . -name "*.lic" -type f
           echo "Contents of _activate-license directory:"
           ls -la ./_activate-license || echo "_activate-license directory not found"
-          echo "Contents of current directory:"
-          ls -la
 
       - uses: actions/upload-artifact@v4
         if: success()
