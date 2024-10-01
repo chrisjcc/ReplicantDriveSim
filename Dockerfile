@@ -72,23 +72,42 @@ WORKDIR /unity-project
 COPY . .
 COPY --from=cpp-build /app/repo/Builds/macOS /unity-project/Assets/Plugins/
 
-# Create a build script
+# Create a build script that uses secrets
 RUN echo '#!/bin/bash\n\
+echo $UNITY_LICENSE > /root/.local/share/unity3d/Unity/Unity_lic.ulf\n\
 unity-editor \
   -quit \
   -batchmode \
   -nographics \
+  -username "$UNITY_EMAIL" \
+  -password "$UNITY_PASSWORD" \
   -projectPath "/unity-project" \
   -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
   -logFile "/unity-project/Logs/logfile.log"\n\
 mkdir -p /unity-project/output\n\
 if [ -d "/unity-project/Builds/macOS" ]; then \
-    ls -larth /unity-project/Builds/macOS/\n\
     cp -r /unity-project/Builds/macOS/* /unity-project/output/\n\
 else \
     echo "Build directory not found. Check Unity logs for errors."\n\
 fi' > /build.sh \
 && chmod +x /build.sh
 
-# Set the entrypoint to the build script
-ENTRYPOINT ["/build.sh"]
+# Use Docker secrets to pass sensitive information
+RUN --mount=type=secret,id=unity_license \
+    --mount=type=secret,id=unity_email \
+    --mount=type=secret,id=unity_password \
+    UNITY_LICENSE=$(cat /run/secrets/unity_license) \
+    UNITY_EMAIL=$(cat /run/secrets/unity_email) \
+    UNITY_PASSWORD=$(cat /run/secrets/unity_password) \
+    /build.sh
+
+# Stage 4: Final stage (without secrets)
+FROM ubuntu:22.04 as final
+
+WORKDIR /unity-project
+
+# Copy only the build artifacts from the unity-build stage
+COPY --from=unity-build /unity-project/output /unity-project/output
+
+# Set the entrypoint to a simple command that lists the output
+ENTRYPOINT ["ls", "-l", "/unity-project/output"]
