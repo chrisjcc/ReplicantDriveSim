@@ -21,6 +21,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Verify Docker installation
+      run: |
+        docker --version
+        docker info
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -51,8 +56,21 @@ jobs:
         build-args: |
           UNITY_EMAIL=${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD=${{ secrets.UNITY_PASSWORD }}
+
         secret-files: |
-          "unity_license=unity_license.ulf"
+          unity_license=unity_license.ulf
+          #"unity_license=unity_license.ulf"
+        outputs: type=docker,dest=/tmp/myimage.tar
+
+    - name: Load image
+      run: |
+        docker load --input /tmp/myimage.tar
+        docker image ls -a
+
+    - name: Debug - Run image
+      run: |
+        docker run --rm ${{ steps.meta.outputs.tags }} || true
+        docker logs $(docker ps -lq) || true
 
     - name: Check Disk Usage
       run: df -h
@@ -61,7 +79,8 @@ jobs:
       run: |
         docker create --name temp ${{ steps.meta.outputs.tags }}
         docker cp temp:/unity-project/output ./artifacts
-        docker rm temp
+        #docker rm temp
+        docker rm $container_id
 
     - name: Upload artifacts to GitHub Packages
       uses: actions/upload-artifact@v3
