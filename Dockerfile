@@ -54,11 +54,8 @@ RUN /bin/bash -c "source $CONDA_DIR/bin/activate && conda init bash"
 # Update Conda
 RUN conda update -n base -c defaults conda -y
 
-# Create Conda environment without pip packages first
-#RUN conda env create -f /app/repo/Assets/Plugins/TrafficSimulation/environment.yml
-
 # Activate the Conda environment
-#SHELL ["conda", "run", "-n", "drive", "/bin/bash", "-c"]
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 
 # Clean Conda
 RUN conda clean -afy
@@ -82,67 +79,74 @@ COPY . .
 ARG UNITY_EMAIL
 ARG UNITY_PASSWORD
 
-# Create a build script that uses secrets
-#RUN echo '#!/bin/bash\n\
-#unity_license_file="/run/secrets/unity_license"\n\
-#if [ -f "$unity_license_file" ]; then\n\
-#    mkdir -p /root/.local/share/unity3d/Unity\n\
-#    cp "$unity_license_file" /root/.local/share/unity3d/Unity/Unity_lic.ulf\n\
-#    unity-editor \
-#      -quit \
-#      -batchmode \
-#      -nographics \
-#      -username "$UNITY_EMAIL" \
-#      -password "$UNITY_PASSWORD" \
-#      -projectPath "/unity-project" \
-#      -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
-#      -logFile "/unity-project/Logs/logfile.log"\n\
-#    if [ -d "/unity-project/Builds/macOS" ]; then \
-#        mkdir -p /unity-project/output\n\
-#        cp -r /unity-project/Builds/macOS/* /unity-project/output/\n\
-#        echo "Build artifacts copied to /unity-project/output/"\n\
-#    else \
-#        echo "Build directory not found. Check Unity logs for errors."\n\
-#        exit 1\n\
-#    fi\n\
-#else\n\
-#    echo "Unity license file is missing."\n\
-#    exit 1\n\
-#fi' > /build.sh \
-#&& chmod +x /build.sh
+# Print current working directory and list files before running build.sh
+RUN echo "Current working directory before build:" && \
+    pwd && \
+    echo "Files and directories before build:" && \
+    ls -la
 
+# Create a build script that uses secrets
 RUN echo '#!/bin/bash\n\
+set -e\n\
 unity_license_file="/run/secrets/unity_license"\n\
 if [ -f "$unity_license_file" ]; then\n\
+    echo "Unity license file found. Content:"\n\
+    cat "$unity_license_file"\n\
+    echo "Copying license file..."\n\
     mkdir -p /root/.local/share/unity3d/Unity\n\
     cp "$unity_license_file" /root/.local/share/unity3d/Unity/Unity_lic.ulf\n\
+    echo "License file copied. Content of Unity_lic.ulf:"\n\
+    cat /root/.local/share/unity3d/Unity/Unity_lic.ulf\n\
+    echo "Running Unity build..."\n\
     unity-editor \
       -quit \
       -batchmode \
       -nographics \
+      -logFile /unity-project/unity_build.log \
       -username "$UNITY_EMAIL" \
       -password "$UNITY_PASSWORD" \
       -projectPath "/unity-project" \
       -executeMethod UnityDriveSimulation.BuildScript.PerformMacOSBuild \
-    fi\n\
+      || (echo "Unity build failed. Unity build log:" && cat /unity-project/unity_build.log && exit 1)\n\
+    echo "Unity build completed."\n\
 else\n\
     echo "Unity license file is missing."\n\
     exit 1\n\
 fi' > /build.sh \
 && chmod +x /build.sh
 
-
 # Use Docker secrets to pass sensitive information
 RUN --mount=type=secret,id=unity_license \
     /build.sh
 
-# Stage 4: Final stage (without secrets)
+# Print current working directory and list files after running build.sh
+RUN echo "Current working directory after build:" && \
+    pwd && \
+    echo "Files and directories after build:" && \
+    ls -la
+
+# Final stage
 FROM ubuntu:22.04 as final
 
 WORKDIR /unity-project
 
-# Copy only the build artifacts from the unity-build stage
+# Copy build artifacts and logs from the unity-build stage
 COPY --from=unity-build /unity-project/output /unity-project/output
+COPY --from=unity-build /unity-project/unity_build.log /unity-project/unity_build.log
 
-# Set the entrypoint to a simple command that lists the output
-ENTRYPOINT ["ls", "-l", "/unity-project/output"]
+# Set up entrypoint script
+RUN echo '#!/bin/bash\n\
+echo "Unity build log:"\n\
+cat /unity-project/unity_build.log\n\
+echo "\nBuild artifacts:"\n\
+ls -lR /unity-project/output\n\
+if [ -d /unity-project/output ] && [ "$(ls -A /unity-project/output)" ]; then\n\
+    echo "Build artifacts found."\n\
+    exit 0\n\
+else\n\
+    echo "No build artifacts found. Build may have failed."\n\
+    exit 1\n\
+fi' > /entrypoint.sh \
+&& chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

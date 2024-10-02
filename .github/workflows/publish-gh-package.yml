@@ -45,6 +45,8 @@ jobs:
     - name: Prepare Unity License File
       run: |
         echo "${{ secrets.UNITY_LICENSE }}" > unity_license.ulf
+        echo "Unity license file content (first 10 lines):"
+        head -n 10 unity_license.ulf
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
@@ -58,8 +60,7 @@ jobs:
           UNITY_PASSWORD=${{ secrets.UNITY_PASSWORD }}
 
         secret-files: |
-          unity_license=unity_license.ulf
-          #"unity_license=unity_license.ulf"
+          "unity_license=unity_license.ulf"
         outputs: type=docker,dest=/tmp/myimage.tar
 
     - name: Load image
@@ -86,7 +87,9 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: unity-build-artifacts
-        path: ./artifacts
+        path: |
+          ./artifacts
+          ./unity_build.log
 
     - name: Clean up
       run: rm unity_license.ulf
