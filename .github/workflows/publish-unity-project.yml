@@ -54,7 +54,7 @@ jobs:
           buildName: libReplicantDriveSim
           buildsPath: Builds
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
-          customParameters: -development -debugCode
+          customParameters: -logFile "Logs/unity_build.log" -development -debugCode
 
       - name: Package Builds
         run: |
@@ -75,4 +75,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macOS-Unity-Build
-          path: ./Builds/macOS
+          # Upload the entire Builds and Logs directories
+          path: |
+            ./Builds
+            ./Logs
