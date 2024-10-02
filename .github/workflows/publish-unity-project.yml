@@ -11,8 +11,11 @@ jobs:
       - name: Compile C++ code
         working-directory: Assets/Plugins/TrafficSimulation
         run: |
-          pip3 install pybind11
-          export PYBIND11_CMAKE_DIR=$(python3 -c "import pybind11; print(pybind11.get_cmake_dir())")
+          # Install pybind11 using Homebrew
+          brew install pybind11
+          # Get the pybind11 CMake directory
+          export PYBIND11_CMAKE_DIR=$(brew --prefix pybind11)/lib/cmake/pybind11
+          # Create build directory and compile
           mkdir build
           cd build
           cmake .. -Dpybind11_DIR=$PYBIND11_CMAKE_DIR
