@@ -26,7 +26,7 @@ endif()
 set(PYBIND11_FINDPYTHON ON)
 
 # Find Python3 development libraries
-find_package(Python3 REQUIRED COMPONENTS Development)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
 if(NOT DEFINED pybind11_DIR)
     execute_process(
