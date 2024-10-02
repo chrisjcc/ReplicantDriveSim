@@ -1,4 +1,4 @@
-name: Build and Publish Unity Project
+name: Build and Publish macOS Unity Project
 
 #on:
 #  push:
@@ -14,7 +14,7 @@ jobs:
         with:
           lfs: true
       
-      - name: Build Unity Project
+      - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -27,19 +27,20 @@ jobs:
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
           customParameters: -development -debugCode
 
-      - name: Package Build
+      - name: Package macOS Build
         run: |
-          zip -r unity-build.zip ./Builds/macOS
+          zip -r macos-unity-build.zip ./Builds/macOS
 
       - name: Publish to GitHub Packages
-        run: |
-          gh release create v${{ github.sha }} unity-build.zip
+        uses: softprops/action-gh-release@v1
+        with:
+          files: macos-unity-build.zip
+          tag_name: v${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Build
+          name: macOS-Build
           path: Builds/macOS
-
