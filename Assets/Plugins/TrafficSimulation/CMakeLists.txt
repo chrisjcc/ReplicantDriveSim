@@ -61,9 +61,15 @@ add_library(ReplicantDriveSim SHARED ${SOURCES} ${HEADERS})
 # Link against pybind11
 target_link_libraries(ReplicantDriveSim PRIVATE pybind11::module Python3::Python)
 
-# Set output directory
+# Set the build directory relative to the current source directory
+set(BUILD_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+
+# Create the build directory if it does not exist
+file(MAKE_DIRECTORY ${BUILD_DIRECTORY})
+
+# Set output directory for the shared library
 set_target_properties(ReplicantDriveSim PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY "${BUILD_DIRECTORY}"
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
 )
