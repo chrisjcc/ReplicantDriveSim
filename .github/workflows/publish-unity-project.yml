@@ -8,21 +8,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker Image and Extract Artifacts
+      - name: Compile C++ code
+        working-directory: Assets/Plugins/TrafficSimulation
         run: |
-          docker build -t replicant-drive-sim .
-          docker create --name replicant-container replicant-drive-sim
-          docker cp replicant-container:/app/build ./plugin-build
-          docker rm replicant-container
+          mkdir build
+          cd build
+          cmake ..
+          make
+          cd ..
 
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TrafficSimulation-Plugin
-          path: plugin-build
+          path: Assets/Plugins/TrafficSimulation/build
+
 
   build-unity:
     needs: build-plugin
@@ -70,4 +70,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macOS-Unity-Build
-          path: Builds/macOS
+          path: ./Builds/macOS
