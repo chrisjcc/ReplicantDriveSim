@@ -1,19 +1,43 @@
 name: Build and Publish macOS Unity Project
 
-#on:
-#  push:
-#    branches: [main]
-
 on: workflow_dispatch
 
 jobs:
-  build-and-publish:
+  build-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image and Extract Artifacts
+        run: |
+          docker build -t replicant-drive-sim .
+          docker create --name replicant-container replicant-drive-sim
+          docker cp replicant-container:/app/build ./plugin-build
+          docker rm replicant-container
+
+      - name: Upload Plugin Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrafficSimulation-Plugin
+          path: plugin-build
+
+  build-unity:
+    needs: build-plugin
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      
+
+      - name: Download Plugin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: TrafficSimulation-Plugin
+          path: Assets/Plugins/TrafficSimulation/build
+
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
         env:
@@ -27,20 +51,23 @@ jobs:
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
           customParameters: -development -debugCode
 
-      - name: Package macOS Build
+      - name: Package Builds
         run: |
           zip -r macos-unity-build.zip ./Builds/macOS
+          zip -r plugin-build.zip ./Assets/Plugins/TrafficSimulation/build
 
-      - name: Publish to GitHub Packages
+      - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v1
         with:
-          files: macos-unity-build.zip
+          files: |
+            macos-unity-build.zip
+            plugin-build.zip
           tag_name: v${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Artifact
+      - name: Upload Unity Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macOS-Build
+          name: macOS-Unity-Build
           path: Builds/macOS
