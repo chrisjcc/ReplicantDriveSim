@@ -20,22 +20,33 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Set up Docker
+      run: |
+        brew install docker
+        colima start
+        sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+
     - name: Log in to the Container registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@v4
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
     - name: Prepare Unity License File
       run: |
         echo "${{ secrets.UNITY_LICENSE }}" > unity_license.ulf
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
       with:
@@ -57,10 +68,12 @@ jobs:
         docker create --name temp ${{ steps.meta.outputs.tags }}
         docker cp temp:/unity-project/output ./artifacts
         docker rm temp
+
     - name: Upload artifacts to GitHub Packages
       uses: actions/upload-artifact@v3
       with:
         name: unity-build-artifacts
         path: ./artifacts
+
     - name: Clean up
       run: rm unity_license.ulf
