@@ -22,10 +22,14 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: StandaloneOSX
+          buildName: libReplicantDriveSim
+          buildsPath: Builds
+          buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
+          customParameters: -development -debugCode
 
       - name: Package Build
         run: |
-          zip -r unity-build.zip ./build
+          zip -r unity-build.zip ./Builds/macOS
 
       - name: Publish to GitHub Packages
         run: |
@@ -37,4 +41,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Build
-          path: build
+          path: Builds/macOS
+
