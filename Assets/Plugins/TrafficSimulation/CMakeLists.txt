@@ -25,28 +25,16 @@ endif()
 # Set the policy to find Python automatically
 set(PYBIND11_FINDPYTHON ON)
 
-# Get the pybind11 directory dynamically
-execute_process(
-    COMMAND python3 -m pybind11 --cmakedir
-    OUTPUT_VARIABLE pybind11_DIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Set the pybind11_DIR variable
-set(pybind11_DIR ${pybind11_DIR})
-
-message(STATUS "pybind11_DIR is ${pybind11_DIR}")
-
-# Find pybind11
-find_package(pybind11 REQUIRED PATHS ${pybind11_DIR})
-
-# Check if pybind11 was found
-if (NOT pybind11_FOUND)
-    message(FATAL_ERROR "pybind11 not found")
-endif()
-
 # Find Python3 development libraries
 find_package(Python3 REQUIRED COMPONENTS Development)
+
+# Find pybind11
+find_package(pybind11 CONFIG REQUIRED)
+if (NOT pybind11_FOUND)
+    message(FATAL_ERROR "pybind11 not found. Please install pybind11 or set pybind11_DIR.")
+endif()
+
+message(STATUS "pybind11_DIR is ${pybind11_DIR}")
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${pybind11_INCLUDE_DIRS})
@@ -58,7 +46,7 @@ file(GLOB_RECURSE HEADERS "include/*.h")
 # Create shared library
 add_library(ReplicantDriveSim SHARED ${SOURCES} ${HEADERS})
 
-# Link against pybind11
+# Link against pybind11 and Python
 target_link_libraries(ReplicantDriveSim PRIVATE pybind11::module Python3::Python)
 
 # Set the build directory relative to the current source directory
