@@ -14,9 +14,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-pip
           pip3 install pybind11
+          export PYBIND11_CMAKE_DIR=$(python3 -c "import pybind11; print(pybind11.get_cmake_dir())")
           mkdir build
           cd build
-          cmake ..
+          cmake .. -Dpybind11_DIR=$PYBIND11_CMAKE_DIR
           make
           cd ..
 

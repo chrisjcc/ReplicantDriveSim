@@ -28,6 +28,15 @@ set(PYBIND11_FINDPYTHON ON)
 # Find Python3 development libraries
 find_package(Python3 REQUIRED COMPONENTS Development)
 
+if(NOT DEFINED pybind11_DIR)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import pybind11; print(pybind11.get_cmake_dir())"
+        OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
+endif()
+
 # Find pybind11
 find_package(pybind11 CONFIG REQUIRED)
 if (NOT pybind11_FOUND)
