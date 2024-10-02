@@ -94,7 +94,7 @@ jobs:
         with:
           # If tag v1.0.0 is pushed (refs/tags/v1.0.0)
           tag_name: ${{ github.ref }}
-          release_name: Release v${{ steps.get_version.outputs.VERSION }} (SHA: ${{ github.sha }})
+          release_name: Release v${{ steps.get_version.outputs.VERSION }}_SHA_${{ github.sha }}
           body: |
             Release v${{ steps.get_version.outputs.VERSION }}
             Commit: ${{ github.sha }}
