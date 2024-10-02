@@ -21,11 +21,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Docker
+    - name: Set up Docker and Colima
       run: |
-        brew install docker
+        brew install docker colima
         colima start
         sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+        # Wait for Docker daemon to be ready
+        timeout=60
+        until docker info >/dev/null 2>&1 || [ $timeout -eq 0 ]; do
+          sleep 1
+          ((timeout--))
+        done
+        if [ $timeout -eq 0 ]; then
+          echo "Docker daemon failed to start within 60 seconds"
+          exit 1
+        fi
+        # Verify Docker is working
+        docker version
+        docker info
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
