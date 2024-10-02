@@ -1,0 +1,28 @@
+name: Build and Publish Unity Project
+
+#on:
+#  push:
+#    branches: [main]
+
+on: workflow_dispatch
+
+jobs:
+  build-and-publish:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Unity Project
+        uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: StandaloneOSX
+
+      - name: Package Build
+        run: |
+          zip -r unity-build.zip ./build
+
+      - name: Publish to GitHub Packages
+        run: |
+          gh release create v${{ github.sha }} unity-build.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
