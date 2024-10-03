@@ -2,6 +2,11 @@ name: Unity Build and Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (for manual dispatch)'
+        required: false
+        default: ''
   push:
     tags:
       - 'v*.*.*'
