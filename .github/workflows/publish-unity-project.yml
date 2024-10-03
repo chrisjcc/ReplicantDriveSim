@@ -83,8 +83,8 @@ jobs:
 
       - name: Package Builds with metadata
         run: |
-          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Builds metadata.txt
-          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
+          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds metadata.txt
+          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
 
       - name: Create Release
         id: create_release
@@ -118,8 +118,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./plugin-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.get_version.outputs.VERSION }}.zip
-          asset_name: plugin-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_path: ./plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_name: plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
           asset_content_type: application/zip
 
       - name: Upload Unity Build Artifact
