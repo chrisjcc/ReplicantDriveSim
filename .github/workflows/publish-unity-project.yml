@@ -84,7 +84,7 @@ jobs:
           buildName: libReplicantDriveSim
           buildsPath: Builds
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
-          projectPath: "."
+          projectPath: ${{ github.workspace }}
           customParameters: -logFile "Logs/unity_build.log" -development -debugCode
 
       - name: Create metadata file
