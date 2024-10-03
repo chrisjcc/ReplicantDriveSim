@@ -84,7 +84,7 @@ jobs:
           buildName: libReplicantDriveSim
           buildsPath: Builds
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
-          projectPath: ${{ github.workspace }}
+          projectPath: .
           customParameters: -logFile "Logs/unity_build.log" -development -debugCode
           androidExportType: "none"
           androidSymbolType: "none"
