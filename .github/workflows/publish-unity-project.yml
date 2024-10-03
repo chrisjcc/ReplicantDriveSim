@@ -48,15 +48,24 @@ jobs:
           lfs: true
           fetch-depth: 0  # This is important to fetch all history for all tags and branches
 
-      - name: Get tag message
-        id: tag
-        run: |
-          TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
-          echo "::set-output name=message::$TAG_MESSAGE"
-
-      - name: Get the version
+      - name: Determine version
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -z "${{ github.event.inputs.version }}" ]; then
+              VERSION=$(date +"%Y%m%d-%H%M%S")  # Fallback to timestamp if no version is provided
+            else
+              VERSION="${{ github.event.inputs.version }}"
+            fi
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}  # Extract version from tag
+          fi
+          echo "Using version: $VERSION"
+          echo "::set-output name=VERSION::$VERSION"
+
+      - name: Get short SHA
+        id: slug
+        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
 
       - name: Download Plugin Artifact
         uses: actions/download-artifact@v4
@@ -77,10 +86,6 @@ jobs:
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
           projectPath: "."
           customParameters: -logFile "Logs/unity_build.log" -development -debugCode
-
-      - name: Get short SHA
-        id: slug
-        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
 
       - name: Create metadata file
         run: |
