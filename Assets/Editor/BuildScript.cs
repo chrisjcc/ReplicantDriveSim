@@ -56,7 +56,7 @@ namespace UnityDriveSimulation
 
         private static string GetBuildPath(BuildTarget buildTarget)
         {
-            string buildFolder = "Builds/macOS";
+            string buildFolder = "Builds/StandaloneOSX";
             string fileName = "libReplicantDriveSim";
 
 
@@ -68,6 +68,9 @@ namespace UnityDriveSimulation
                 System.IO.Directory.CreateDirectory(buildPath);
                 Debug.Log($"Created a build path: {buildPath}");
             }
+
+            Debug.Log($"Build path: {buildPath}");
+            Debug.Log($"Current directory: {System.Environment.CurrentDirectory}");
 
             return System.IO.Path.Combine(buildPath, $"{fileName}.app");
         }
