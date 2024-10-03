@@ -87,6 +87,9 @@ jobs:
           projectPath: ${{ github.workspace }}
           customParameters: -logFile "Logs/unity_build.log" -development -debugCode
 
+          androidExportType: "none"
+          androidSymbolType: "none"
+
       - name: Create metadata file
         run: |
           echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
