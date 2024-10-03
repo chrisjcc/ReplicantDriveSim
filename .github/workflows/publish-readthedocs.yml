@@ -1,4 +1,4 @@
-name: Trigger Read the Docs Build
+name: Publish Read the Docs
 
 on:
   push:
