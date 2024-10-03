@@ -86,7 +86,6 @@ jobs:
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
           projectPath: ${{ github.workspace }}
           customParameters: -logFile "Logs/unity_build.log" -development -debugCode
-
           androidExportType: "none"
           androidSymbolType: "none"
 
