@@ -103,9 +103,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # If tag v1.0.0 is pushed (refs/tags/v1.0.0)
-          tag_name: ${{ github.ref }}
-          release_name: Release v${{ steps.get_version.outputs.VERSION }}_SHA_${{ github.sha }}
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          release_name: Release v${{ steps.get_version.outputs.VERSION }}
           body: |
             Release v${{ steps.get_version.outputs.VERSION }}
             Commit: ${{ github.sha }}
