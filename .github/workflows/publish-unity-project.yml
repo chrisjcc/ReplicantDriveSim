@@ -108,7 +108,7 @@ jobs:
           customParameters:  -buildTarget OSXArm64 -logFile "./Logs/unity_build.log" -development -debugCode
           androidExportType: "none"
           androidSymbolType: "none"
-          run: echo 'Project Version: ${{ steps.build_unity.outputs.buildVersion }}'
+        run: echo 'Project Version: ${{ steps.build_unity.outputs.buildVersion }}'
 
       - name: Create metadata file
         run: |
