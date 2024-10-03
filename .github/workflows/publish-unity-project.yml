@@ -43,10 +43,20 @@ jobs:
     needs: build-plugin
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
         with:
-          lfs: true
           fetch-depth: 0  # This is important to fetch all history for all tags and branches
+          lfs: true
+
+      - name: Cache Library files from previous builds
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-UnityDriveSimulation-StandaloneOSX
+          restore-keys: |
+            Library-UnityDriveSimulation-
+            Library-
 
       - name: Determine version
         id: get_version
@@ -80,10 +90,18 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
+          # Build a macOS standalone (Intel 64-bit).
           targetPlatform: StandaloneOSX
+          # Use "auto" (default) to get from your ProjectSettings/ProjectVersion.txt
+          unityVersion: auto
+          versioning: Semantic
+          # Enables caching the Unity Hub and Editor installation for MacOS runners (default: false).
+          # This can significantly reduce project build times if you have enough available cache on Github Actions.
+          cacheUnityInstallationOnMac: true
           buildName: libReplicantDriveSim
           buildsPath: Builds
-          buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
+          # Format: EditorNamespace.BuilderClassName.StaticBuildMethod
+          buildMethod: UnityBuilderAction.BuildScript.PerformMacOSBuild
           projectPath: .
           customParameters: -logFile "Logs/unity_build.log" -development -debugCode
           androidExportType: "none"
