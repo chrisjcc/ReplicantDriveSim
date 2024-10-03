@@ -75,6 +75,7 @@ jobs:
           buildName: libReplicantDriveSim
           buildsPath: Builds
           buildMethod: UnityDriveSimulation.BuildScript.PerformMacOSBuild
+          projectPath: "."
           customParameters: -logFile "Logs/unity_build.log" -development -debugCode
 
       - name: Get short SHA
