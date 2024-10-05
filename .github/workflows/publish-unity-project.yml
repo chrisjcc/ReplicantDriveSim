@@ -169,7 +169,7 @@ jobs:
             ./Logs
 
 
-build-and-push-image:
+  build-and-push-image:
     needs: [build-unity]
     runs-on: macos-latest
     permissions:
