@@ -189,7 +189,7 @@ jobs:
         run: |
           brew install docker
           brew install colima
-          colima start
+          #colima start
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
 
       - name: Verify Docker installation
