@@ -67,6 +67,8 @@ def run_episodes(env, num_episodes, output_file):
                         SampleBatch.REWARDS: [],
                         SampleBatch.NEXT_OBS: [],
                         SampleBatch.DONES: [],
+                        "t": [],
+                        "action_prob": [],  # Placeholder for action probabilities
                     }
                 episode_data[agent_id][SampleBatch.OBS].append(agent_obs.tolist())
                 discrete_action, continuous_actions = actions[agent_id]
@@ -84,6 +86,8 @@ def run_episodes(env, num_episodes, output_file):
                 agent_done = terminateds.get(agent_id, False) or truncateds.get(agent_id, False)
                 episode_data[agent_id][SampleBatch.DONES].append(agent_done)
                 episode_data[agent_id][SampleBatch.NEXT_OBS].append(new_obs[agent_id].tolist())
+                episode_data[agent_id]["t"].append(step)
+                episode_data[agent_id]["action_prob"].append(1.0)
 
             # Check if the episode is done
             done = terminateds.get("__all__", False) or truncateds.get("__all__", False)
@@ -98,7 +102,7 @@ def run_episodes(env, num_episodes, output_file):
                     agent_data[key]["continuous"] = np.array(agent_data[key]["continuous"])
                 else:
                     agent_data[key] = np.array(agent_data[key])
-            agent_data["type"] = "SampleBatch"  # Add the 'type' field
+            agent_data["type"] = "MultiAgentBatch"  # Add the 'type' field
             agent_data["policy_id"] = "shared_policy"  # Add the 'policy_id' field
 
 
@@ -119,7 +123,7 @@ class NumpyEncoder(json.JSONEncoder):
 
 def main():
     parser = argparse.ArgumentParser(description="Run a Unity environment simulation.")
-    parser.add_argument("--num_episodes", type=int, default=2, help="Number of episodes to run (default: 2)")
+    parser.add_argument("--num_episodes", type=int, default=1, help="Number of episodes to run (default: 1)")
     parser.add_argument("--output_file", type=str, default="multi_agent_demonstrations.json", help="Output file to save agent data")
     args = parser.parse_args()
 

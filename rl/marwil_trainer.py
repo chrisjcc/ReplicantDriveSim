@@ -41,7 +41,7 @@ class CustomJsonReader:
                 SampleBatch.REWARDS: np.array(agent_data['rewards']),
                 SampleBatch.NEXT_OBS: np.array(agent_data['new_obs']),
                 SampleBatch.DONES: np.array(agent_data['dones']),
-                "action_prob": np.ones_like(agent_data['rewards']),  # Placeholder for action probabilities
+                #"action_prob": np.ones_like(agent_data['rewards']),  # Placeholder for action probabilities
             })
 
         #env_steps = sum(len(data[SampleBatch.ACTIONS]['discrete']) for data in batch_data.values())
