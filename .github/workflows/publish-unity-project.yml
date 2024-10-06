@@ -185,8 +185,8 @@ jobs:
           name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
           path: ./Builds
 
-      - name: Set up Docker
-        uses: docker-practice/actions-setup-docker@master
+      #- name: Set up Docker
+      #  uses: docker-practice/actions-setup-docker@master
 
       #- name: Install and start Docker
       #  run: |
@@ -195,15 +195,15 @@ jobs:
       #    #colima start
       #    sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
       - name: Verify Docker installation
         run: |
           docker --version
           docker info
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        #with:
-        #  driver: docker
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
