@@ -185,12 +185,15 @@ jobs:
           name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
           path: ./Builds
 
-      - name: Install and start Docker
-        run: |
-          brew install docker
-          brew install colima
-          #colima start
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+
+      #- name: Install and start Docker
+      #  run: |
+      #    brew install docker
+      #    brew install colima
+      #    #colima start
+      #    sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
 
       - name: Verify Docker installation
         run: |
