@@ -3,8 +3,9 @@
 FROM --platform=$BUILDPLATFORM alpine:latest
 
 COPY ./Builds /app/Builds
-COPY metadata.txt /app/metadata.txt
+#COPY metadata.txt /app/metadata.txt
 
 WORKDIR /app
 
-CMD ["cat", "metadata.txt"]
+#CMD ["cat", "metadata.txt"]
+CMD ["ls", "."]
