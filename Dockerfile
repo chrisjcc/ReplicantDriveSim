@@ -12,4 +12,4 @@ WORKDIR /app
 
 # Display the contents of metadata.txt
 #RUN cat metadata.txt
-CMD ["ls", "."]
+CMD ["/bin/sh"]
