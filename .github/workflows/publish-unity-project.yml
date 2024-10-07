@@ -110,16 +110,18 @@ jobs:
           androidExportType: "none"
           androidSymbolType: "none"
 
-      - name: Create metadata file
-        run: |
-          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
-          echo "Commit SHA: ${{ github.sha }}" >> metadata.txt
-          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
+      #- name: Create metadata file
+      #  run: |
+      #    echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
+      #    echo "Commit SHA: ${{ github.sha }}" >> metadata.txt
+      #    echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
       - name: Package Builds with metadata
         run: |
-          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds metadata.txt
-          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
+          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds
+          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build
+          #zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds metadata.txt
+          #zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
           #zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Builds metadata.txt
           #zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
 
