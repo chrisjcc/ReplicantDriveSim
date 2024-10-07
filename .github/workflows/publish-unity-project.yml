@@ -37,6 +37,7 @@ jobs:
         with:
           name: TrafficSimulation-Plugin
           path: Assets/Plugins/TrafficSimulation/build
+          copy-symlinks: true
 
 
   build-unity:
