@@ -199,13 +199,13 @@ jobs:
       # even if the build machine itself is not of that architecture. 
       # This means you can build ARM64 images on an AMD64 machine and vice versa.
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        /setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        /setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        /login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -221,17 +221,32 @@ jobs:
         run: |
           echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      #- name: Extract metadata (tags, labels) for Docker
+      #  id: meta
+      #  uses: docker/metadata-action@v5
+      #  with:
+      #    images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
+      #    tags: |
+      #      type=raw,value=${{ steps.get_version.outputs.VERSION }}
+      #      type=raw,value=latest,enable={{is_default_branch}}
+
       - name: Build and push Docker image to the GitHub Container and DockerHub Registry
-        uses: docker/build-push-action@v5
+        id: docker_build
+        uses: docker/build-push-action@v6
+        env: 
+          DOCKER_BUILD_SUMMARY: true
         with:
           context: .
           push: true
+          # Support single multi-architecture Docker image 
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
             ghcr.io/${{ env.REPO_LOWER }}:latest
             ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
             ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:latest
+          #tags: ${{ steps.meta.outputs.tags }}
+          #labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
