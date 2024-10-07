@@ -208,7 +208,7 @@ jobs:
         run: |
           echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           
-      - name: Build and push Docker image
+      - name: Build and push Docker image to the GitHub Container Registry
         uses: docker/build-push-action@v5
         with:
           context: .
