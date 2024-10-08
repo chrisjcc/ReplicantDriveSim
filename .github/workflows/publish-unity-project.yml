@@ -234,7 +234,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=raw,value=${{ steps.get_version.outputs.VERSION }}
+            type=raw,value=${{ needs.build-unity.outputs.VERSION }}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image to the GitHub Container and DockerHub Registry
