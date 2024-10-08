@@ -26,19 +26,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install pybind11
+        run: pip install pybind11
+
       - name: Compile C++ code
         working-directory: Assets/Plugins/TrafficSimulation
         run: |
-          # Install pybind11 using Homebrew
-          brew install pybind11
-          # Get the pybind11 CMake directory
-          export PYBIND11_CMAKE_DIR=$(brew --prefix pybind11)/lib/cmake/pybind11
           # Create build directory and compile
-          mkdir build
-          cd build
-          cmake .. -Dpybind11_DIR=$PYBIND11_CMAKE_DIR
+          mkdir build && cd build
+          cmake ..
+          #cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
           make
-          cd ..
 
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
