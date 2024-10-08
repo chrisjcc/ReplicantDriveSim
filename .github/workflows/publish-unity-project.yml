@@ -218,4 +218,3 @@ jobs:
             ghcr.io/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
             ghcr.io/${{ env.REPO_LOWER }}:latest
           no-cache: true  # Set to true disable caching
-          debug: true     # Set to true for more verbose output
