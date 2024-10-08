@@ -246,11 +246,12 @@ jobs:
           # Support single multi-architecture Docker image 
           platforms: linux/amd64,linux/arm64
           tags: |
-            #ghcr.io/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
-            #ghcr.io/${{ env.REPO_LOWER }}:latest
             ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
             ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:latest
-          #tags: ${{ steps.meta.outputs.tags }}
+          #tags: |
+             #ghcr.io/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
+             #ghcr.io/${{ env.REPO_LOWER }}:latest
+             # ${{ steps.meta.outputs.tags }}
           #labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
