@@ -6,6 +6,10 @@
 #include "vehicle.h"
 #include "traffic.h"
 
+#include "OpenDriveMap.h"         // Ensure you include the header for OpenDriveMap
+#include "Road.h"                 // Include the header for Road class
+#include "RoadNetworkMesh.h"      // Include the header for RoadNetworkMesh
+
 namespace py = pybind11;
 
 PYBIND11_MODULE(simulation, m) {
@@ -31,19 +35,47 @@ PYBIND11_MODULE(simulation, m) {
         .def("getSensorRange", &Vehicle::getSensorRange, "Get the sensor range of the vehicle")
         .def("getPositionString", &Vehicle::getPositionString, "Get the position of the vehicle as a string");
 
+    // Bind odr::Road with a default constructor
+    py::class_<odr::Road>(m, "Road") // Bind the default constructor and methods
+        .def(py::init<std::string, double, std::string, std::string, bool>(),  // Constructor with specific arguments
+             py::arg("id"),
+             py::arg("length"),
+             py::arg("junction"),
+             py::arg("name"),
+             py::arg("left_hand_traffic") = false)  // Default argument for bool;
+        .def_readwrite("id", &odr::Road::id)
+        .def_readwrite("length", &odr::Road::length)
+        .def_readwrite("junction", &odr::Road::junction)
+        .def_readwrite("name", &odr::Road::name)
+        .def_readwrite("left_hand_traffic", &odr::Road::left_hand_traffic)
+        .def("get_xyz", &odr::Road::get_xyz);
+
     // Bind the Traffic class
     py::class_<Traffic>(m, "Traffic")
-        .def(py::init<const int&, const unsigned&>(), "Constructor with the number of agents and seed value")
+        .def(py::init<const int&, const std::string&, const unsigned&>(), "Constructor with the number of agents and seed value")
         .def("step", &Traffic::step, "Advance the simulation by one time step")
-        .def("get_agents", &Traffic::get_agents, py::return_value_policy::reference, "Get all agents in the traffic simulation")
-        .def("get_agent_by_name", &Traffic::get_agent_by_name, py::return_value_policy::reference, "Get an agent by name")
-        .def("get_agent_positions", &Traffic::get_agent_positions, "Get the positions of all agents")
-        .def("get_agent_velocities", &Traffic::get_agent_velocities, "Get the velocities of all agents")
-        .def("get_previous_positions", &Traffic::get_previous_positions, "Get the previous positions of all agents")
-        .def("get_agent_orientations", &Traffic::get_agent_orientations, "Get the orientations of all agents")
-        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles, py::return_value_policy::reference_internal, "Get nearby vehicles for each agent");
+        .def("get_agents", &Traffic::getAgents, py::return_value_policy::reference, "Get all agents in the traffic simulation")
+        .def("get_agent_by_name", &Traffic::getAgentByName, py::return_value_policy::reference, "Get an agent by name")
+        .def("get_agent_positions", &Traffic::getAgentPositions, "Get the positions of all agents")
+        .def("get_agent_velocities", &Traffic::getAgentVelocities, "Get the velocities of all agents")
+        .def("get_previous_positions", &Traffic::getPreviousPositions, "Get the previous positions of all agents")
+        .def("get_agent_orientations", &Traffic::getAgentOrientations, "Get the orientations of all agents")
+        .def("get_nearby_vehicles", &Traffic::getNearbyVehicles, py::return_value_policy::reference_internal, "Get nearby vehicles for each agent")
+        .def_property("odr_map",
+                      [](const Traffic& ts) { return ts.getOdrMap(); },
+                      [](Traffic& ts, const std::shared_ptr<odr::OpenDriveMap>& map) { ts.setOdrMap(map); });
 
-    // Bind vector of shared_ptr<Vehicle> using a custom caster
+    // Bind odr::RoadNetworkMesh with a default constructor (adjust as per actual constructors)
+    py::class_<odr::RoadNetworkMesh>(m, "RoadNetworkMesh")
+        .def(py::init<>());  // Add appropriate constructor and methods
+
+    // Bind odr::OpenDriveMap with constructors and methods
+    py::class_<odr::OpenDriveMap, std::shared_ptr<odr::OpenDriveMap>>(m, "OpenDriveMap")
+        .def(py::init<const std::string&>())
+        .def("get_road_network_mesh", &odr::OpenDriveMap::get_road_network_mesh)  // Expose the method
+        .def("get_roads", &odr::OpenDriveMap::get_roads);  // Expose and bind the get_roads method
+
+    // Bind vector of shared_ptr<Vehicle> using a custom class
     py::class_<std::vector<std::shared_ptr<Vehicle>>>(m, "VehiclePtrVector")
         .def(py::init<>(), "Default constructor for a vector of shared_ptr<Vehicle>")
         .def("size", &std::vector<std::shared_ptr<Vehicle>>::size, "Get the size of the vector")
