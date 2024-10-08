@@ -74,16 +74,18 @@ jobs:
         run: |
           if [[ ${{ github.event_name }} == 'release' ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ -z "${{ github.event.inputs.version }}" ]; then
-              VERSION=$(date +"%Y%m%d-%H%M%S")  # Fallback to timestamp if no version is provided
-            else
-              VERSION="${{ github.event.inputs.version }}"
-            fi
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            VERSION="${{ github.event.inputs.ref }}"
-          else
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              VERSION="${{ github.event.inputs.version }}"
+            else
+              VERSION=$(date +"%Y%m%d-%H%M%S")  # Fallback to timestamp if no version is provided
+            fi
+          elif [[ ${{ github.ref }} == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}  # Extract version from tag
+          elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            VERSION="pr-${{ github.event.pull_request.number }}"
+          else
+            VERSION=$(git rev-parse --short HEAD)  # Use short commit hash for other cases
           fi
           echo "Using version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
