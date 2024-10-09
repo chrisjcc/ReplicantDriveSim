@@ -147,7 +147,7 @@ jobs:
           # 2. Check the file type
           file TrafficSimulation-Plugin.tar
           # Change to the directory
-          cd ./TrafficSimulation-Plugin
+          cd ./TrafficSimulation-Plugin.tar
           # List the contents to verify the tar file is there
           ls -larth
           # 3. Try to list the contents of the archive without extracting
