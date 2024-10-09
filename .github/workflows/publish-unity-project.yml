@@ -65,12 +65,12 @@ jobs:
         with:
           name: TrafficSimulation-Plugin
           #path: Assets/Plugins/TrafficSimulation/build
-          path: TrafficSimulation-Plugin.tar
+          path: ./TrafficSimulation-Plugin.tar
           include-hidden-files: true
           if-no-files-found: warn
 
       - name: List build directory contents
-        run: ls -la .
+        run: ls -larth .
 
 
   build-unity:
@@ -124,7 +124,7 @@ jobs:
         with:
           name: TrafficSimulation-Plugin
           #path: Assets/Plugins/TrafficSimulation/build
-          path: TrafficSimulation-Plugin.tar
+          path: ./TrafficSimulation-Plugin.tar
 
       #- name: Create symbolic links for libReplicantDriveSim
       #  shell: bash
@@ -138,12 +138,12 @@ jobs:
       #    ls -la
 
       - name: List build directory contents
-        run: ls -la .
+        run: ls -larth .
 
       - name: Extract Plugin Files
         run: |
           # 1. Verify file existence and check its size
-          ls -l TrafficSimulation-Plugin.tar
+          ls -larth TrafficSimulation-Plugin.tar
           # 2. Check the file type
           file TrafficSimulation-Plugin.tar
           # 3. Try to list the contents of the archive without extracting
