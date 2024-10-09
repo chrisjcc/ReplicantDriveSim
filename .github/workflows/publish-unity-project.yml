@@ -55,6 +55,7 @@ jobs:
           name: TrafficSimulation-Plugin
           path: Assets/Plugins/TrafficSimulation/build/libReplicantDriveSim*
           include-hidden-files: true
+          follow-symlinks: true
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
