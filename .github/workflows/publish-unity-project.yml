@@ -136,6 +136,9 @@ jobs:
       #    # Verify the symbolic links
       #    ls -la
 
+      - name: List build directory contents
+        run: ls -la .
+
       - name: Extract Plugin Files
         run: |
           tar -xvf TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
