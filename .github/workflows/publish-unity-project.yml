@@ -54,12 +54,17 @@ jobs:
           mkdir -p temp_build
           cp -L build/libReplicantDriveSim* temp_build/
           mv temp_build build
-    
+      
+      - name: Archive Plugin Files
+        run: |
+          tar -cvh --file=TrafficSimulation-Plugin.tar Assets/Plugins/TrafficSimulation/build
+
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TrafficSimulation-Plugin
           path: Assets/Plugins/TrafficSimulation/build
+          #path: TrafficSimulation-Plugin.tar
           include-hidden-files: true
           if-no-files-found: warn
 
