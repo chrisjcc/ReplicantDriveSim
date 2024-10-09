@@ -43,6 +43,12 @@ jobs:
           #cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
           make
 
+      - name: Create symlinks
+        run: |
+          cd Assets/Plugins/TrafficSimulation/build/
+          ln -s libReplicantDriveSim.1.0.0.dylib libReplicantDriveSim.dylib
+          ln -s libReplicantDriveSim.1.0.0.dylib libReplicantDriveSim.1.dylib
+    
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -105,6 +111,9 @@ jobs:
         with:
           name: TrafficSimulation-Plugin
           path: Assets/Plugins/TrafficSimulation/build
+
+      - name: List build directory contents
+        run: ls -la Assets/Plugins/TrafficSimulation/build/
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
