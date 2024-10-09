@@ -43,10 +43,17 @@ jobs:
           #cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
           make
           # Replace symlinks with real copies
-          cp -L libReplicantDriveSim.1.dylib libReplicantDriveSim.1.dylib.real
-          mv libReplicantDriveSim.1.dylib.real libReplicantDriveSim.1.dylib
-          cp -L libReplicantDriveSim.dylib libReplicantDriveSim.dylib.real
-          mv libReplicantDriveSim.dylib.real libReplicantDriveSim.dylib
+          #cp -L libReplicantDriveSim.1.dylib libReplicantDriveSim.1.dylib.real
+          #mv libReplicantDriveSim.1.dylib.real libReplicantDriveSim.1.dylib
+          #cp -L libReplicantDriveSim.dylib libReplicantDriveSim.dylib.real
+          #mv libReplicantDriveSim.dylib.real libReplicantDriveSim.dylib
+
+      - name: Prepare files for upload
+        run: |
+          cd Assets/Plugins/TrafficSimulation/
+          mkdir -p temp_build
+          cp -L build/libReplicantDriveSim* temp_build/
+          mv temp_build build
     
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
