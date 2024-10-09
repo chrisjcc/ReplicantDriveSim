@@ -42,6 +42,11 @@ jobs:
           cmake ..
           #cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
           make
+          # Replace symlinks with real copies
+          cp -L libReplicantDriveSim.1.dylib libReplicantDriveSim.1.dylib.real
+          mv libReplicantDriveSim.1.dylib.real libReplicantDriveSim.1.dylib
+          cp -L libReplicantDriveSim.dylib libReplicantDriveSim.dylib.real
+          mv libReplicantDriveSim.dylib.real libReplicantDriveSim.dylib
     
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
@@ -49,7 +54,7 @@ jobs:
           name: TrafficSimulation-Plugin
           path: Assets/Plugins/TrafficSimulation/build/libReplicantDriveSim*
           include-hidden-files: true
-          follow-symlinks: true
+          if-no-files-found: warn
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
