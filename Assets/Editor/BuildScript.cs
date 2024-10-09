@@ -14,7 +14,29 @@ namespace UnityBuilderAction
             // Set the target architecture to Apple Silicon (ARM64) only ("OSXUniversal" for Universal build (Intel + Apple Silicon))
             EditorUserBuildSettings.SetPlatformSettings("Standalone", "OSXArm64", "Architecture", "ARM64");
 
+            // Set the desired resolution
+            int width = 2*1280;
+            int height = 2*720;
+
+            // Set fixed window size
+            SetFixedWindowSize(width, height);
+
             PerformBuild(BuildTarget.StandaloneOSX, BuildOptions.None);
+        }
+
+        private static void SetFixedWindowSize(int width, int height)
+        {
+            // Disable fullscreen
+            PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+
+            // Set the default screen width and height
+            PlayerSettings.defaultScreenWidth = width;
+            PlayerSettings.defaultScreenHeight = height;
+
+            // Disable resizable window
+            PlayerSettings.resizableWindow = false;
+
+            Debug.Log($"Set fixed window size: {width}x{height}");
         }
 
         public static void PerformBuild(BuildTarget buildTarget, BuildOptions buildOptions)
@@ -35,7 +57,7 @@ namespace UnityBuilderAction
                     target = buildTarget,
                     options = buildOptions
                 };
-
+                // Set other options as needed
                 BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
                 BuildResult result = report.summary.result;
 
