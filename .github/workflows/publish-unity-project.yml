@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TrafficSimulation-Plugin
-          path: Assets/Plugins/TrafficSimulation/build/libReplicantDriveSim*
+          path: Assets/Plugins/TrafficSimulation/build
           include-hidden-files: true
           if-no-files-found: warn
 
@@ -118,6 +118,17 @@ jobs:
         with:
           name: TrafficSimulation-Plugin
           path: Assets/Plugins/TrafficSimulation/build
+
+      - name: Create symbolic links for libReplicantDriveSim
+        run: |
+          cd Assets/Plugins/TrafficSimulation/build/
+          # Create the symbolic link for the major version
+          ln -sf libReplicantDriveSim.1.0.0.dylib libReplicantDriveSim.1.dylib
+          # Create the symbolic link for the generic version
+          ln -sf libReplicantDriveSim.1.dylib libReplicantDriveSim.dylib
+          # Verify the symbolic links
+          ls -la
+        shell: /bin/bash
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
