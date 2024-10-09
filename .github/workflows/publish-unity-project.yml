@@ -125,6 +125,7 @@ jobs:
           path: Assets/Plugins/TrafficSimulation/build
 
       - name: Create symbolic links for libReplicantDriveSim
+        shell: bash
         run: |
           cd Assets/Plugins/TrafficSimulation/build/
           # Create the symbolic link for the major version
@@ -133,7 +134,6 @@ jobs:
           ln -sf libReplicantDriveSim.1.dylib libReplicantDriveSim.dylib
           # Verify the symbolic links
           ls -la
-          shell: bash
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
