@@ -84,7 +84,7 @@ jobs:
               VERSION=$(date +"%Y%m%d-%H%M%S")  # Fallback to timestamp if no version is provided
             fi
           elif [[ ${{ github.ref }} == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/v}  # Extract version from tag
+            VERSION=${GITHUB_REF#refs/tags/}
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             VERSION="pr-${{ github.event.pull_request.number }}"
           else
