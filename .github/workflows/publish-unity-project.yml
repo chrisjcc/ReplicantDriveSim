@@ -57,7 +57,7 @@ jobs:
       
       - name: Archive Plugin Files
         run: |
-          tar -cvh --file=TrafficSimulation-Plugin.tar Assets/Plugins/TrafficSimulation/build
+          tar -cvfh TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation build
 
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
@@ -149,10 +149,6 @@ jobs:
           tar -tvf TrafficSimulation-Plugin.tar
           # 4. If all checks pass, attempt to extract the file
           tar -xvf TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
-
-      #- name: Extract Plugin Files
-      #  run: |
-      #    tar -xvf TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
