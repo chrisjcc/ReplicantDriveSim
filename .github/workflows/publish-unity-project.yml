@@ -133,7 +133,7 @@ jobs:
           ln -sf libReplicantDriveSim.1.dylib libReplicantDriveSim.dylib
           # Verify the symbolic links
           ls -la
-        shell: /bin/bash
+          shell: bash
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
