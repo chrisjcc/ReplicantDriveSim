@@ -146,6 +146,10 @@ jobs:
           ls -larth TrafficSimulation-Plugin.tar
           # 2. Check the file type
           file TrafficSimulation-Plugin.tar
+          # Change to the directory
+          cd ./TrafficSimulation-Plugin
+          # List the contents to verify the tar file is there
+          ls -larth
           # 3. Try to list the contents of the archive without extracting
           tar -xvf TrafficSimulation-Plugin.tar
           # 4. If all checks pass, attempt to extract the file
