@@ -42,12 +42,6 @@ jobs:
           cmake ..
           #cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
           make
-
-      - name: Create symlinks
-        run: |
-          cd Assets/Plugins/TrafficSimulation/build/
-          ln -s libReplicantDriveSim.1.0.0.dylib libReplicantDriveSim.dylib
-          ln -s libReplicantDriveSim.1.0.0.dylib libReplicantDriveSim.1.dylib
     
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
