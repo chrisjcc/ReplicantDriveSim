@@ -47,8 +47,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TrafficSimulation-Plugin
-          path: Assets/Plugins/TrafficSimulation/build
+          path: Assets/Plugins/TrafficSimulation/build/libReplicantDriveSim*
           include-hidden-files: true
+
+      - name: List build directory contents
+        run: ls -la Assets/Plugins/TrafficSimulation/build/
 
 
   build-unity:
