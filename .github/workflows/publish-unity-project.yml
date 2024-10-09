@@ -141,7 +141,18 @@ jobs:
 
       - name: Extract Plugin Files
         run: |
+          # 1. Verify file existence and check its size
+          ls -l TrafficSimulation-Plugin.tar
+          # 2. Check the file type
+          file TrafficSimulation-Plugin.tar
+          # 3. Try to list the contents of the archive without extracting
+          tar -tvf TrafficSimulation-Plugin.tar
+          # 4. If all checks pass, attempt to extract the file
           tar -xvf TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
+
+      #- name: Extract Plugin Files
+      #  run: |
+      #    tar -xvf TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
