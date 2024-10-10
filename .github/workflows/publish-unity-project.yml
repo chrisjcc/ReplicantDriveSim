@@ -41,8 +41,7 @@ jobs:
         run: |
           # Create build directory and compile
           mkdir build && cd build
-          #cmake ..
-          cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
+          cmake ..         
           make
       
       - name: Archive Plugin Files
@@ -56,9 +55,6 @@ jobs:
           path: ./TrafficSimulation-Plugin.tar
           include-hidden-files: true
           if-no-files-found: warn
-
-      - name: List build directory contents
-        run: ls -larth .
 
 
   build-unity:
@@ -115,19 +111,12 @@ jobs:
 
       - name: Extract Plugin Files
         run: |
-          # Check the file type
-          file TrafficSimulation-Plugin.tar
-          # Verify file existence and check its size
-          ls -larth TrafficSimulation-Plugin.tar/
           # Create build directory
           mkdir -p Assets/Plugins/TrafficSimulation/build/
-          # If all checks pass, attempt to extract the file
+          # Extract the file
           tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
           # Remove tar archive
           rm -rf ./TrafficSimulation-Plugin.tar
-
-      - name: List build directory contents
-        run: ls -larth Assets/Plugins/TrafficSimulation/build/
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
@@ -161,10 +150,8 @@ jobs:
 
       - name: Package Builds with metadata
         run: |
-          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds
-          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build
-          #zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds metadata.txt
-          #zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
+          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds ./Logs metadata.txt
+          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
           #zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Builds metadata.txt
           #zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
 
@@ -209,9 +196,10 @@ jobs:
         with:
           name: macOS-Unity-Build-${{ steps.get_version.outputs.VERSION }}
           # Upload the entire Builds and Logs directories
-          path: |
-            ./Builds
-            ./Logs
+          path: macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip
+          #path: |
+          #  ./Builds
+          #  ./Logs
 
 
   build-and-push-image:
@@ -221,15 +209,33 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Lowercase the repo name
+        run: |
+          echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
+          tags: |
+            type=raw,value=${{ needs.build-unity.outputs.VERSION }}
+            type=raw,value=latest,enable={{is_default_branch}} 
+    
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4       
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
-          path: ./Builds
+          path: ./
 
+      - name: Extract Unity Build Artifact
+        run: |
+          unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+    
       # QEMU emulation, allows building images for different architectures 
       # even if the build machine itself is not of that architecture. 
       # This means you can build ARM64 images on an AMD64 machine and vice versa.
@@ -253,19 +259,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Lowercase the repo name
-        run: |
-          echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
-          tags: |
-            type=raw,value=${{ needs.build-unity.outputs.VERSION }}
-            type=raw,value=latest,enable={{is_default_branch}}        
 
       - name: Build and push Docker image to Docker Hub Registry
         id: docker_push_and_build
@@ -291,4 +284,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
-            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:latest  
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:latest
