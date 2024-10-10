@@ -155,6 +155,7 @@ jobs:
           mkdir -p Assets/Plugins/TrafficSimulation/build
           # 4. If all checks pass, attempt to extract the file
           tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
+          rm -rf ./TrafficSimulation-Plugin.tar
 
       - name: List build directory contents
         run: ls -la Assets/Plugins/TrafficSimulation/build/
