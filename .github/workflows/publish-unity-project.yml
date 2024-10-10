@@ -111,9 +111,6 @@ jobs:
           name: TrafficSimulation-Plugin
           path: ./TrafficSimulation-Plugin.tar
 
-      - name: List build directory contents
-        run: ls -larth Assets/Plugins/TrafficSimulation/build/
-
       - name: Extract Plugin Files
         run: |
           # Check the file type
@@ -121,14 +118,14 @@ jobs:
           # Verify file existence and check its size
           ls -larth TrafficSimulation-Plugin.tar/
           # Create build directory
-          mkdir -p Assets/Plugins/TrafficSimulation/build
+          mkdir -p Assets/Plugins/TrafficSimulation/build/
           # If all checks pass, attempt to extract the file
           tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
           # Remove tar archive
           rm -rf ./TrafficSimulation-Plugin.tar
 
       - name: List build directory contents
-        run: ls -la Assets/Plugins/TrafficSimulation/build/
+        run: ls -larth Assets/Plugins/TrafficSimulation/build/
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
