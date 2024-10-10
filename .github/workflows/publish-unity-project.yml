@@ -141,7 +141,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           # Build a macOS standalone (Intel 64-bit).
-          targetPlatform: StandaloneOSX
+          targetPlatform: StandaloneOSX # Build a macOS standalone.
           # Use "auto" (default) to get from your ProjectSettings/ProjectVersion.txt
           unityVersion: auto
           versioning: Semantic
@@ -153,7 +153,7 @@ jobs:
           # Format: EditorNamespace.BuilderClassName.StaticBuildMethod
           buildMethod: UnityBuilderAction.BuildScript.PerformMacOSBuild
           projectPath: .
-          customParameters:  -buildTarget OSXArm64 -logFile "./Logs/unity_build.log" -development -debugCode
+          customParameters:  '-buildTarget OSXArm64 -logFile "./Logs/unity_build.log" -development -debugCode'
           androidExportType: "none"
           androidSymbolType: "none"
 
