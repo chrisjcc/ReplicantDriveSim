@@ -16,6 +16,8 @@ on:
       - 'v*.*.*'
 
 env:
+  # Use docker.io for Docker Hub
+  REGISTRY: ghcr.io
   DOCKER_NAMESPACE: chrisjcc
   DOCKER_REPOSITORY: replicantdrivesim
 
@@ -238,15 +240,17 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -264,13 +268,13 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}        
 
       - name: Build and push Docker image to Docker Hub Registry
-        id: docker_build
+        id: docker_push_and_build
         uses: docker/build-push-action@v6
         env: 
           DOCKER_BUILD_SUMMARY: true
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           # Support single multi-architecture Docker image 
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
@@ -278,12 +282,13 @@ jobs:
           no-cache: true  # Set to true disable caching
 
       - name: Build and push Docker image to GitHub Container Registry
+        id: gh_push_and_build
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           # Support single multi-architecture Docker image 
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
-            ghcr.io/${{ env.REPO_LOWER }}:latest  
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:latest  
