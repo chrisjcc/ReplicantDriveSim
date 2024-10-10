@@ -1,3 +1,13 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# GitHub recommends pinning actions to a commit SHA.
+# To get a newer version, you will need to update the SHA.
+# You can also reference a tag or branch, but the action may change without warning.
+
+# Multi-platform image with GitHub Actions
 name: Unity Build, Release, and Publish Package
 
 on:
@@ -77,6 +87,11 @@ jobs:
           restore-keys: |
             Library-UnityDriveSimulation-
             Library-
+          #path: /tmp/.buildx-cache
+          #key: ${{ runner.os }}-buildx-${{ github.ref }}-${{ github.sha }}
+          #restore-keys: |
+          #  ${{ runner.os }}-buildx-${{ github.ref }}-
+          #  ${{ runner.os }}-buildx-
 
       - name: Determine version
         id: get_version
@@ -285,3 +300,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
             ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:latest
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.version }}
