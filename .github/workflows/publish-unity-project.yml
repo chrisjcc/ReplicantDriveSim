@@ -150,10 +150,8 @@ jobs:
 
       - name: Package Builds with metadata
         run: |
-          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds
-          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build
-          #zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds metadata.txt
-          #zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
+          zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip ./Builds ./Logs metadata.txt
+          zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
           #zip -r macos-unity-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Builds metadata.txt
           #zip -r plugin-build-${{ steps.get_version.outputs.VERSION }}-${{ steps.slug.outputs.sha8 }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
 
@@ -198,9 +196,10 @@ jobs:
         with:
           name: macOS-Unity-Build-${{ steps.get_version.outputs.VERSION }}
           # Upload the entire Builds and Logs directories
-          path: |
-            ./Builds
-            ./Logs
+          path: macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip
+          #path: |
+          #  ./Builds
+          #  ./Logs
 
 
   build-and-push-image:
@@ -230,8 +229,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
-          path: ./Builds
+          path: ./
 
+      - name: Extract Unity Build Artifact
+        run: |
+          unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+    
       # QEMU emulation, allows building images for different architectures 
       # even if the build machine itself is not of that architecture. 
       # This means you can build ARM64 images on an AMD64 machine and vice versa.
