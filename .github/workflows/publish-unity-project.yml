@@ -39,32 +39,18 @@ jobs:
         run: |
           # Create build directory and compile
           mkdir build && cd build
-          cmake ..
-          #cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
+          #cmake ..
+          cmake .. -Dpybind11_DIR=$(python -m pybind11 --cmakedir)         
           make
-          # Replace symlinks with real copies
-          #cp -L libReplicantDriveSim.1.dylib libReplicantDriveSim.1.dylib.real
-          #mv libReplicantDriveSim.1.dylib.real libReplicantDriveSim.1.dylib
-          #cp -L libReplicantDriveSim.dylib libReplicantDriveSim.dylib.real
-          #mv libReplicantDriveSim.dylib.real libReplicantDriveSim.dylib
-
-      #- name: Prepare files for upload
-      #  run: |
-      #    cd Assets/Plugins/TrafficSimulation/
-      #    mkdir -p temp_build
-      #    cp -L build/libReplicantDriveSim* temp_build/
-      #    mv temp_build build
       
       - name: Archive Plugin Files
         run: |
-          ls Assets/Plugins/TrafficSimulation/
           tar -cvhf ./TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build .
 
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TrafficSimulation-Plugin
-          #path: Assets/Plugins/TrafficSimulation/build
           path: ./TrafficSimulation-Plugin.tar
           include-hidden-files: true
           if-no-files-found: warn
@@ -123,38 +109,22 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: TrafficSimulation-Plugin
-          #path: Assets/Plugins/TrafficSimulation/build
           path: ./TrafficSimulation-Plugin.tar
 
-      #- name: Create symbolic links for libReplicantDriveSim
-      #  shell: bash
-      #  run: |
-      #    cd Assets/Plugins/TrafficSimulation/build/
-      #    # Create the symbolic link for the major version
-      #    ln -sf libReplicantDriveSim.1.0.0.dylib libReplicantDriveSim.1.dylib
-      #    # Create the symbolic link for the generic version
-      #    ln -sf libReplicantDriveSim.1.dylib libReplicantDriveSim.dylib
-      #    # Verify the symbolic links
-      #    ls -la
-
       - name: List build directory contents
-        run: ls -larth .
+        run: ls -larth Assets/Plugins/TrafficSimulation/build/
 
       - name: Extract Plugin Files
         run: |
-          # 1. Verify file existence and check its size
-          ls -larth TrafficSimulation-Plugin.tar
-          # 2. Check the file type
+          # Check the file type
           file TrafficSimulation-Plugin.tar
-          # Change to the directory
-          #cd ./TrafficSimulation-Plugin.tar
-          # List the contents to verify the tar file is there
-          ls -larth
-          # 3. Try to list the contents of the archive without extracting
-          #tar -xvf TrafficSimulation-Plugin.tar
+          # Verify file existence and check its size
+          ls -larth TrafficSimulation-Plugin.tar/
+          # Create build directory
           mkdir -p Assets/Plugins/TrafficSimulation/build
-          # 4. If all checks pass, attempt to extract the file
+          # If all checks pass, attempt to extract the file
           tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
+          # Remove tar archive
           rm -rf ./TrafficSimulation-Plugin.tar
 
       - name: List build directory contents
@@ -175,8 +145,7 @@ jobs:
           # Enables caching the Unity Hub and Editor installation for MacOS runners (default: false).
           # This can significantly reduce project build times if you have enough available cache on Github Actions.
           cacheUnityInstallationOnMac: true
-          buildName: libReplicantDriveSim
-          #buildName: libReplicantDriveSim-${{ steps.slug.outputs.sha8 }}
+          buildName: libReplicantDriveSim-${{ steps.slug.outputs.sha8 }}
           buildsPath: Builds
           # Format: EditorNamespace.BuilderClassName.StaticBuildMethod
           buildMethod: UnityBuilderAction.BuildScript.PerformMacOSBuild
@@ -185,11 +154,11 @@ jobs:
           androidExportType: "none"
           androidSymbolType: "none"
 
-      #- name: Create metadata file
-      #  run: |
-      #    echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
-      #    echo "Commit SHA: ${{ github.sha }}" >> metadata.txt
-      #    echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
+      - name: Create metadata file
+        run: |
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
+          echo "Commit SHA: ${{ github.sha }}" >> metadata.txt
+          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
       - name: Package Builds with metadata
         run: |
@@ -307,11 +276,9 @@ jobs:
           push: true
           # Support single multi-architecture Docker image 
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          #tags: |
-          #  ghcr.io/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
-          #  ghcr.io/${{ env.REPO_LOWER }}:latest
-          #  ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
-          #  ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:latest
+          tags: |
+            ghcr.io/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
+            ghcr.io/${{ env.REPO_LOWER }}:latest
+            ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           no-cache: true  # Set to true disable caching
