@@ -277,7 +277,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           no-cache: true  # Set to true disable caching
 
-      - name: Build Push Docker image to GitHub Container Registry
+      - name: Build and push Docker image to GitHub Container Registry
         uses: docker/build-push-action@v6
         with:
           context: .
