@@ -74,6 +74,7 @@ set_target_properties(ReplicantDriveSim PROPERTIES
 # MacOS specific settings
 if(APPLE)
     set_target_properties(ReplicantDriveSim PROPERTIES
+        SUFFIX ".so" # to override the default extension .dylib for shared libraries on macOS.
         MACOSX_RPATH ON
         INSTALL_NAME_DIR "@rpath"
     )
