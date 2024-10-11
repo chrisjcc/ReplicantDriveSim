@@ -72,7 +72,8 @@ class CMakeBuild(build_ext):
         print(f"Found library: {lib_file}")
 
         # Copy the library file to the correct location
-        target_file = "build/ReplicantDriveSim.cpython-38-darwin.so" #self.get_ext_fullpath(ext.name)
+        #target_file = "build/ReplicantDriveSim.cpython-38-darwin.so" #self.get_ext_fullpath(ext.name)
+        target_file = "build/libReplicantDriveSim.so"
         self.copy_file(lib_file, target_file)
 
 
@@ -86,7 +87,7 @@ sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
     name='ReplicantDriveSim',
-    version='0.1.2',
+    version='0.1.3',
     packages=find_packages(),
     author='Christian Contreras Campana',
     author_email='chrisjcc.physics@gmail.com',

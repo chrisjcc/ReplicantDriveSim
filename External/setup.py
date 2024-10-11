@@ -1,6 +1,7 @@
 import os
 import sys
 import glob
+import pathlib
 import subprocess
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -63,14 +64,22 @@ class CMakeBuild(build_ext):
 
         self.move_file(lib_path, dest_file)
 
+# Reading long description from README.md
+directory_path = pathlib.Path(__file__).parent.resolve()
+
+# Now we get the root directory of the Git repository
+long_description = (directory_path / "README.md").read_text(encoding="utf-8")
+
 sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
-    name='simulation',
-    version='0.1.0',
-    author='Your Name',
-    author_email='your.email@example.com',
+    name='ReplicantDriveSim',
+    version='0.1.5',
+    author='Christian Contreras Campana',
+    author_email='chrisjcc.physics@gmail.com',
     description='Traffic simulation package with C++ backend',
+    long_description=long_description,  # Adding long description
+    long_description_content_type='text/markdown',  # Tells PyPI it's markdown
     ext_modules=[CMakeExtension(
         'simulation',
         sourcedir=sourcedir
@@ -81,4 +90,11 @@ setup(
     package_data={
         '': ['*.so'],
     },
+    url='https://chrisjcc.github.io/ReplicantDriveSim/',  # Home-page
+    license='MIT',  # License type (update accordingly)
+    #install_requires=[  # Required dependencies
+    #    'numpy',        # Example dependency, add others as needed
+    #    'torch',        # Example dependency
+    #    'rllib'
+    #],
 )
