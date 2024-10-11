@@ -71,21 +71,21 @@ pip install --force-reinstall dist/simulation-*.whl
 ## Import the compiled C++ module
 import simulation
 
-## Create a traffic environment
-simulation = traffic_simulation.TrafficSimulation(2)
+## Create a traffic environment (2 vehicles and seed value 42)
+traffic_sim = simulation.Traffic(2, 42)
 
 ## Retrieve the current states of agents in the traffic environment
-states = simulation.get_agent_positions()
+states = traffic_sim.get_agent_positions()
 
 ## Display the states of agents in the traffic environment
 for agent, state in states.items():
     print(f"{agent} state: {state}")
 
 ## Advance the environment by one step
-simulation.step([1, 0], [[0.1, 0.2, 0.3], [0.0, 0.0, 0.0]])
+traffic_sim.step([1, 0], [[0.1, 0.2, 0.3], [0.0, 0.0, 0.0]])
 
 ## Update the states of agents in the traffic environment
-states = simulation.get_agent_positions()
+states = traffic_sim.get_agent_positions()
 
 ## Display the updated states of agents in the traffic environment
 for agent, state in states.items():
