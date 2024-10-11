@@ -12,6 +12,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
+# Define VERSION_INFO for the build
+# VERSION_INFO must be passed through CXXFLAGS from the setup.py
+if (VERSION_INFO)
+    add_definitions(-DVERSION_INFO="${VERSION_INFO}")
+endif()
+
 # Define EXPORT macro
 if(WIN32)
     add_definitions(-DBUILDING_DLL)
