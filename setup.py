@@ -3,7 +3,7 @@ import sys
 import glob
 import pathlib
 import subprocess
-from setuptools import setup, Extension
+from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 
 def get_git_root():
@@ -60,13 +60,14 @@ class CMakeBuild(build_ext):
 
 
         #lib_file = os.path.join(lib_dir, f"lib{ext.name}.so")
-        lib_file = os.path.join(lib_dir, "ReplicantDriveSim.cpython-38-darwin.so")
+        #lib_file = os.path.join(lib_dir, "ReplicantDriveSim.cpython-38-darwin.so")
+        lib_file = os.path.join(lib_dir, "libReplicantDriveSim.so")
 
         if not os.path.exists(lib_file):
             lib_file = os.path.join(lib_dir, f"lib{ext.name}.dylib")
 
         if not os.path.exists(lib_file):
-            raise RuntimeError(f"Could not find the built library in {lib_dir}")
+            raise RuntimeError(f"Could not find the built library in {lib_file}")
 
         print(f"Found library: {lib_file}")
 
@@ -76,21 +77,22 @@ class CMakeBuild(build_ext):
 
 
 # Reading long description from README.md
-#directory_path = pathlib.Path(__file__).parent.resolve()
+directory_path = pathlib.Path(__file__).parent.resolve()
+
 # Now we get the root directory of the Git repository
-#directory_path = get_git_root()
-#long_description = (directory_path / "README.md").read_text(encoding="utf-8")
+long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 
 sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
     name='ReplicantDriveSim',
-    version='0.1.0',
+    version='0.1.2',
+    packages=find_packages(),
     author='Christian Contreras Campana',
     author_email='chrisjcc.physics@gmail.com',
     description='Traffic simulation package with C++ backend',
-    #long_description=long_description,  # Adding long description
-    #long_description_content_type='text/markdown',  # Tells PyPI it's markdown
+    long_description=long_description,  # Adding long description
+    long_description_content_type='text/markdown',  # Tells PyPI it's markdown
     ext_modules=[CMakeExtension('ReplicantDriveSim', sourcedir=sourcedir)],
     cmdclass={'build_ext': CMakeBuild},
     zip_safe=False,
@@ -98,7 +100,7 @@ setup(
     package_data={
         '': ['*.so', '*.dylib'],
     },
-    url='https://github.com/chrisjcc/ReplicantDriveSim',  # Home-page
+    url='https://chrisjcc.github.io/ReplicantDriveSim/',  # Home-page
     license='MIT',  # License type (update accordingly)
     #install_requires=[  # Required dependencies
     #    'numpy',        # Example dependency, add others as needed
