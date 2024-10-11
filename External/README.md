@@ -69,7 +69,7 @@ pip install --force-reinstall dist/simulation-*.whl
 
 ```python
 ## Import the compiled C++ module
-import traffic_simulation
+import simulation
 
 ## Create a traffic environment
 simulation = traffic_simulation.TrafficSimulation(2)
