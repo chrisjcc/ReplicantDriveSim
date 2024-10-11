@@ -27,12 +27,12 @@ class CMakeBuild(build_ext):
                 '-DPYTHON_EXECUTABLE=' + sys.executable,
                 '-Dpybind11_DIR=' + pybind11_dir,
                 '-DCMAKE_BUILD_TYPE=' + ('Debug' if self.debug else 'Release'),
+                '-DVERSION_INFO={}'.format(self.distribution.get_version()),  # Pass VERSION_INFO directly
             ]
 
             build_args = ['--', '-j4']
 
             env = os.environ.copy()
-            env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''), self.distribution.get_version())
 
             # Change to build directory
             old_cwd = os.getcwd()
