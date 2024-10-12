@@ -6,10 +6,17 @@ project(simulation)
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 14)
 
-message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
+ message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
 
-# Set the output directory for the library
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+#if(NOT DEFINED CUSTOM_OUTPUT_DIR)
+#    set(CUSTOM_OUTPUT_DIR ${CMAKE_BINARY_DIR}/lib)
+#endif()
+
+# Use CMAKE_LIBRARY_OUTPUT_DIRECTORY
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    # Set the output directory for the library
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+endif()
 
 message(STATUS "CMAKE_LIBRARY_OUTPUT_DIRECTORY is ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
@@ -56,8 +63,11 @@ add_library(simulation_static STATIC ${SOURCE_FILES})
 pybind11_add_module(simulation ${SOURCE_FILES})
 
 # Set the output directory for the pybind11 module
+# Explicitly specify where to place the generated shared object file
 set_target_properties(simulation PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    #LIBRARY_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}" # NEW NOT INCLUDED IN THE ORIGINAL CODE
     PREFIX ""
 )
 
@@ -72,10 +82,14 @@ target_compile_options(simulation_static PRIVATE -Wall -Wextra)
 target_compile_options(simulation PRIVATE -Wall -Wextra)
 
 # Explicitly specify where to place the generated shared object file
+# Also update the properties for the shared library if it exists
 set_target_properties(simulation_static PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    #LIBRARY_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    #ARCHIVE_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    #RUNTIME_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
 )
 
 # Install the static library
