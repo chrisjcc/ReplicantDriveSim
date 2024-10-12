@@ -6,10 +6,14 @@ project(simulation)
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 14)
 
+if(NOT DEFINED CUSTOM_OUTPUT_DIR)
+    set(CUSTOM_OUTPUT_DIR ${CMAKE_BINARY_DIR}/lib)
+endif()
+
 message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
 
 # Set the output directory for the library
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR})
 
 message(STATUS "CMAKE_LIBRARY_OUTPUT_DIRECTORY is ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
@@ -57,7 +61,7 @@ pybind11_add_module(simulation ${SOURCE_FILES})
 
 # Set the output directory for the pybind11 module
 set_target_properties(simulation PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
     PREFIX ""
 )
 
@@ -73,9 +77,9 @@ target_compile_options(simulation PRIVATE -Wall -Wextra)
 
 # Explicitly specify where to place the generated shared object file
 set_target_properties(simulation_static PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
+    ARCHIVE_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
+    RUNTIME_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
 )
 
 # Install the static library
