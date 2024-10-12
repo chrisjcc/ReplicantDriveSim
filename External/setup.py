@@ -27,7 +27,7 @@ class CMakeBuild(build_ext):
                 '-DPYTHON_EXECUTABLE=' + sys.executable,
                 '-Dpybind11_DIR=' + pybind11_dir,
                 '-DCMAKE_BUILD_TYPE=' + ('Debug' if self.debug else 'Release'),
-                '-DVERSION_INFO={}'.format(self.distribution.get_version()),  # Pass VERSION_INFO directly
+                '-DVERSION_INFO={}'.format(self.distribution.get_version()), # Pass VERSION_INFO directly
             ]
 
             build_args = ['--', '-j4']
@@ -70,11 +70,12 @@ directory_path = pathlib.Path(__file__).parent.resolve()
 # Now we get the root directory of the Git repository
 long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 
+# Source directory
 sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
-    name='ReplicantDriveSim',
-    version='0.1.5',
+    name='simulation',
+    version='0.1.8',
     author='Christian Contreras Campana',
     author_email='chrisjcc.physics@gmail.com',
     description='Traffic simulation package with C++ backend',
