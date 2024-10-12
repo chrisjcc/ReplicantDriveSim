@@ -75,7 +75,11 @@ sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
     name='simulation',
+<<<<<<< Updated upstream
     version='0.1.8',
+=======
+    version='0.1.5',
+>>>>>>> Stashed changes
     author='Christian Contreras Campana',
     author_email='chrisjcc.physics@gmail.com',
     description='Traffic simulation package with C++ backend',

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.4...3.18)
 
 # Set project name
 project(ReplicantDriveSim VERSION 1.0.0 LANGUAGES CXX)
@@ -59,10 +59,10 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.h")
 
 # Create shared library
-add_library(ReplicantDriveSim SHARED ${SOURCES} ${HEADERS})
+add_library(simulation SHARED ${SOURCES} ${HEADERS})
 
 # Link against pybind11 and Python
-target_link_libraries(ReplicantDriveSim PRIVATE pybind11::module Python3::Python)
+target_link_libraries(simulation PRIVATE pybind11::module Python3::Python)
 
 # Set the build directory relative to the current source directory
 #set(BUILD_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
@@ -71,7 +71,7 @@ target_link_libraries(ReplicantDriveSim PRIVATE pybind11::module Python3::Python
 #file(MAKE_DIRECTORY ${BUILD_DIRECTORY})
 
 # Set output directory for the shared library
-#set_target_properties(ReplicantDriveSim PROPERTIES
+#set_target_properties(simulation PROPERTIES
 #    LIBRARY_OUTPUT_DIRECTORY "${BUILD_DIRECTORY}"
 #    VERSION ${PROJECT_VERSION}
 #    SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -79,7 +79,7 @@ target_link_libraries(ReplicantDriveSim PRIVATE pybind11::module Python3::Python
 
 # MacOS specific settings
 if(APPLE)
-    set_target_properties(ReplicantDriveSim PROPERTIES
+    set_target_properties(simulation PROPERTIES
         SUFFIX ".so" # to override the default extension .dylib for shared libraries on macOS.
         MACOSX_RPATH ON
         INSTALL_NAME_DIR "@rpath"
@@ -88,6 +88,6 @@ if(APPLE)
     # Find and link against Python framework
     find_library(PYTHON_LIBRARY NAMES Python PATHS ${Python3_LIBRARY_DIRS})
     if(PYTHON_LIBRARY)
-        target_link_libraries(ReplicantDriveSim PRIVATE ${PYTHON_LIBRARY})
+        target_link_libraries(simulation PRIVATE ${PYTHON_LIBRARY})
     endif()
 endif()

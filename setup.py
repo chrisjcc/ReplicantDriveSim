@@ -1,20 +1,11 @@
 import os
+import re
 import sys
 import glob
 import pathlib
 import subprocess
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
-
-def get_git_root():
-    try:
-        # Run 'git rev-parse --show-toplevel' to get the root directory of the git repo
-        git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], 
-                                           universal_newlines=True).strip()
-        return pathlib.Path(git_root)
-    except subprocess.CalledProcessError:
-        # Handle case where the script is not inside a Git repository
-        return pathlib.Path(__file__).parent.resolve()
 
 
 class CMakeExtension(Extension):
@@ -25,56 +16,57 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     def run(self):
         try:
-            out = subprocess.check_output(['cmake', '--version'])
-        except OSError:
-            raise RuntimeError(
-                "CMake must be installed to build the following extensions: " +
-                ", ".join(e.name for e in self.extensions))
+            sourcedir = self.extensions[0].sourcedir
+            build_temp = os.path.abspath(self.build_temp)
+            if not os.path.exists(build_temp):
+                os.makedirs(build_temp)
 
-        for ext in self.extensions:
-            self.build_extension(ext)
+            print(f"Build temp directory: {build_temp}")
 
-    def build_extension(self, ext):
-        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        cmake_args = [
-            #f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}',
-            f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={os.path.join(ext.sourcedir, "Assets", "Plugins", "TrafficSimulation", "build")}'
-            f'-DPYTHON_EXECUTABLE={sys.executable}',
-            f'-DCMAKE_BUILD_TYPE={"Debug" if self.debug else "Release"}'
-        ]
+            # Get the pybind11 directory dynamically
+            pybind11_dir = subprocess.check_output(['python3', '-m', 'pybind11', '--cmakedir']).decode().strip()
 
-        build_temp = os.path.join(self.build_temp, ext.name)
-        if not os.path.exists(build_temp):
-            os.makedirs(build_temp)
+            cmake_args = [
+                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + os.path.join(build_temp, 'lib'),
+                '-DPYTHON_EXECUTABLE=' + sys.executable,
+                '-Dpybind11_DIR=' + pybind11_dir,
+                '-DCMAKE_BUILD_TYPE=' + ('Debug' if self.debug else 'Release'),
+                '-DVERSION_INFO={}'.format(self.distribution.get_version()),  # Pass VERSION_INFO directly
+            ]
 
+            build_args = ['--', '-j4']
 
-        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=build_temp)
-        subprocess.check_call(['cmake', '--build', '.'], cwd=build_temp)
+            env = os.environ.copy()
 
-        print(f"Build temp directory: {build_temp}")
-        print(f"Extension directory: {extdir}")
+            # Change to build directory
+            old_cwd = os.getcwd()
+            os.chdir(build_temp)
+            try:
+                subprocess.check_call(['cmake', str(sourcedir)] + cmake_args, env=env)
+                subprocess.check_call(['cmake', '--build', '.'] + build_args)
+            finally:
+                # Restore the original working directory
+                os.chdir(old_cwd)
+        except OSError as e:
+            print('Unable to build extension: {}'.format(e))
+            raise e
 
-        # Look for the built library in the correct location
-        #lib_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Assets', 'Plugins', 'TrafficSimulation', 'build')
-        lib_dir = os.path.join('/Users/christiancontrerascampana/Desktop/project/unity_traffic_simulation/reduce_git_lfs/production_ready/ReplicantDriveSim/Assets/Plugins/TrafficSimulation/build')
+        # Move the built library to the proper location
+        # Flexible for simulation.cpython-39-darwin.so or simulation.cpython-39-aarch64-linux-gnu.so
+        # Use glob in order to expand out the use of a wildcard "*" and extract the actual name of the file
+        lib_path = glob.glob(os.path.join(build_temp, 'lib', 'libsimulation*.so'))[0]
 
+        # Ensure destination directory exists
+        dest_path = os.path.dirname(self.get_ext_fullpath('simulation'))
+        if not os.path.exists(dest_path):
+            os.makedirs(dest_path)
 
-        #lib_file = os.path.join(lib_dir, f"lib{ext.name}.so")
-        #lib_file = os.path.join(lib_dir, "ReplicantDriveSim.cpython-38-darwin.so")
-        lib_file = os.path.join(lib_dir, "libReplicantDriveSim.so")
+        # Correct destination filename
+        dest_file = self.get_ext_fullpath('simulation')
+        if os.path.exists(dest_file):
+            os.remove(dest_file)  # Remove if it already exists to avoid permission issues
 
-        if not os.path.exists(lib_file):
-            lib_file = os.path.join(lib_dir, f"lib{ext.name}.dylib")
-
-        if not os.path.exists(lib_file):
-            raise RuntimeError(f"Could not find the built library in {lib_file}")
-
-        print(f"Found library: {lib_file}")
-
-        # Copy the library file to the correct location
-        #target_file = "build/ReplicantDriveSim.cpython-38-darwin.so" #self.get_ext_fullpath(ext.name)
-        target_file = "build/libReplicantDriveSim.so"
-        self.copy_file(lib_file, target_file)
+        self.move_file(lib_path, dest_file)
 
 
 # Reading long description from README.md
@@ -86,21 +78,28 @@ long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
-    name='ReplicantDriveSim',
-    version='0.1.3',
-    packages=find_packages(),
+    name='simulation',
+    version="0.1.8",
     author='Christian Contreras Campana',
     author_email='chrisjcc.physics@gmail.com',
     description='Traffic simulation package with C++ backend',
     long_description=long_description,  # Adding long description
     long_description_content_type='text/markdown',  # Tells PyPI it's markdown
-    ext_modules=[CMakeExtension('ReplicantDriveSim', sourcedir=sourcedir)],
+    ext_modules=[CMakeExtension(
+        'simulation',
+        sourcedir=sourcedir
+    )],
     cmdclass={'build_ext': CMakeBuild},
+    packages=find_packages(exclude=['rl']),
+    package_data={
+        '': ['*.so'],
+    },
+    #package_data={
+    #    'ReplicantDriveSim': ['*.so', '*.dylib'],
+    #},
+    include_package_data=True,
     zip_safe=False,
     python_requires='>=3.6',
-    package_data={
-        '': ['*.so', '*.dylib'],
-    },
     url='https://chrisjcc.github.io/ReplicantDriveSim/',  # Home-page
     license='MIT',  # License type (update accordingly)
     #install_requires=[  # Required dependencies
