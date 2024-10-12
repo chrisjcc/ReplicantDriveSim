@@ -1,10 +1,9 @@
 import os
 import sys
 import glob
-import shutil
 import pathlib
 import subprocess
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
 class CMakeExtension(Extension):
@@ -13,9 +12,26 @@ class CMakeExtension(Extension):
         self.sourcedir = os.path.abspath(sourcedir)
 
 class CMakeBuild(build_ext):
+    #def get_ext_filename(self, ext_name):
+    #    # Override the default extension
+    #    filename = super().get_ext_filename(ext_name)
+    #    if sys.platform == "darwin":
+    #        # On macOS, use .dylib instead of .so
+    #        return filename.replace(".so", ".dylib")
+    #    return filename
+
     def run(self):
+        # Set the MACOSX_DEPLOYMENT_TARGET environment variable
+        if sys.platform == "darwin":
+            os.environ["MACOSX_DEPLOYMENT_TARGET"] = "14.0"
+            # Use the correct file extension based on the platform
+            #self.file_extension = ".so" #".dylib"
+        #else:
+        #    self.file_extension = ".so"
+
+        # Check if CMake is installed
         try:
-            out = subprocess.check_output(['cmake', '--version'])
+            subprocess.check_output(['cmake', '--version'])
         except OSError:
             raise RuntimeError("CMake must be installed to build the following extensions: " +
                                ", ".join(e.name for e in self.extensions))
@@ -24,83 +40,75 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        print("TODO: extdir: ", extdir)
-        print("TODO: build_temp: ", self.build_temp)
-        print("TODO: ext.name: ", ext.name)
-        build_temp = os.path.join(self.build_temp, ext.name)
-        print("TODO: build_temp: ", self.build_temp)
-
+        sourcedir = ext.sourcedir
+        build_temp = os.path.abspath(self.build_temp)
         if not os.path.exists(build_temp):
             os.makedirs(build_temp)
 
         # Get the pybind11 directory dynamically
-        #pybind11_dir = subprocess.check_output(['python3', '-m', 'pybind11', '--cmakedir']).decode().strip()
+        pybind11_dir = subprocess.check_output(['python3', '-m', 'pybind11', '--cmakedir']).decode().strip()
 
-        # ADD: MACOSX_DEPLOYMENT_TARGET=14
         cmake_args = [
-                f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}',
-                #f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={build_temp}',
-                '-DPYTHON_EXECUTABLE=' + sys.executable,
-                #'-Dpybind11_DIR=' + pybind11_dir,
-                '-DCMAKE_BUILD_TYPE=' + ('Debug' if self.debug else 'Release'),
-                '-DVERSION_INFO={}'.format(self.distribution.get_version()), # Pass VERSION_INFO directly
+            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + os.path.join(build_temp, 'lib'),
+            '-DPYTHON_EXECUTABLE=' + sys.executable,
+            '-Dpybind11_DIR=' + pybind11_dir,
+            '-DCMAKE_BUILD_TYPE=' + ('Debug' if self.debug else 'Release'),
+            '-DVERSION_INFO={}'.format(self.distribution.get_version()),
         ]
 
-        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=build_temp)
-        subprocess.check_call(['cmake', '--build', '.'], cwd=build_temp)
+        build_args = ['--', '-j4']
 
-        # Copy the built library to the correct location
-        print("TODO: GLOB: ", glob.glob(os.path.join(extdir, '*')))
+        env = os.environ.copy()
 
-        built_lib = glob.glob(os.path.join(extdir, 'lib*simulation*.so')) or \
-        glob.glob(os.path.join(extdir, 'lib*simulation*.dylib'))
-        
-        if not built_lib:
-            raise RuntimeError("Built library not found")
-        
-        built_lib = built_lib[0]
+        # Change to build directory
+        old_cwd = os.getcwd()
+        os.chdir(build_temp)
+        try:
+            subprocess.check_call(['cmake', str(sourcedir)] + cmake_args, env=env)
+            subprocess.check_call(['cmake', '--build', '.'] + build_args)
+        finally:
+            os.chdir(old_cwd)
 
-        dest_path = self.get_ext_fullpath(ext.name)
-        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-        print(f"Copied {built_lib} to {dest_path}")
-        shutil.copy(built_lib, dest_path)
+        # Move the built library to the proper location
+        print(glob.glob(os.path.join(build_temp, 'lib', '*')))
+        lib_path = glob.glob(os.path.join(build_temp, 'lib', 'simulation*.so'))[0] # TODO: .so
+        #lib_path = glob.glob(os.path.join(build_temp, 'lib', f'simulation*{self.file_extension}'))[0] # TODO: .so
+        dest_path = os.path.dirname(self.get_ext_fullpath(ext.name))
 
+        if not os.path.exists(dest_path):
+            os.makedirs(dest_path)
+
+        dest_file = self.get_ext_fullpath(ext.name)
+        if os.path.exists(dest_file):
+            os.remove(dest_file)  # Avoid permission issues
+
+        self.move_file(lib_path, dest_file)
 
 # Reading long description from README.md
 directory_path = pathlib.Path(__file__).parent.resolve()
-
-# Now we get the root directory of the Git repository
 long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 
 # Source directory
 sourcedir = os.environ.get('TRAFFIC_SIM_SOURCEDIR', '/app/repo/External')
 
 setup(
-    name='simulation',
+    name='ReplicantDriveSim',
     version='0.1.8',
     author='Christian Contreras Campana',
     author_email='chrisjcc.physics@gmail.com',
     description='Traffic simulation package with C++ backend',
-    long_description=long_description,  # Adding long description
-    long_description_content_type='text/markdown',  # Tells PyPI it's markdown
-    ext_modules=[CMakeExtension(
-        'simulation',
-        sourcedir=sourcedir
-    )],
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    ext_modules=[CMakeExtension('simulation', sourcedir=sourcedir)],
     cmdclass={'build_ext': CMakeBuild},
-    packages=find_packages(exclude=['rl']),
-    include_package_data=True,
     zip_safe=False,
     python_requires='>=3.6',
-    package_data={
-        '': ['*.so', '*.dylib'],
-    },
-    url='https://chrisjcc.github.io/ReplicantDriveSim/',  # Home-page
-    license='MIT',  # License type (update accordingly)
-    #install_requires=[  # Required dependencies
-    #    'numpy',        # Example dependency, add others as needed
-    #    'torch',        # Example dependency
+    package_data={'': ['*.so', '*.dylib']},
+    url='https://chrisjcc.github.io/ReplicantDriveSim/',
+    license='MIT',
+    #install_requires=[  # Add required dependencies as needed
+    #    'numpy', 
+    #    'torch', 
     #    'rllib'
     #],
 )

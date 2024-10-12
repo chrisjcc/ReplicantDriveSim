@@ -6,17 +6,10 @@ project(simulation)
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 14)
 
- message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
+message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
 
-#if(NOT DEFINED CUSTOM_OUTPUT_DIR)
-#    set(CUSTOM_OUTPUT_DIR ${CMAKE_BINARY_DIR}/lib)
-#endif()
-
-# Use CMAKE_LIBRARY_OUTPUT_DIRECTORY
-if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    # Set the output directory for the library
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
-endif()
+# Set the output directory for the library
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 message(STATUS "CMAKE_LIBRARY_OUTPUT_DIRECTORY is ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
@@ -50,9 +43,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/simulation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/traffic.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/vehicle.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp
-
-)
+    ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp)
 
 message(STATUS "SOURCE_FILES is ${SOURCE_FILES}")
 
@@ -62,12 +53,14 @@ add_library(simulation_static STATIC ${SOURCE_FILES})
 # Add the pybind11 module
 pybind11_add_module(simulation ${SOURCE_FILES})
 
+# Override the default .dylib extension with .so on macOS
+#if(APPLE)
+#    set_target_properties(simulation PROPERTIES SUFFIX ".so")
+#endif()
+
 # Set the output directory for the pybind11 module
-# Explicitly specify where to place the generated shared object file
 set_target_properties(simulation PROPERTIES
-    #LIBRARY_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}" # NEW NOT INCLUDED IN THE ORIGINAL CODE
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     PREFIX ""
 )
 
@@ -82,14 +75,10 @@ target_compile_options(simulation_static PRIVATE -Wall -Wextra)
 target_compile_options(simulation PRIVATE -Wall -Wextra)
 
 # Explicitly specify where to place the generated shared object file
-# Also update the properties for the shared library if it exists
 set_target_properties(simulation_static PROPERTIES
-    #LIBRARY_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
-    #ARCHIVE_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
-    #RUNTIME_OUTPUT_DIRECTORY ${CUSTOM_OUTPUT_DIR}
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
 
 # Install the static library
