@@ -6,6 +6,10 @@
 #include "vehicle.h"
 #include "traffic.h"
 
+#ifndef VERSION_INFO
+#define VERSION_INFO "dev"
+#endif
+
 namespace py = pybind11;
 
 PYBIND11_MODULE(simulation, m) {
