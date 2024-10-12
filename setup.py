@@ -4,7 +4,7 @@ import glob
 import shutil
 import pathlib
 import subprocess
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
 class CMakeExtension(Extension):
@@ -89,6 +89,8 @@ setup(
         sourcedir=sourcedir
     )],
     cmdclass={'build_ext': CMakeBuild},
+    packages=find_packages(exclude=['rl']),
+    include_package_data=True,
     zip_safe=False,
     python_requires='>=3.6',
     package_data={
