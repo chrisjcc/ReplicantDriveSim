@@ -304,3 +304,16 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.version }}
+
+      - name: Build and publish PyPi package
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          TRAFFIC_SIM_SOURCEDIR=$PWD/Assets/Plugins/TrafficSimulation/ python setup.py sdist bdist_wheel
+          twine upload dist/*
+
+      - name: Verify PyPi package installation
+        run: |
+          pip install ReplicantDriveSim==0.1.8
+          pip show ReplicantDriveSim
