@@ -8,7 +8,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(simulation, m) {
+PYBIND11_MODULE(replicantdrivesim, m) {
     m.doc() = "Traffic simulation module";
 
     // Bind the Vehicle class
