@@ -8,8 +8,15 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(simulation, m) {
+PYBIND11_MODULE(replicantdrivesim, m) {
     m.doc() = "Traffic simulation module";
+
+    // Add version information
+    #ifdef VERSION_INFO
+        m.attr("__version__") = VERSION_INFO;
+    #else
+        m.attr("__version__") = "dev";
+    #endif
 
     // Bind the Vehicle class
     py::class_<Vehicle>(m, "Vehicle")
