@@ -98,8 +98,16 @@ class CMakeBuild(build_ext):
 directory_path = pathlib.Path(__file__).parent.resolve()
 long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 
-# Source directory
-sourcedir = os.environ.get("TRAFFIC_SIM_SOURCEDIR", "/app/repo/External")
+# Source directory (fall back to current directory if TRAFFIC_SIM_SOURCEDIR is not set)
+sourcedir = os.environ.get(
+    "TRAFFIC_SIM_SOURCEDIR", 
+    os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), 
+        "Assets", 
+        "Plugins", 
+        "TrafficSimulation" 
+    )
+)
 
 # Find all unity related files
 unity_executable_files = package_files(os.path.join("Builds", "StandaloneOSX"))
