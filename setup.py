@@ -94,7 +94,7 @@ sourcedir = os.environ.get("TRAFFIC_SIM_SOURCEDIR", "/app/repo/External")
 
 setup(
     name="ReplicantDriveSim",
-    version="0.1.9",
+    version="0.2.0",
     author="Christian Contreras Campana",
     author_email="chrisjcc.physics@gmail.com",
     description="Traffic simulation package with C++ backend",
