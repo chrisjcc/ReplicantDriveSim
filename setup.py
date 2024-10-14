@@ -115,7 +115,7 @@ unity_executable_files = package_files(os.path.join("Builds", "StandaloneOSX"))
 
 setup(
     name="ReplicantDriveSim",
-    version="0.2.0",
+    version="0.2.1",
     author="Christian Contreras Campana",
     author_email="chrisjcc.physics@gmail.com",
     description="Unity Traffic Simulation",
