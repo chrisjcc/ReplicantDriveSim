@@ -64,9 +64,7 @@ class CMakeBuild(build_ext):
         lib_paths = glob.glob(
             os.path.join(
                 build_temp,
-                #f"replicantdrivesim_pypi{self.file_extension}"
-                #"libReplicantDriveSim.so"
-                "replicantdrivesim_pypi.cpython-*-x86_64-linux-gnu.so"
+                f"replicantdrivesim_pypi{self.file_extension}"
             )
         )
 
