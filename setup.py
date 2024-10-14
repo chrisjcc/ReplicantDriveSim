@@ -60,6 +60,7 @@ class CMakeBuild(build_ext):
             os.chdir(old_cwd)
 
         # Move the built library (produced by CMake) to the correct location
+        print("TODO: ", glob.glob(os.path.join(build_temp, "*")))
         lib_paths = glob.glob(
             os.path.join(
                 build_temp,
