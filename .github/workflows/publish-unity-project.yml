@@ -43,8 +43,8 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install dependencies
-        run: pip install --upgrade setuptools wheel twine pybind11
+      - name: Install pybind11
+        run: pip install pybind11
 
       - name: Compile C++ code
         working-directory: Assets/Plugins/TrafficSimulation
@@ -304,6 +304,9 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.version }}
+
+      - name: Install dependencies
+        run: pip install --upgrade setuptools wheel twine pybind11
 
       - name: Build and publish PyPi package
         env:
