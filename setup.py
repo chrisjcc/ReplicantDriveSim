@@ -4,8 +4,16 @@ import pathlib
 import subprocess
 import sys
 
-from setuptools import Extension, setup
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
+
+def package_files(directory):
+    """Recursively gather all files in a directory."""
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        for filename in filenames:
+            paths.append(os.path.join('..', path, filename))
+    return paths
 
 
 class CMakeExtension(Extension):
@@ -93,25 +101,37 @@ long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 # Source directory
 sourcedir = os.environ.get("TRAFFIC_SIM_SOURCEDIR", "/app/repo/External")
 
+# Find all unity related files
+unity_executable_files = package_files(os.path.join("Builds", "StandaloneOSX"))
+
+
 setup(
     name="ReplicantDriveSim",
     version="0.2.0",
     author="Christian Contreras Campana",
     author_email="chrisjcc.physics@gmail.com",
-    description="Traffic simulation package with C++ backend",
+    description="Unity Traffic Simulation",
     long_description=long_description,
     long_description_content_type="text/markdown",
     # Name should match the module name defined in the C++ code, i.e. pybind11PYBIND11_MODULE(name, m)
     ext_modules=[CMakeExtension(name="replicantdrivesim", sourcedir=sourcedir)],
     cmdclass={"build_ext": CMakeBuild},
+    packages=find_packages(exclude=['tests']),
+    package_data={
+        "replicantdrivesim": ["*.so", "*.dylib"],
+        # Include Unity executable files
+        "": ["configs/*.yaml"] + unity_executable_files,
+    },
+    include_package_data=True,
     zip_safe=False,
     python_requires=">=3.6",
-    package_data={"": ["*.so", "*.dylib"]},
     url="https://chrisjcc.github.io/ReplicantDriveSim/",
     license="MIT",
-    # install_requires=[  # Add required dependencies as needed
+    #install_requires=[
     #    'numpy',
-    #    'torch',
+    #    'pyyaml',
+    #    'gymnasium',
+    #    'ray',
     #    'rllib'
-    # ],
+    #],
 )

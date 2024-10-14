@@ -144,3 +144,6 @@ install(TARGETS ${PYPI_TARGET}
 install(FILES ${CMAKE_SOURCE_DIR}/include/simulation.h
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
+# Install Unity files (like the macOS .app)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Builds/macOS
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/Builds/StandaloneOSX)
