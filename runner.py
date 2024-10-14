@@ -26,7 +26,7 @@ def run_episodes(env, num_episodes):
                 # continuous_actions[1] = 0.1  # Some other modification
                 # continuous_actions[2] = 0.0  # Another modification
 
-                actions[agent] = (discrete_action, continuous_action)
+                actions[agent] = (discrete_action, continuous_actions)
 
             # Print the modified actions
             print(f"actions: {actions}")
