@@ -90,12 +90,20 @@ class CMakeBuild(build_ext):
 directory_path = pathlib.Path(__file__).parent.resolve()
 long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 
-# Source directory
-sourcedir = os.environ.get("TRAFFIC_SIM_SOURCEDIR", "/app/repo/External")
+# Source directory (fall back to the current directory if TRAFFIC_SIM_SOURCEDIR is not set)
+sourcedir = os.environ.get(
+    "TRAFFIC_SIM_SOURCEDIR", 
+    os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), 
+        "Assets", 
+        "Plugins", 
+        "TrafficSimulation" 
+    )
+)
 
 setup(
     name="ReplicantDriveSim",
-    version="0.2.0",
+    version="0.2.1",
     author="Christian Contreras Campana",
     author_email="chrisjcc.physics@gmail.com",
     description="Traffic simulation package with C++ backend",
