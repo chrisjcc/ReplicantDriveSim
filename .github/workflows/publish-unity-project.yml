@@ -306,33 +306,33 @@ jobs:
           docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.version }}
 
 
-build-and-publish-pypi:
-  needs: build-and-push-image
-  runs-on: macos-latest
-  permissions:
-    contents: read
-    packages: write
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4    
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-
-    - name: Install dependencies
-      run: pip install --upgrade setuptools wheel twine pybind11
-
-    - name: Build and publish PyPi package
-      env:
-        TWINE_USERNAME: "__token__"
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        TRAFFIC_SIM_SOURCEDIR=$PWD/Assets/Plugins/TrafficSimulation/ python setup.py sdist bdist_wheel
-        twine upload dist/*
-
-    - name: Verify PyPi package installation
-      run: |
-        pip install ReplicantDriveSim==0.1.9
-        pip show ReplicantDriveSim
+  build-and-publish-pypi:
+    needs: build-and-push-image
+    runs-on: macos-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4    
+  
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+  
+      - name: Install dependencies
+        run: pip install --upgrade setuptools wheel twine pybind11
+  
+      - name: Build and publish PyPi package
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          TRAFFIC_SIM_SOURCEDIR=$PWD/Assets/Plugins/TrafficSimulation/ python setup.py sdist bdist_wheel
+          twine upload dist/*
+  
+      - name: Verify PyPi package installation
+        run: |
+          pip install ReplicantDriveSim==0.1.9
+          pip show ReplicantDriveSim
