@@ -46,7 +46,6 @@ class CMakeBuild(build_ext):
 
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + build_temp,
-            "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_BUILD_TYPE=" + ("Debug" if self.debug else "Release"),
             "-DVERSION_INFO={}".format(self.distribution.get_version()),
         ]
@@ -62,7 +61,10 @@ class CMakeBuild(build_ext):
 
         # Move the built library (produced by CMake) to the correct location
         lib_paths = glob.glob(
-            os.path.join(build_temp, f"libReplicantDriveSim*{self.file_extension}")
+            os.path.join(
+                build_temp,
+                f"replicantdrivesim_pypi{self.file_extension}"
+            )
         )
 
         if lib_paths:  # Check if the glob result is not empty
@@ -92,7 +94,7 @@ sourcedir = os.environ.get("TRAFFIC_SIM_SOURCEDIR", "/app/repo/External")
 
 setup(
     name="ReplicantDriveSim",
-    version="0.1.8",
+    version="0.1.9",
     author="Christian Contreras Campana",
     author_email="chrisjcc.physics@gmail.com",
     description="Traffic simulation package with C++ backend",
