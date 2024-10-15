@@ -320,18 +320,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
-          path: ./
+          path: ./replicantdrivesim
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
-          rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          unzip replicantdrivesim/macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          rm replicantdrivesim/macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
 
       - name: Move build directory to replicantdrivesim
         run: |
-          # Move the build directory from Assets to replicantdrivesim
-          mv Assets/Plugins/TrafficSimulation/build replicantdrivesim/
-          cp replicantdrivesim/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+          # Copy and rename binary executable 
+          cp Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
 
       - name: Set up Python
         uses: actions/setup-python@v4
