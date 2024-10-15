@@ -349,6 +349,10 @@ jobs:
           ls -larth replicantdrivesim/
           ls -larth replicantdrivesim/build/
           cp replicantdrivesim/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+          ls -larth replicantdrivesim/
+          file replicantdrivesim/replicantdrivesim.so
+          ls -larth replicantdrivesim/Builds/StandaloneOSX/libReplicantDriveSim.app/Contents/PlugIns/
+          file replicantdrivesim/Builds/StandaloneOSX/libReplicantDriveSim.app/Contents/MacOS/UnityReplicantDriveSim
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -373,5 +377,5 @@ jobs:
   
       - name: Verify PyPi package installation
         run: |
-          pip install ReplicantDriveSim==0.2.1
+          pip install ReplicantDriveSim
           pip show ReplicantDriveSim
