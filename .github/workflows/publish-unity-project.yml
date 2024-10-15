@@ -307,7 +307,7 @@ jobs:
 
 
   build-and-publish-pypi:
-    needs: build-and-push-image
+    needs: [build-unity]
     runs-on: macos-latest
     permissions:
       contents: read
