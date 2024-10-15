@@ -324,7 +324,6 @@ jobs:
 
       - name: Extract Unity Build Artifact
         run: |
-          ./
           unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip -d replicantdrivesim
           rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
 
