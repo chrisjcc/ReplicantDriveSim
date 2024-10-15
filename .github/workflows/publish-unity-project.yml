@@ -320,12 +320,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
-          path: ./replicantdrivesim
+          path: ./
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip replicantdrivesim/macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
-          rm replicantdrivesim/macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          ./
+          unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip -d replicantdrivesim
+          rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
 
       - name: Move build directory to replicantdrivesim
         run: |
