@@ -1,10 +1,12 @@
 ---
 layout: default
-title: "Traffic Simulation"
+title: "Traffic Architecture"
 permalink: /External/
 ---
 
 # Build and Install the Traffic Simulation Library
+
+<img src="https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim_Raycasting.png" alt="Nissan GTR" width="800" height="600"/>
 
 ## Verifying Git LFS Installation
 
@@ -67,23 +69,23 @@ pip install --force-reinstall dist/simulation-*.whl
 
 ```python
 ## Import the compiled C++ module
-import traffic_simulation
+import simulation
 
-## Create a traffic environment
-simulation = traffic_simulation.TrafficSimulation(2)
+## Create a traffic environment (2 vehicles and seed value 42)
+traffic_sim = simulation.Traffic(2, 42)
 
 ## Retrieve the current states of agents in the traffic environment
-states = simulation.get_agent_positions()
+states = traffic_sim.get_agent_positions()
 
 ## Display the states of agents in the traffic environment
 for agent, state in states.items():
     print(f"{agent} state: {state}")
 
 ## Advance the environment by one step
-simulation.step([1, 0], [[0.1, 0.2, 0.3], [0.0, 0.0, 0.0]])
+traffic_sim.step([1, 0], [[0.1, 0.2, 0.3], [0.0, 0.0, 0.0]])
 
 ## Update the states of agents in the traffic environment
-states = simulation.get_agent_positions()
+states = traffic_sim.get_agent_positions()
 
 ## Display the updated states of agents in the traffic environment
 for agent, state in states.items():
@@ -197,3 +199,15 @@ If you only need shell access without port mapping, you can run the container in
 docker run -it chrisjcc/replicantdrivesim /bin/bash
 ```
 This command starts the container and opens a Bash shell, allowing you to interact directly with the container environment.
+
+
+### Create a Release
+Follow the instructions below to generate a Git tag, which will trigger a software release.
+
+```shell
+git fetch --tags  # Retrieve all tags from the remote repository
+git tag -a v0.1.0 -m "Version 0.1.0"  # Create a new annotated tag for version 0.1.0
+git push origin v0.1.0  # Push the newly created tag to the remote repository
+git fetch --tags  # Refresh the local tags list
+git tag -l  # List all tags to verify the new tag is present
+```

@@ -1,10 +1,9 @@
 fileFormatVersion: 2
-guid: 25af27d65608145b4aee85621465c82e
+guid: f3fe7e814b8184579959d5a8a7467ad8
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences:
-  - roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
+  defaultReferences: []
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

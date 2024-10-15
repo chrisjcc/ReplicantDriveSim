@@ -3,16 +3,19 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Road
+  - TrafficAgent
+  - RoadBoundary
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Road
   - Water
   - UI
-  - 
-  - 
+  - RoadBoundary
+  - TrafficAgent
   - 
   - 
   - 

@@ -132,7 +132,7 @@ GameObject:
   m_Component:
   - component: {fileID: 102826275}
   - component: {fileID: 102826274}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: RoadManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -148,10 +148,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 102826273}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 25af27d65608145b4aee85621465c82e, type: 3}
+  m_Script: {fileID: 11500000, guid: f3fe7e814b8184579959d5a8a7467ad8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
+  roadPhysicsMaterial: {fileID: 0}
+  roadLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  trafficAgentLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  singleRoadWidth: 15
+  roadLength: 3250
+  boundaryHeight: 5
+  medianWidth: 5
 --- !u!4 &102826275
 Transform:
   m_ObjectHideFlags: 0
@@ -176,27 +187,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 257869386}
-  - component: {fileID: 257869385}
-  m_Layer: 0
+  - component: {fileID: 257869387}
+  m_Layer: 3
   m_Name: TrafficSimulationManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &257869385
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 257869384}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 447940029cf1f4d9cac51dd2912e4db7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentPrefab: {fileID: 5350370327471573518, guid: f5a500c7af1c6474187c346a01732844, type: 3}
 --- !u!4 &257869386
 Transform:
   m_ObjectHideFlags: 0
@@ -212,6 +210,31 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &257869387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 257869384}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bd63a84cb8ab439ba5a902a73f51f97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentPrefab: {fileID: 4109849008543767089, guid: d82982a893aaf4a29b195b5d5b95b7fb, type: 3}
+  initialAgentCount: 2
+  seed: 42
+  simTimeStep: 0.04
+  maxVelocity: 60
+  numberOfRays: 15
+  rayLength: 200
+  raycastAngle: 90
+  debugVisualization: 0
+  rayHitColor: {r: 1, g: 0, b: 0, a: 1}
+  rayMissColor: {r: 1, g: 1, b: 1, a: 1}
+  spawnAreaSize: 2
+  MaxSteps: 2000
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -317,7 +340,8 @@ GameObject:
   - component: {fileID: 963194228}
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
-  m_Layer: 0
+  - component: {fileID: 963194230}
+  m_Layer: 3
   m_Name: Main Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -331,7 +355,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0
@@ -371,7 +395,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 9
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -392,12 +416,29 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 1, z: 200}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &963194230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6688afc185d9f4971966791d65412c65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetObject: {fileID: 0}
+  cameraHeight: 300
+  cameraDistance: 5
+  smoothSpeed: 5
+  cameraXPosition: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
