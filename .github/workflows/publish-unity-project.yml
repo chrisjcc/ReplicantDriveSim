@@ -315,7 +315,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4    
-  
+
+      - name: Download Unity Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
+          path: ./
+
+      - name: Extract Unity Build Artifact
+        run: |
+          unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+
+      - name: Move build directory to replicantdrivesim
+        run: |
+          # Move the build directory from Assets to replicantdrivesim
+          mv Assets/Plugins/TrafficSimulation/build replicantdrivesim/
+          cp replicantdrivesim/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -324,12 +341,17 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade setuptools wheel twine pybind11
   
-      - name: Build and publish PyPi package
+      - name: Build Python package
+        run: |
+          # Build the Python wheel and source distribution
+          python setup.py sdist bdist_wheel
+    
+      - name: Upload to PyPI to publish Python package
         env:
           TWINE_USERNAME: "__token__"
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          python setup.py sdist bdist_wheel
+          # Upload the package to PyPI
           twine upload dist/*
   
       - name: Verify PyPi package installation
