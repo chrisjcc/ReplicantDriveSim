@@ -344,7 +344,10 @@ jobs:
 
       - name: Copy and Rename Executable
         run: |
-          # Copy and rename binary executable 
+          # Copy and rename binary executable
+          ls -larth
+          ls -larth replicantdrivesim/
+          ls -larth replicantdrivesim/build/
           cp replicantdrivesim/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
 
       - name: Set up Python
