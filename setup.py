@@ -19,7 +19,7 @@ unity_executable_files = package_files(os.path.join("replicantdrivesim", "Builds
 
 setup(
     name="ReplicantDriveSim",
-    version="0.2.3",
+    version="0.2.5",
     author="Christian Contreras Campana",
     author_email="chrisjcc.physics@gmail.com",
     description="Unity Traffic Simulation",
@@ -27,7 +27,7 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=['tests']),
     package_data={
-        "replicantdrivesim": ["*.so", "*.dylib"],
+        "replicantdrivesim": ["*.so"],
         "": ["configs/*.yaml"] + unity_executable_files,
     },
     include_package_data=True,
