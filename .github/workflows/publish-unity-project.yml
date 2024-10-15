@@ -327,10 +327,25 @@ jobs:
           unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip -d replicantdrivesim
           rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
 
-      - name: Move build directory to replicantdrivesim
+      - name: Download Plugin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: TrafficSimulation-Plugin
+          path: ./TrafficSimulation-Plugin.tar
+
+      - name: Extract Plugin Files
+        run: |
+          # Create build directory
+          mkdir -p replicantdrivesim/build/
+          # Extract the file
+          tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C replicantdrivesim/build/
+          # Remove tar archive
+          rm -rf ./TrafficSimulation-Plugin.tar
+
+      - name: Copy and Rename Executable
         run: |
           # Copy and rename binary executable 
-          cp Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+          cp replicantdrivesim/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
 
       - name: Set up Python
         uses: actions/setup-python@v4
