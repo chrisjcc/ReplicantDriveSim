@@ -15,11 +15,11 @@ directory_path = pathlib.Path(__file__).parent.resolve()
 long_description = (directory_path / "README.md").read_text(encoding="utf-8")
 
 # Find all unity related files
-unity_executable_files = package_files(os.path.join("Builds", "StandaloneOSX"))
+unity_executable_files = package_files(os.path.join("replicantdrivesim", "Builds", "StandaloneOSX"))
 
 setup(
     name="ReplicantDriveSim",
-    version="0.2.1",
+    version="0.2.3",
     author="Christian Contreras Campana",
     author_email="chrisjcc.physics@gmail.com",
     description="Unity Traffic Simulation",
