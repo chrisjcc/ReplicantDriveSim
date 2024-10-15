@@ -1,14 +1,23 @@
-# replicantdrivesim/__init__.py
-
 import os
-
+import sys
 import yaml
 import platform
 
-from .replicantdrivesim import Traffic, Vehicle  # Import C++ bindings
+# Add the package root directory to sys.path
+package_root = os.path.abspath(os.path.dirname(__file__))
+if package_root not in sys.path:
+    sys.path.insert(0, package_root)
+
+try:
+    from .replicantdrivesim import Traffic, Vehicle  # Import C++ bindings
+except ImportError as e:
+    print(f"Error importing C++ bindings: {e}")
+    print(f"Current sys.path: {sys.path}")
+    print(f"Current working directory: {os.getcwd()}")
+    raise
+
 from .rl.environment import CustomUnityMultiAgentEnv
 from .rl.unity_env_resource import create_unity_env
-
 
 def load_config(config_path: str, config_schema_path: str):
     """Load and validate configuration files."""
@@ -18,10 +27,9 @@ def load_config(config_path: str, config_schema_path: str):
     # Optionally add schema validation here if needed
     return config_data
 
-
 def get_unity_executable_path():
     # Get the package's directory and locate the Unity executable
-    package_dir = os.path.dirname(replicantdrivesim.__file__)
+    package_dir = os.path.dirname(__file__)
     system = platform.system()
 
     # Construct the full path to the Unity executable
@@ -49,18 +57,12 @@ def get_unity_executable_path():
 
     return unity_executable_path
 
-
 def make(env_name):
     """Create a Unity environment using the given configuration."""
     if env_name == "replicantdrivesim-v0":
-        # Determine the current directory where the script is running
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Set YAML file paths
-        config_path = os.path.join(os.path.dirname(__file__), "configs", "config.yaml")
-        config_schema_path = os.path.join(
-            os.path.dirname(__file__), "configs", "config_schema.yaml"
-        )
+        # Set YAML file paths relative to the package directory
+        config_path = os.path.join(package_root, "configs", "config.yaml")
+        config_schema_path = os.path.join(package_root, "configs", "config_schema.yaml")
 
         # Load configuration from YAML
         config_data = load_config(config_path, config_schema_path)
@@ -86,7 +88,6 @@ def make(env_name):
         )
     else:
         raise ValueError(f"Unknown environment: {env_name}")
-
 
 # Explicitly add 'make' to __all__
 __all__ = [
