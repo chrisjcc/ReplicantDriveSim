@@ -106,30 +106,10 @@ def main():
         },
     )
 
-    # Get the base directory by moving up one level (assuming the script is in 'rl' folder)
-    #base_dir = os.path.dirname(current_dir)
-
-    # Construct the full path to the Unity executable
-    #unity_executable_path = os.path.join(base_dir, "libReplicantDriveSim.app")
-
-    # Create Unity environment
-    #unity_env_handle = create_unity_env(
-    #    file_name=unity_executable_path,
-    #    worker_id=0,
-    #    base_port=config_data["unity_env"]["base_port"],
-    #    no_graphics=config_data["unity_env"]["no_graphics"],
-    #)
-
     # Register the environment with RLlib
     env_name = "CustomUnityMultiAgentEnv"
     register_env(env_name, env_creator)
 
-    # Create an instance of the environment for configuration
-    #env_config = {
-    #    "initial_agent_count": config_data["env_config"]["initial_agent_count"],
-    #    "unity_env_handle": unity_env_handle,
-    #    "episode_horizon": config_data["env_config"]["episode_horizon"],
-    #}
 
     # Define the configuration for the PPO algorithm
     env = replicantdrivesim.make("replicantdrivesim-v0", config=config_data)
@@ -200,7 +180,7 @@ def main():
             local_dir="./ray_results",
             checkpoint_config=train.CheckpointConfig(
                 num_to_keep=1,
-                checkpoint_frequency=1,
+                checkpoint_frequency=100,
                 checkpoint_at_end=True,
             ),
             callbacks=[
