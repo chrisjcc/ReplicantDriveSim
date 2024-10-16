@@ -9,9 +9,6 @@ import yaml
 
 import replicantdrivesim
 
-#from environment import CustomUnityMultiAgentEnv
-#from unity_env_resource import create_unity_env
-
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
 from mlflow.models.signature import ModelSignature
@@ -77,15 +74,12 @@ def main():
     Returns:
         None
     """
-    # Determine the current directory where the script is running
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
     # Set YAML files paths
     config_path = os.path.join("replicantdrivesim", "configs", "config.yaml")
-    #config_schema_path = os.path.join("replicantdrivesim", "configs", "config_schema.yaml")
+    config_schema_path = os.path.join("replicantdrivesim", "configs", "config_schema.yaml")
 
     # Validate YAML file
-    #validate_yaml_schema(config_path, config_schema_path)
+    validate_yaml_schema(config_path, config_schema_path)
 
     # Load configuration from YAML file
     with open(config_path, "r") as config_file:
@@ -109,7 +103,6 @@ def main():
     # Register the environment with RLlib
     env_name = "CustomUnityMultiAgentEnv"
     register_env(env_name, env_creator)
-
 
     # Define the configuration for the PPO algorithm
     env = replicantdrivesim.make("replicantdrivesim-v0", config=config_data)
@@ -207,7 +200,7 @@ def main():
     results = tuner.fit()
 
     # Print the results dictionary of the training to inspect the structure
-    print("Training results: ", results)
+    print(f"Training results: {results}")
 
     # Check if results is not empty
     if results:
@@ -233,7 +226,6 @@ def main():
                 print(f"Best config: {best_result.config}")
                 print(f"Best metrics: {best_result.metrics}")
                 print(f"Best result last checkpoint path: {best_result.checkpoint}")
-
 
             # Model 2: Based on the best result (scope set to `avg`)
             best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope='avg')
