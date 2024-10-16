@@ -11,8 +11,8 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
 
 # Constants for the Pygame simulation
-SCREEN_WIDTH = 900
-SCREEN_HEIGHT = 400
+SCREEN_WIDTH = 2 * 900
+SCREEN_HEIGHT = 2 * 400
 LANE_WIDTH = 100
 NUM_LANES = 2
 FPS = 25
@@ -70,6 +70,7 @@ class HighwayEnv(MultiAgentEnv):
         ]
         self.sim = simulation.Traffic(
             self.configs.get("num_agents", 2),
+            self.configs.get("map_file", "data/maps/test.xodr"),
             self.configs.get("seed", 314),
         )
         self.agent_positions = {agent: np.array([0.0, 0.0, 0.0]) for agent in self.agents}
@@ -85,8 +86,8 @@ class HighwayEnv(MultiAgentEnv):
         self.high_level_action_space = gym.spaces.Discrete(5)
         # Control action correspond to steering angle (rad), acceleration (m/s^2), and braking (m/s^2)
         self.low_level_action_space = gym.spaces.Box(
-            low=np.array([-0.610865, 0.0, -8.0], dtype=np.float32),
-            high=np.array([0.610865, 4.5, 0.0], dtype=np.float32),
+            low=np.array([-math.pi, 0.0, -8.0], dtype=np.float32),
+            high=np.array([math.pi, 4.5, 0.0], dtype=np.float32),
             shape=(3,),
             dtype=np.float32,
         )
@@ -107,6 +108,10 @@ class HighwayEnv(MultiAgentEnv):
         self.terminateds = {"__all__": False}
         self.truncateds = {"__all__": False}
         self.infos = {}
+
+        self.odr_map = self.sim.odr_map
+        self.road_network_mesh = self.odr_map.get_road_network_mesh(0.1)  # eps = 0.1
+        self.scale_factor = 2.0 #5.0 #2.0 #1.5 #10  # Adjust this to scale the map to fit the screen
 
         mlflow.log_params(
             {
@@ -141,6 +146,7 @@ class HighwayEnv(MultiAgentEnv):
 
         self.sim = simulation.Traffic(
             len(self.agents),
+            self.configs.get("map_file", "external/libOpenDRIVE/test.xodr"),
             self.configs.get("seed", 314),
         )  # Reset the simulation
 
@@ -408,52 +414,61 @@ class HighwayEnv(MultiAgentEnv):
 
         if not self.pygame_init:
             pygame.init()
+
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-            pygame.display.set_caption("Highway Simulation")
+            pygame.display.set_caption("OpenDRIVE Traffic Simulation")
+
             self.clock = pygame.time.Clock()  # Initialize clock
             self.pygame_init = True
 
         self.screen.fill((255, 255, 255))  # Clear screen with white
 
-        # Draw road
-        pygame.draw.rect(
-            self.screen,
-            (0, 0, 0),
-            (
-                0,
-                LANE_WIDTH,
-                SCREEN_WIDTH,
-                SCREEN_HEIGHT - 2 * LANE_WIDTH,
-            ),  # Example road dimensions
-        )
+        # Calculate the center offset
+        x_offset = 200 #-1000
+        y_offset = -300 #-1700 # -300 #600
+        center_offset_x = (SCREEN_WIDTH + x_offset) // 2
+        center_offset_y = (SCREEN_HEIGHT + y_offset)// 2
 
-        # Draw lane markers
-        for i in range(15):
-            pygame.draw.line(
-                self.screen,
-                (255, 255, 255),
-                (i * 60, SCREEN_HEIGHT // 2),
-                ((i * 60) + 30, SCREEN_HEIGHT // 2),
-                5,
-            )
+        # Render the road network
+        for road in self.odr_map.get_roads():
+            # Process each road, for example:
+            #print(f"Road ID: {road.id}")  # Assuming Road has an 'id' attribute
 
-        # Render each agent (vehicle)
-        for agent in self.sim.get_agents():
-            x, y = int(agent.getX()), int(agent.getY())
+            for s in range(int(road.length)):
+                for t in [-3., 0., 3.]:  # Adjust these values based on lane widths
+                    start_point = road.get_xyz(float(s), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+                    end_point = road.get_xyz(float(s + 1), float(t), float(0.0), [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
 
-            # Determine color based on collision status
-            color = (255, 0, 0) if self.collisions.get(agent.getName(), False) else (0, 0, 255)
+                    pygame.draw.line(
+                        self.screen,
+                        (100, 100, 100),  # Gray color for roads
+                        (int(start_point[0] * self.scale_factor) + center_offset_x, int(start_point[1] * self.scale_factor) + center_offset_y),
+                        (int(end_point[0] * self.scale_factor) + center_offset_x, int(end_point[1] * self.scale_factor) + center_offset_y),
+                        2
+                    )
+
+        # Render vehicles
+        agent_positions = self.sim.get_agent_positions()
+        agent_steerings = {agent: self.sim.get_agents()[i].getSteering() for i, (agent, _) in enumerate(agent_positions.items())}
+
+        for i, (agent, pos), in enumerate(agent_positions.items()):
+            x, y = int(pos[0] * self.scale_factor) + center_offset_x, int(pos[1] * self.scale_factor) + center_offset_y
+            #x, y = int(pos[2] * self.scale_factor) + center_offset_x, int(pos[0] * self.scale_factor) + center_offset_y
+
+            # Red color for vehicles otherwise blue in the event of a collision
+            color = (255, 0, 0) #if self.collisions[agent] else (0, 0, 255)
 
             # Create a rectangle surface for the vehicle with correct dimensions
-            rect_length = agent.getWidth() * 20  # scaled by 20 for visualization
-            rect_width = agent.getLength() * 20   # scaled by 20 for visualization
+            rect_length = self.sim.get_agents()[i].getWidth() * 3   # scaled by 3 for visualization
+            rect_width  = self.sim.get_agents()[i].getLength() * 3  # scaled by 3 for visualization
+
+            # Draw the vehicle as a rotated rectangle
             rect = pygame.Surface((rect_width, rect_length), pygame.SRCALPHA)  # Vehicle dimensions
             rect.fill(color)
 
-
             # Rotate the rectangle surface based on steering angle
-            steering_angle = math.degrees(agent.getSteering())  # Convert vehicle steering angle from rad to degrees
-            rotated_rect = pygame.transform.rotate(rect, steering_angle) # Negative to correct the rotation direction
+            steering_angle = math.degrees(agent_steerings[agent])  # Convert vehicle steering angle from rad to degrees
+            rotated_rect = pygame.transform.rotate(rect, steering_angle)  # Negative to correct the rotation direction
 
             # Calculate the position to blit the rotated rectangle
             rect_x = x - rotated_rect.get_width() // 2
@@ -461,7 +476,6 @@ class HighwayEnv(MultiAgentEnv):
 
             # Draw rotated rectangle on the screen
             self.screen.blit(rotated_rect, (rect_x, rect_y))
-
 
         # Clear the visible screen
         pygame.display.flip()  # Update the full display surface to the screen
@@ -484,13 +498,19 @@ if __name__ == "__main__":
 
     # Configure parameters
     configs = {
-        "seed": 314,
+        "seed": 42,
         "progress": True,
         "collision": True,
         "safety_distance": True,
         "max_episode_steps": 1000,
         "num_agents": 2,
         "render_mode": "human",
+        "map_file": "data/maps/data.xodr",
+        #"data/maps/Gaimersheim-RA+JT-City-65KM_UR_AC_DE_ING_RELEASE_20210831.xodr",
+        #"data/maps/Am_Reisenfeld-RA+JT-11KM_UR_AC_DE_MUC_RELEASE_20210901.xodr",
+        #"map_file": "data/maps/A10-IN-5-14KM_HW_AC_DE_BER_RELEASE_20210510.xodr",
+        #"map_file": "data/maps/test.xodr",
+        #"map_file": "data/maps/Town01.xodr",
     }
 
     # Log params for main run
@@ -520,8 +540,8 @@ if __name__ == "__main__":
 
             for agent in env.agents:
                 total_reward = rewards[agent]
-                print(f"Rewards for {agent}: {total_reward}")
-                print(f"Reward components for {agent}: {infos[agent]}")
+                #print(f"Rewards for {agent}: {total_reward}")
+                #print(f"Reward components for {agent}: {infos[agent]}")
 
             done = terminateds.get("__all__", False) or terminateds.get(
                 "__all__", False

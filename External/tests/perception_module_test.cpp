@@ -8,7 +8,7 @@ protected:
     std::unique_ptr<PerceptionModule> perception;
 
     virtual void SetUp() {
-        sim = std::make_unique<Traffic>(3, 314); // Example with 3 agents
+        sim = std::make_unique<Traffic>(3, "external/libOpenDRIVE/test.xodr", 314); // Example with 3 agents
         perception = std::make_unique<PerceptionModule>(*sim);
     }
 };
@@ -16,6 +16,10 @@ protected:
 TEST_F(PerceptionModuleTest, AgentNotFound) {
 
     Vehicle* agent = new Vehicle();
+
+    agent->setId(999); // Set an ID
+    agent->setName("999"); // Set a name
+
     std::vector<float> observations = perception->getObservations(*agent);
 
     ASSERT_EQ(observations.size(), 12); // Assuming numRays = 12
