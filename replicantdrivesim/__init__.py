@@ -38,13 +38,6 @@ except ImportError as e:
 from .rl.environment import CustomUnityMultiAgentEnv
 from .rl.unity_env_resource import create_unity_env
 
-def load_config(config_path: str, config_schema_path: str):
-    """Load and validate configuration files."""
-    with open(config_path, "r") as config_file:
-        config_data = yaml.safe_load(config_file)
-
-    # Optionally add schema validation here if needed
-    return config_data
 
 def get_unity_executable_path():
     # Get the package's directory and locate the Unity executable
@@ -76,35 +69,23 @@ def get_unity_executable_path():
 
     return unity_executable_path
 
-def make(env_name):
+def make(env_name, config: dict):
     """Create a Unity environment using the given configuration."""
     if env_name == "replicantdrivesim-v0":
-        # Set YAML file paths relative to the package directory
-        config_path = os.path.join(package_root, "configs", "config.yaml")
-        config_schema_path = os.path.join(package_root, "configs", "config_schema.yaml")
-
-        # Load configuration from YAML
-        config_data = load_config(config_path, config_schema_path)
-
         # Automatically get the Unity executable path
         unity_executable_path = get_unity_executable_path()
 
         unity_env_handle = create_unity_env(
             file_name=unity_executable_path,
             worker_id=0,
-            base_port=config_data["unity_env"]["base_port"],
-            no_graphics=config_data["unity_env"]["no_graphics"],
+            base_port=config["unity_env"]["base_port"],
+            no_graphics=config["unity_env"]["no_graphics"],
         )
 
-        env_config = {
-            "initial_agent_count": config_data["env_config"]["initial_agent_count"],
-            "unity_env_handle": unity_env_handle,
-            "episode_horizon": config_data["env_config"]["episode_horizon"],
-        }
+        # Update configuration to include unity environment handler
+        config.update({"unity_env_handle":  unity_env_handle})
 
-        return CustomUnityMultiAgentEnv(
-            config=env_config, unity_env_handle=unity_env_handle
-        )
+        return CustomUnityMultiAgentEnv(config=config)
     else:
         raise ValueError(f"Unknown environment: {env_name}")
 
@@ -112,7 +93,6 @@ def make(env_name):
 __all__ = [
     "Traffic",
     "Vehicle",
-    "load_config",
     "get_unity_executable_path",
     "make",
     "CustomUnityMultiAgentEnv",
