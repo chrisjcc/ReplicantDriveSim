@@ -8,6 +8,25 @@ package_root = os.path.abspath(os.path.dirname(__file__))
 if package_root not in sys.path:
     sys.path.insert(0, package_root)
 
+# Dynamically get the version
+try:
+    from importlib.metadata import version, PackageNotFoundError
+    try:
+        __version__ = version("ReplicantDriveSim")
+    except PackageNotFoundError:
+        # package is not installed
+        __version__ = "unknown"
+except ImportError:
+    # Fallback for Python < 3.8
+    try:
+        from importlib_metadata import version, PackageNotFoundError
+        try:
+            __version__ = version("ReplicantDriveSim")
+        except PackageNotFoundError:
+            __version__ = "unknown"
+    except ImportError:
+        __version__ = "unknown"
+
 try:
     from .replicantdrivesim import Traffic, Vehicle  # Import C++ bindings
 except ImportError as e:
@@ -97,7 +116,8 @@ __all__ = [
     "get_unity_executable_path",
     "make",
     "CustomUnityMultiAgentEnv",
+    "__version__",
 ]
 
 # Print a message to confirm this file is being executed
-print("replicantdrivesim __init__.py executed")
+print(f"replicantdrivesim (version {__version__})")
