@@ -6,11 +6,17 @@ import numpy as np
 import ray
 import yamale
 import yaml
-from environment import CustomUnityMultiAgentEnv
+
+import replicantdrivesim
+
+#from environment import CustomUnityMultiAgentEnv
+#from unity_env_resource import create_unity_env
+
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
 from mlflow.models.signature import ModelSignature
 from mlflow.types.schema import Schema, TensorSpec
+
 from ray import train, tune
 from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
@@ -21,7 +27,7 @@ from ray.rllib.utils.typing import AgentID, MultiAgentDict, PolicyID
 from ray.train import RunConfig
 from ray.tune import Tuner
 from ray.tune.registry import register_env
-from unity_env_resource import create_unity_env
+
 
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
@@ -47,7 +53,7 @@ def validate_yaml_schema(data_path, schema_path):
 
 # Define environment creator function
 def env_creator(env_config):
-    return CustomUnityMultiAgentEnv(env_config)
+    return replicantdrivesim.CustomUnityMultiAgentEnv(env_config)
 
 def policy_mapping_fn(agent_id, episode, worker, **kwargs):
     return "shared_policy"
@@ -75,11 +81,11 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Set YAML files paths
-    config_path = os.path.join(current_dir, "configs", "config.yaml")
-    config_schema_path = os.path.join(current_dir, "configs", "config_schema.yaml")
+    config_path = os.path.join("replicantdrivesim", "configs", "config.yaml")
+    #config_schema_path = os.path.join("replicantdrivesim", "configs", "config_schema.yaml")
 
     # Validate YAML file
-    validate_yaml_schema(config_path, config_schema_path)
+    #validate_yaml_schema(config_path, config_schema_path)
 
     # Load configuration from YAML file
     with open(config_path, "r") as config_file:
@@ -101,37 +107,37 @@ def main():
     )
 
     # Get the base directory by moving up one level (assuming the script is in 'rl' folder)
-    base_dir = os.path.dirname(current_dir)
+    #base_dir = os.path.dirname(current_dir)
 
     # Construct the full path to the Unity executable
-    unity_executable_path = os.path.join(base_dir, "libReplicantDriveSim.app")
+    #unity_executable_path = os.path.join(base_dir, "libReplicantDriveSim.app")
 
     # Create Unity environment
-    unity_env_handle = create_unity_env(
-        file_name=unity_executable_path,
-        worker_id=0,
-        base_port=config_data["unity_env"]["base_port"],
-        no_graphics=config_data["unity_env"]["no_graphics"],
-    )
+    #unity_env_handle = create_unity_env(
+    #    file_name=unity_executable_path,
+    #    worker_id=0,
+    #    base_port=config_data["unity_env"]["base_port"],
+    #    no_graphics=config_data["unity_env"]["no_graphics"],
+    #)
 
     # Register the environment with RLlib
     env_name = "CustomUnityMultiAgentEnv"
     register_env(env_name, env_creator)
 
     # Create an instance of the environment for configuration
-    env_config = {
-        "initial_agent_count": config_data["env_config"]["initial_agent_count"],
-        "unity_env_handle": unity_env_handle,
-        "episode_horizon": config_data["env_config"]["episode_horizon"],
-    }
+    #env_config = {
+    #    "initial_agent_count": config_data["env_config"]["initial_agent_count"],
+    #    "unity_env_handle": unity_env_handle,
+    #    "episode_horizon": config_data["env_config"]["episode_horizon"],
+    #}
 
     # Define the configuration for the PPO algorithm
-    env = CustomUnityMultiAgentEnv(config=env_config, unity_env_handle=unity_env_handle)
+    env = replicantdrivesim.make("replicantdrivesim-v0", config=config_data)
 
     config = PPO.get_default_config()
     config = config.environment(
         env=env_name,
-        env_config=env_config,
+        env_config=config_data,
         disable_env_checking=config_data["environment"][
             "disable_env_checking"
         ],  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
