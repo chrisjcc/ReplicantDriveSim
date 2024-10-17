@@ -18,7 +18,25 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
+      - name: Determine version
+        id: get_version
+        run: |
+          if [[ ${{ github.event_name }} == 'release' ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              VERSION="${{ github.event.inputs.version }}"
+            else
+              VERSION=$(date +"%Y%m%d-%H%M%S") # Fallback to timestamp if no version is provided
+            fi
+          else
+            VERSION=$(git rev-parse --short HEAD) # Use short commit hash for other cases
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Lowercase the repo name
         run: |
           echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -29,22 +47,22 @@ jobs:
         with:
           images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=raw,value=${{ needs.build-unity-project.outputs.VERSION }}
+            type=raw,value=${{ steps.get_version.outputs.VERSION }}
             type=raw,value=latest,enable={{is_default_branch}} 
 
-      - name: Checkout repository
+      - name: Checkout Git repository
         uses: actions/checkout@v4
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ needs.build-unity-project.outputs.VERSION }}
+          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
           path: ./
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip macos-unity-build-project-${{ needs.build-unity-project.outputs.VERSION }}.zip
-          rm macos-unity-build-project-${{ needs.build-unity-project.outputs.VERSION }}.zip
+          unzip macos-unity-build-project-${{ steps.get_version.outputs.VERSION }}.zip
+          rm macos-unity-build-project-${{ steps.get_version.outputs.VERSION }}.zip
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
