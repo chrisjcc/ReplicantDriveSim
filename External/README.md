@@ -61,15 +61,23 @@ cd ..
 This will build the Google Test library (libgtest.a and libgtest_main.a).
 
 ## Install Traffic Simulation
-```python
-pip install --force-reinstall dist/simulation-*.whl
+
+You can install the Traffic Simulation package directly from PyPI using pip:
+```bash
+pip install ReplicantDriveSim
+pip install ReplicantDriveSim
+```
+
+For developement mode
+```bash
+pip install --force-reinstall dist/replicantdrivesim-*.whl
 ```
 
 ### Example Usage
 
 ```python
 ## Import the compiled C++ module
-import simulation
+import replicantdrivesim
 
 ## Create a traffic environment (2 vehicles and seed value 42)
 traffic_sim = simulation.Traffic(2, 42)
