@@ -102,17 +102,11 @@ jobs:
           #path: ./TrafficSimulation-Plugin.tar
           path: ./
 
-      #- name: Extract Plugin Files
-      #  run: |
-      #    ls -larth .
-      #    # Create build directory
-      #    mkdir -p Assets/Plugins/TrafficSimulation/build/
-      #    # Extract the file
-      #    #tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
-      #    #unzip ./macos-unity-plugin-build-${{ env.VERSION }}.zip -d Assets/Plugins/TrafficSimulation/build
-      #    # Remove tar archive
-      #    #rm -rf ./TrafficSimulation-Plugin.tar
-      #    #rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+      - name: Extract Plugin Build Artifacts
+        run: |
+          mkdir -p Assets/Plugins/TrafficSimulation/build/
+          unzip ./macos-unity-plugin-build-${{ env.VERSION }}.zip -d ./Assets/Plugins/TrafficSimulation/build/
+          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
