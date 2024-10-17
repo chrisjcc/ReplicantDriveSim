@@ -1,6 +1,8 @@
 name: Publish Read the Docs
-
 on:
+  repository_dispatch:
+    types: [trigger_readthedocs]
+  workflow_dispatch:
   push:
     branches:
       - main  # or the branch you want to trigger the build on
@@ -11,6 +13,6 @@ jobs:
     steps:
       - name: Trigger Read the Docs Build
         env:
-          READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}  # Ensure this secret is added to GitHub Secrets
+          READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
         run: |
           curl -X POST -d '' "https://readthedocs.org/api/v3/projects/ReplicantDriveSim/webhook/github/?token=$READTHEDOCS_TOKEN"
