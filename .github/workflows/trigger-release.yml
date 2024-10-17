@@ -94,6 +94,23 @@ jobs:
           }' \
           -w "\n\nResponse code: %{http_code}\n"
 
+    - name: Trigger Docker Image Workflow
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        curl -v -X POST \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
+          https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+          -d '{
+            "event_type": "trigger_docker_publish",
+            "client_payload": {
+              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
+            }
+          }' \
+          -w "\n\nResponse code: %{http_code}\n"
+
     - name: Trigger Unity Project Publish Workflow
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
