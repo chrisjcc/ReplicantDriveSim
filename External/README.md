@@ -65,7 +65,6 @@ This will build the Google Test library (libgtest.a and libgtest_main.a).
 You can install the Traffic Simulation package directly from PyPI using pip:
 ```bash
 pip install ReplicantDriveSim
-pip install ReplicantDriveSim
 ```
 
 For developement mode
