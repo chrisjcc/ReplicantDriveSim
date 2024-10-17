@@ -147,6 +147,22 @@ jobs:
           # Upload the entire Builds and Logs directories
           path: macos-unity-build-project-${{ env.VERSION }}.zip
 
+      - name: Create Git Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: Release ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            Release ${{ steps.get_version.outputs.VERSION }}
+            Commit: ${{ github.sha }}
+            Short SHA: ${{ steps.slug.outputs.sha8 }}
+            ${{ steps.tag.outputs.message }}
+          draft: false
+          prerelease: false
+
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
