@@ -80,8 +80,8 @@ jobs:
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Get short SHA	
-        id: slug	
+      - name: Get short SHA
+        id: slug
         run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
 
       - name: Download Plugin Artifact
@@ -125,10 +125,10 @@ jobs:
           androidExportType: "none"
           androidSymbolType: "none"
 
-      - name: Create metadata file	
-        run: |	
-          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt	
-          echo "Commit SHA: ${{ github.sha }}" >> metadata.txt	
+      - name: Create metadata file
+        run: |
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
+          echo "Commit SHA: ${{ github.sha }}" >> metadata.txt
           echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
       - name: Package Builds with metadata
