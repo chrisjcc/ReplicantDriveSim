@@ -8,7 +8,7 @@
 # You can also reference a tag or branch, but the action may change without warning.
 
 # Multi-platform image with GitHub Actions
-name: Unity Build, Release, and Publish Package
+name: Deploy PyPI Package
 
 on:
   release:

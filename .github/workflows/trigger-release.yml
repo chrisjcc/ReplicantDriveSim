@@ -1,5 +1,6 @@
 # This workflow automates the creation of GitHub releases upon pushing new tags, using Node.js 20 and GitHub CLI.
 name: Create Release
+
 on:
   push:
     tags:
