@@ -1,4 +1,5 @@
-name: Publish Read the Docs
+name: Deploy Read the Docs
+
 on:
   repository_dispatch:
     types: [trigger_readthedocs]
