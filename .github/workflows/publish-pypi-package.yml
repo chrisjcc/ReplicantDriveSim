@@ -15,8 +15,31 @@ on:
 jobs:
   build-unity-plugin:
     runs-on: macos-latest
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: get_version
+        run: |
+          if [[ ${{ github.event_name }} == 'release' ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              VERSION="${{ github.event.inputs.version }}"
+            else
+              VERSION=$(date +"%Y%m%d-%H%M%S") # Fallback to timestamp if no version is provided
+            fi
+          else
+            VERSION=$(git rev-parse --short HEAD) # Use short commit hash for other cases
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -64,44 +87,31 @@ jobs:
           fetch-depth: 0 # This is important to fetch all history for all tags and branches
           lfs: true
 
-      - name: Determine version
-        id: get_version
-        run: |
-          if [[ ${{ github.event_name }} == 'release' ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            if [ -n "${{ github.event.inputs.version }}" ]; then
-              VERSION="${{ github.event.inputs.version }}"
-            else
-              VERSION=$(date +"%Y%m%d-%H%M%S") # Fallback to timestamp if no version is provided
-            fi
-          else
-            VERSION=$(git rev-parse --short HEAD) # Use short commit hash for other cases
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Get short SHA
         id: slug
         run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - name: Get version from previous job
+        run: echo "VERSION=${{ needs.build-unity-plugin.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Download Plugin Artifact
         uses: actions/download-artifact@v4
         with:
           #name: TrafficSimulation-Plugin
-          name: macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
+          name: macos-unity-plugin-build-${{ env.VERSION }}.zip
           #path: ./TrafficSimulation-Plugin.tar
-          path: ./macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
+          path: ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
       - name: Extract Plugin Files
         run: |
           # Create build directory
           mkdir -p Assets/Plugins/TrafficSimulation/build/
           # Extract the file
-          tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
-          unzip macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
+          #tar -xvf ./TrafficSimulation-Plugin.tar/TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build
+          unzip macos-unity-plugin-build-${{ env.VERSION }}.zip
           # Remove tar archive
           #rm -rf ./TrafficSimulation-Plugin.tar
-          rm -rf macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
+          rm -rf macos-unity-plugin-build-${{ env.VERSION }}.zip
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
@@ -127,20 +137,20 @@ jobs:
 
       - name: Create metadata file
         run: |
-          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
-          echo "Commit SHA: ${{ github.sha }}" >> metadata.txt
+          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
           echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
       - name: Package Builds with metadata
         run: |
-          zip -r macos-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip ./Builds ./Logs metadata.txt
+          zip -r macos-unity-Build-project-${{ env.VERSION }}.zip ./Builds ./Logs metadata.txt
 
       - name: Upload Unity Build Artifact
         uses: actions/upload-artifact@v4
         with:	
-          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
+          name: macOS-unity-Build-project-${{ env.VERSION }}
           # Upload the entire Builds and Logs directories
-          path: macos-unity-build-project-${{ steps.get_version.outputs.VERSION }}.zip
+          path: macos-unity-build-project-${{ env.VERSION }}.zip
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
@@ -148,6 +158,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./macos-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
-          asset_name: macos-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_path: ./macos-unity-Build-project-${{ env.VERSION }}.zip
+          asset_name: macos-unity-Build-project-${{ env.VERSION }}.zip
           asset_content_type: application/zip
