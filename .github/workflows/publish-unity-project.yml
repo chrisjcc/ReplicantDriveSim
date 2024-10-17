@@ -14,7 +14,7 @@ on:
   release:
     types: [published]
   repository_dispatch:
-    types: [trigger_docker_publish]
+    types: [trigger_docker_publish, trigger_pypi_publish]
   workflow_dispatch:
     inputs:
       version:
@@ -33,7 +33,7 @@ env:
 
 
 jobs:
-  build-plugin:
+  build-unity-plugin:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,8 +67,8 @@ jobs:
           if-no-files-found: warn
 
 
-  build-unity:
-    needs: build-plugin
+  build-unity-project:
+    needs: build-unity-plugin
     runs-on: macos-latest
     outputs:
       VERSION: ${{ steps.get_version.outputs.VERSION }}
@@ -212,13 +212,10 @@ jobs:
           name: macOS-Unity-Build-${{ steps.get_version.outputs.VERSION }}
           # Upload the entire Builds and Logs directories
           path: macos-unity-build-${{ steps.get_version.outputs.VERSION }}.zip
-          #path: |
-          #  ./Builds
-          #  ./Logs
 
 
-  build-and-push-image:
-    needs: [build-unity]
+  build-and-push-docker-image:
+    needs: [build-unity-project]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -234,7 +231,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=raw,value=${{ needs.build-unity.outputs.VERSION }}
+            type=raw,value=${{ needs.build-unity-project.outputs.VERSION }}
             type=raw,value=latest,enable={{is_default_branch}} 
     
       - name: Checkout repository
@@ -243,13 +240,13 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
+          name: macOS-Unity-Build-${{ needs.build-unity-project.outputs.VERSION }}
           path: ./
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
-          rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          unzip macos-unity-build-${{ needs.build-unity-project.outputs.VERSION }}.zip
+          rm macos-unity-build-${{ needs.build-unity-project.outputs.VERSION }}.zip
     
       # QEMU emulation, allows building images for different architectures 
       # even if the build machine itself is not of that architecture. 
@@ -298,7 +295,7 @@ jobs:
           # Support single multi-architecture Docker image 
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:${{ needs.build-unity.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:${{ needs.build-unity-project.outputs.VERSION }}
             ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}:latest
 
       - name: Inspect image
@@ -306,8 +303,8 @@ jobs:
           docker buildx imagetools inspect ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.meta.outputs.version }}
 
 
-  build-and-publish-pypi:
-    needs: [build-unity]
+  build-and-publish-pypi-package:
+    needs: [build-unity-project]
     runs-on: macos-latest
     permissions:
       contents: read
@@ -319,13 +316,13 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-Unity-Build-${{ needs.build-unity.outputs.VERSION }}
+          name: macOS-Unity-Build-${{ needs.build-unity-project.outputs.VERSION }}
           path: ./
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip -d replicantdrivesim
-          rm macos-unity-build-${{ needs.build-unity.outputs.VERSION }}.zip
+          unzip macos-unity-build-${{ needs.build-unity-project.outputs.VERSION }}.zip -d replicantdrivesim
+          rm macos-unity-build-${{ needs.build-unity-pproject.outputs.VERSION }}.zip
 
       - name: Download Plugin Artifact
         uses: actions/download-artifact@v4
