@@ -180,7 +180,7 @@ jobs:
 
 
   build-and-publish-pypi:
-    needs: [build-unity-project]
+    needs: build-unity-project
     runs-on: macos-latest
     permissions:
       contents: read
