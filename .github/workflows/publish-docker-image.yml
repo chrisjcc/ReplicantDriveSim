@@ -21,7 +21,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    needs: build-unity-project # This depends on the The job name 'Publish PyPI Package' workflow from publish-pypi-package.yml
     outputs:
       VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
