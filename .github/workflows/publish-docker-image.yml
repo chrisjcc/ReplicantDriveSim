@@ -23,7 +23,7 @@ jobs:
         uses: fountainhead/action-wait-for-check@v1.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Build Unity Project
+          checkName: Publish PyPI Package
           ref: ${{ github.event.client_payload.ref || github.ref }}
 
   build-and-push-docker-image:
