@@ -4,11 +4,15 @@ import gymnasium as gym
 import numpy as np
 import ray
 import yaml
-from environment import CustomUnityMultiAgentEnv
+
 from ray.rllib.algorithms.marwil import MARWILConfig
 from ray.rllib.policy.sample_batch import SampleBatch, MultiAgentBatch
+from ray.rllib.algorithms.marwil import MARWILTorchPolicy
+
 from ray.tune import Tuner
 from ray.tune.registry import register_env
+
+from environment import CustomUnityMultiAgentEnv
 from unity_env_resource import create_unity_env
 
 # Suppress DeprecationWarnings from output
@@ -17,13 +21,17 @@ os.environ["RAY_AIR_NEW_OUTPUT"] = "0"
 os.environ["RAY_AIR_RICH_LAYOUT"] = "0"
 gym.logger.set_level(gym.logger.DISABLED)
 
+
 class CustomJsonReader:
     def __init__(self, filepath):
         with open(filepath, 'r') as f:
             self.episodes = json.load(f)
         self.current_episode = 0
 
-    def next(self):
+    def __iter__(self):
+        return self
+
+    def __next__(self):
         if self.current_episode >= len(self.episodes):
             raise StopIteration
 
@@ -34,24 +42,23 @@ class CustomJsonReader:
         for agent_id, agent_data in episode_data.items():
             batch_data[agent_id] = SampleBatch({
                 SampleBatch.OBS: np.array(agent_data['obs']),
-                SampleBatch.ACTIONS: {
-                    'discrete': np.array(agent_data['actions']['discrete']),
-                    'continuous': np.array(agent_data['actions']['continuous'])
-                },
+                SampleBatch.ACTIONS: np.array(agent_data['actions']['discrete']),  # Assuming discrete actions
                 SampleBatch.REWARDS: np.array(agent_data['rewards']),
                 SampleBatch.NEXT_OBS: np.array(agent_data['new_obs']),
                 SampleBatch.DONES: np.array(agent_data['dones']),
-                #"action_prob": np.ones_like(agent_data['rewards']),  # Placeholder for action probabilities
+                SampleBatch.ACTION_PROB: np.ones_like(agent_data['rewards']),  # Placeholder
             })
 
-        #env_steps = sum(len(data[SampleBatch.ACTIONS]['discrete']) for data in batch_data.values())
         env_steps = sum(len(data[SampleBatch.ACTIONS]) for data in batch_data.values())
 
-        return MultiAgentBatch(
-            batch_data,
-            env_steps,
-            _custom_type=SampleBatch.AGENT_STEP
-        )
+        return MultiAgentBatch(batch_data, env_steps)
+
+
+class CustomMARWILPolicy(MARWILTorchPolicy):
+    def postprocess_trajectory(self, sample_batch, other_agent_batches=None, episode=None):
+        # Implement a simple postprocessing or just return the batch
+        return sample_batch
+
 
 # Load configuration
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -105,16 +112,25 @@ config = config.training(beta=1.0, lr=1e-4)
 
 # Set up offline data
 demo_file = "/Users/christiancontrerascampana/Desktop/project/unity_traffic_simulation/reduce_git_lfs/minor_update/ReplicantDriveSim/multi_agent_demonstrations.json"
-config = config.offline_data(input_=demo_file)
+config = config.offline_data(input_=CustomJsonReader(demo_file))
+
+config = config.framework("torch")
+config = config.training(policy_model=CustomMARWILPolicy)
 
 # Custom input reader
+#config = config.evaluation(
+#    evaluation_config=config.overrides(off_policy_estimation_methods={})
+#)
+
 config = config.evaluation(
-    evaluation_config=config.overrides(off_policy_estimation_methods={})
+    evaluation_interval=1,
+    evaluation_duration=5,
+    evaluation_config=config.overrides(explore=False)
 )
 
-config.input_config = {"input_files": [demo_file]}
+#config.input_config = {"input_files": [demo_file]}
 #config.input = lambda ioctx: CustomJsonReader(ioctx.config["input_files"][0])
-config.input = CustomJsonReader
+#config.input = CustomJsonReader
 
 # Set up the tuner
 tuner = Tuner(
