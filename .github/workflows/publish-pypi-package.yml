@@ -139,14 +139,14 @@ jobs:
 
       - name: Package Builds with metadata
         run: |
-          zip -r macos-unity-Build-project-${{ env.VERSION }}.zip ./Builds ./Logs metadata.txt
+          zip -r macOS-unity-Build-project-${{ env.VERSION }}.zip ./Builds ./Logs metadata.txt
 
       - name: Upload Unity Build Artifact
         uses: actions/upload-artifact@v4
         with:	
           name: macOS-unity-Build-project-${{ env.VERSION }}
           # Upload the entire Builds and Logs directories
-          path: macos-unity-build-project-${{ env.VERSION }}.zip
+          path: macOS-unity-Build-project-${{ env.VERSION }}.zip
 
       #- name: Upload Release Asset
       #  uses: actions/upload-release-asset@v1
@@ -154,8 +154,8 @@ jobs:
       #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #  with:
       #    upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #    asset_path: ./macos-unity-Build-project-${{ env.VERSION }}.zip
-      #    asset_name: macos-unity-Build-project-${{ env.VERSION }}.zip
+      #    asset_path: ./macOS-unity-Build-project-${{ env.VERSION }}.zip
+      #    asset_name: macOS-unity-Build-project-${{ env.VERSION }}.zip
       #    asset_content_type: application/zip
 
       - name: Update Release Asset
@@ -176,8 +176,8 @@ jobs:
               owner,
               repo,
               release_id: release.data.id,
-              name: `macos-unity-Build-project-${process.env.VERSION}.zip`,
-              data: fs.readFileSync(`./macos-unity-Build-project-${process.env.VERSION}.zip`)
+              name: `macOS-unity-Build-project-${process.env.VERSION}.zip`,
+              data: fs.readFileSync(`./macOS-unity-Build-project-${process.env.VERSION}.zip`)
             });
 
 
@@ -199,13 +199,13 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-unity-Build-project-${{ env.VERSION }}
+          name: macOS-unity-Build-project-${{ env.VERSION }}
           path: ./replicantdrivesim
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip replicantdrivesim/macos-unity-Build-project-${{ env.VERSION }}.zip
-          rm replicantdrivesim/macos-unity-Build-project-${{ env.VERSION }}.zip
+          unzip replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
+          rm replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
