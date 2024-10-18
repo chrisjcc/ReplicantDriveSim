@@ -27,17 +27,18 @@ jobs:
         id: get_version
         run: |
           if [[ ${{ github.event_name }} == 'release' ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
+            version="${GITHUB_REF#refs/tags/}"
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             if [ -n "${{ github.event.inputs.version }}" ]; then
-              VERSION="${{ github.event.inputs.version }}"
+              version="${{ github.event.inputs.version }}"
             else
-              VERSION=$(date +"%Y%m%d-%H%M%S") # Fallback to timestamp if no version is provided
+              version=$(date +"%Y%m%d-%H%M%S") # Fallback to timestamp if no version is provided
             fi
           else
-            VERSION=$(git describe --tags --always) # Use latest tag or commit hash
+            version=$(git describe --tags --always) # Use latest tag or commit hash
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$version" >> $GITHUB_OUTPUT
+          echo "Set VERSION to: $VERSION"  # Debug output
 
       - name: Get short SHA
         id: slug
@@ -213,13 +214,13 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ env.VERSION }}
+          name: macOS-unity-Build-project-v0.2.0 #${{ env.VERSION }}
           path: ./replicantdrivesim
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
-          rm replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
+          unzip replicantdrivesim/macOS-unity-Build-project-v0.2.0.zip #${{ env.VERSION }}.zip
+          rm replicantdrivesim/macOS-unity-Build-project-v0.2.0.zip #${{ env.VERSION }}.zip
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
@@ -232,10 +233,10 @@ jobs:
           # Create build directory
           #mkdir -p replicantdrivesim/build/
           # Extract the file
-          unzip ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          unzip ./macos-unity-plugin-build-v0.2.0.zip #${{ env.VERSION }}.zip
           cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
           # Remove tar archive
-          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          rm -rf ./macos-unity-plugin-build-v0.2.0.zip #${{ env.VERSION }}.zip
 
       #- name: Copy and Rename Executable
       #  run: |
