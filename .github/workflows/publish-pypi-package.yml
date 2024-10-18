@@ -201,7 +201,9 @@ jobs:
         run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Debug VERSION
-        run: echo "VERSION is ${{ needs.build-unity-project.outputs.VERSION }}"
+        run: |
+          echo "needs VERSION is ${{ needs.build-unity-project.outputs.VERSION }}"
+          echo "env VERSION is ${{ env.VERSION }}"
 
       - name: Checkout Git repository
         uses: actions/checkout@v4
