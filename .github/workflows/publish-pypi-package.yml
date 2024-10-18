@@ -153,10 +153,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.get_version.outputs.VERSION }}
-          release_name: Release ${{ steps.get_version.outputs.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          release_name: Release ${{ env.VERSION }}
           body: |
-            Release ${{ steps.get_version.outputs.VERSION }}
+            Release ${{ env.VERSION }}
             Commit: ${{ github.sha }}
             Short SHA: ${{ steps.slug.outputs.sha8 }}
             ${{ steps.tag.outputs.message }}
