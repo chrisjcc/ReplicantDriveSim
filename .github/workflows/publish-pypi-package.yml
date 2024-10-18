@@ -70,9 +70,7 @@ jobs:
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
         with:
-          #name: TrafficSimulation-Plugin
           name: macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}
-          #path: ./TrafficSimulation-Plugin.tar
           path: ./macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
           include-hidden-files: true
           if-no-files-found: warn
@@ -97,9 +95,7 @@ jobs:
       - name: Download Plugin Artifact
         uses: actions/download-artifact@v4
         with:
-          #name: TrafficSimulation-Plugin
           name: macos-unity-plugin-build-${{ env.VERSION }}
-          #path: ./TrafficSimulation-Plugin.tar
           path: ./
 
       - name: Extract Plugin Build Artifacts
@@ -172,3 +168,70 @@ jobs:
           asset_path: ./macos-unity-Build-project-${{ env.VERSION }}.zip
           asset_name: macos-unity-Build-project-${{ env.VERSION }}.zip
           asset_content_type: application/zip
+
+  build-and-publish-pypi:
+    needs: [build-unity-project]
+    runs-on: macos-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Unity Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-Unity-Build-${{ env.VERSION }}
+          path: ./
+
+      - name: Extract Unity Build Artifact
+        run: |
+          unzip macos-unity-build-${{ env.VERSION }}.zip -d replicantdrivesim
+          rm macos-unity-build-${{ env.VERSION }}.zip
+
+      - name: Download Plugin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-unity-plugin-build-${{ env.VERSION }}
+          path: ./
+
+      - name: Extract Plugin Files
+        run: |
+          # Create build directory
+          mkdir -p replicantdrivesim/build/
+          # Extract the file
+          unzip ./macos-unity-plugin-build-${{ env.VERSION }}.zip -d replicantdrivesim/build/
+          # Remove tar archive
+          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+
+      - name: Copy and Rename Executable
+        run: |
+          # Copy and rename binary executable
+          cp replicantdrivesim/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: pip install --upgrade setuptools wheel twine pybind11
+
+      - name: Build Python package
+        run: |
+          # Build the Python wheel and source distribution
+          python setup.py sdist bdist_wheel
+
+      - name: Upload to PyPI to publish Python package
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          # Upload the package to PyPI
+          twine upload dist/*
+
+      - name: Verify PyPi package installation
+        run: |
+          pip install ReplicantDriveSim
+          pip show ReplicantDriveSim
