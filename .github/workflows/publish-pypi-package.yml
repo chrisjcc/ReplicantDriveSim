@@ -82,7 +82,7 @@ jobs:
     runs-on: macos-latest
     outputs:
       VERSION: ${{ steps.get_version.outputs.VERSION }}
-  steps:
+    steps:
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
