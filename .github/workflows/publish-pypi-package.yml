@@ -191,8 +191,8 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
 
-     - name: Set version from previous job
-       run: echo "VERSION=${{ needs.build-unity-plugin.outputs.VERSION }}" >> $GITHUB_ENV
+      - name: Set version from previous job
+        run: echo "VERSION=${{ needs.build-unity-plugin.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
