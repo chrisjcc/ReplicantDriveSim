@@ -98,7 +98,7 @@ jobs:
           name: macos-unity-plugin-build-${{ env.VERSION }}
           path: ./
 
-      - name: Extract Plugin Build Artifacts
+      - name: Extract Unity Plugin Build Artifacts
         run: |
           mkdir -p Assets/Plugins/TrafficSimulation/build/
           unzip ./macos-unity-plugin-build-${{ env.VERSION }}.zip -d ./Assets/Plugins/TrafficSimulation/build/
@@ -164,15 +164,15 @@ jobs:
             const release = await github.rest.repos.getReleaseByTag({
               owner,
               repo,
-               tag: process.env.VERSION
+               tag: env.VERSION
             });
 
             await github.rest.repos.uploadReleaseAsset({
               owner,
               repo,
               release_id: release.data.id,
-              name: `macos-unity-Build-project-${process.env.VERSION}.zip`,
-              data: fs.readFileSync(`./macos-unity-Build-project-${process.env.VERSION}.zip`)
+              name: `macos-unity-Build-project-${env.VERSION}.zip`,
+              data: fs.readFileSync(`./macos-unity-Build-project-${env.VERSION}.zip`)
             });
 
 
