@@ -80,7 +80,9 @@ jobs:
   build-unity-project:
     needs: build-unity-plugin
     runs-on: macos-latest
-    steps:
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+  steps:
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
@@ -192,7 +194,7 @@ jobs:
           ref: ${{ github.event.client_payload.ref || github.ref }}
 
       - name: Set version from previous job
-        run: echo "VERSION=${{ needs.build-unity-plugin.outputs.VERSION }}" >> $GITHUB_ENV
+        run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
