@@ -32,7 +32,15 @@ To install the latest version of `ReplicantDriveSim`, use the following pip comm
 
 ```bash
 pip install ReplicantDriveSim
+```
 
+This command will download and install the package along with its dependencies. After installation, you can import the library in your Python scripts:
+
+```python
+import replicantdrivesim
+```
+
+For more detailed usage instructions, please refer to the documentation in the repository.
 
 ## Project Setup
 
