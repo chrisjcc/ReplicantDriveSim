@@ -83,6 +83,9 @@ jobs:
     outputs:
       VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
+      - name: Set workflow outputs
+        run: echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
@@ -195,8 +198,8 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
 
-      #- name: Set version from previous job
-      #  run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
+      - name: Set VERSION env var
+        run: echo "VERSION=${{ needs.build-unity-project.outputs.version }}" >> $GITHUB_ENV
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
