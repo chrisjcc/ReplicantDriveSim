@@ -33,7 +33,7 @@ jobs:
               VERSION=$(date +"%Y%m%d-%H%M%S") # Fallback to timestamp if no version is provided
             fi
           else
-            VERSION=$(git rev-parse --short HEAD) # Use short commit hash for other cases
+            VERSION=$(git describe --tags --always) # Use latest tag or commit hash
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
