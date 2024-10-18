@@ -143,31 +143,38 @@ jobs:
           # Upload the entire Builds and Logs directories
           path: macos-unity-build-project-${{ env.VERSION }}.zip
 
-      - name: Create Git Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.VERSION }}
-          release_name: Release ${{ env.VERSION }}
-          body: |
-            Release ${{ env.VERSION }}
-            Commit: ${{ github.sha }}
-            Short SHA: ${{ steps.slug.outputs.sha8 }}
-            ${{ steps.tag.outputs.message }}
-          draft: false
-          prerelease: false
+      #- name: Upload Release Asset
+      #  uses: actions/upload-release-asset@v1
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #  with:
+      #    upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #    asset_path: ./macos-unity-Build-project-${{ env.VERSION }}.zip
+      #    asset_name: macos-unity-Build-project-${{ env.VERSION }}.zip
+      #    asset_content_type: application/zip
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Update Release Asset
+        uses: actions/github-script@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./macos-unity-Build-project-${{ env.VERSION }}.zip
-          asset_name: macos-unity-Build-project-${{ env.VERSION }}.zip
-          asset_content_type: application/zip
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const release = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+               tag: process.env.VERSION
+            });
+
+            await github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id: release.data.id,
+              name: `macos-unity-Build-project-${process.env.VERSION}.zip`,
+              data: fs.readFileSync(`./macos-unity-Build-project-${process.env.VERSION}.zip`)
+            });
+
 
   build-and-publish-pypi:
     needs: [build-unity-project]
