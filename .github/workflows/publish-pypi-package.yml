@@ -86,6 +86,9 @@ jobs:
       - name: Set workflow outputs
         run: echo "VERSION=${{ env.VERSION }}" >> $GITHUB_OUTPUT
 
+      - name: Debug VERSION
+        run: echo "VERSION is ${{ env.VERSION }}"
+
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
@@ -196,6 +199,9 @@ jobs:
     steps:
       - name: Set VERSION env var
         run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
+
+      - name: Debug VERSION
+        run: echo "VERSION is ${{ needs.build-unity-project.outputs.VERSION }}"
 
       - name: Checkout Git repository
         uses: actions/checkout@v4
