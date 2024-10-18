@@ -184,6 +184,8 @@ jobs:
   build-and-publish-pypi:
     needs: build-unity-project
     runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.build-unity-project.outputs.VERSION }}
     permissions:
       contents: read
       packages: write
@@ -193,8 +195,8 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
 
-      - name: Set version from previous job
-        run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
+      #- name: Set version from previous job
+      #  run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
