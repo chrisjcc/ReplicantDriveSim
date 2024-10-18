@@ -84,7 +84,7 @@ jobs:
       VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
       - name: Set workflow outputs
-        run: echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${{ env.VERSION }}" >> $GITHUB_OUTPUT
 
       - name: Checkout Git repository
         uses: actions/checkout@v4
@@ -187,14 +187,15 @@ jobs:
   build-and-publish-pypi:
     needs: build-unity-project
     runs-on: macos-latest
-    env:
-      VERSION: ${{ needs.build-unity-project.outputs.VERSION }}
     permissions:
       contents: read
       packages: write
+    env:
+      VERSION: ${{ needs.build-unity-project.outputs.VERSION }}
+
     steps:
       - name: Set VERSION env var
-        run: echo "VERSION=${{ needs.build-unity-project.outputs.version }}" >> $GITHUB_ENV
+        run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Checkout Git repository
         uses: actions/checkout@v4
