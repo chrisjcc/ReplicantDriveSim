@@ -30,13 +30,19 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/}"
           elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
             VERSION="${{ github.event.client_payload.version }}"
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              VERSION="${{ github.event.inputs.version }}"
+            else
+              VERSION=$(git describe --tags --always)
+            fi
           else
             VERSION=$(git describe --tags --always) # Use latest tag or commit hash
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Print version
-        run: echo "Building Docker image for version ${{ steps.get_version.outputs.VERSION }}"
+        run: echo "Building PyPI package for version ${{ steps.get_version.outputs.VERSION }}"
 
       - name: Get short SHA
         id: slug
@@ -65,7 +71,6 @@ jobs:
 
       - name: Archive Plugin Files
         run: |
-          #tar -cvhf ./TrafficSimulation-Plugin.tar -C Assets/Plugins/TrafficSimulation/build .
           zip -r macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
 
       - name: Upload Unity Plugin Artifact
@@ -80,10 +85,10 @@ jobs:
     needs: build-unity-plugin
     runs-on: macos-latest
     outputs:
-      VERSION: ${{ steps.get_version.outputs.VERSION }}
+      VERSION: ${{ needs.build-unity-plugin.outputs.VERSION }}
     steps:
-      - name: Set workflow outputs
-        run: echo "VERSION=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+      - name: Set VERSION from previous job
+        run: echo "VERSION=${{ needs.build-unity-plugin.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Debug VERSION
         run: echo "VERSION is ${{ env.VERSION }}"
@@ -193,17 +198,12 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      VERSION: v0.2.0 #${{ needs.build-unity-project.outputs.VERSION }}
-
     steps:
-      - name: Set VERSION env var
+      - name: Set VERSION from previous job
         run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Debug VERSION
-        run: |
-          echo "needs VERSION is ${{ needs.build-unity-project.outputs.VERSION }}"
-          echo "env VERSION is ${{ env.VERSION }}"
+        run: echo "VERSION is ${{ env.VERSION }}"
 
       - name: Checkout Git repository
         uses: actions/checkout@v4
@@ -213,35 +213,29 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-v0.2.0 #${{ env.VERSION }}
+          name: macOS-unity-Build-project-${{ env.VERSION }}
           path: ./replicantdrivesim
 
       - name: Extract Unity Build Artifact
         run: |
           # Extract the file and overwrite existing files without prompting
-          unzip -o replicantdrivesim/macOS-unity-Build-project-v0.2.0.zip #${{ env.VERSION }}.zip
-          rm replicantdrivesim/macOS-unity-Build-project-v0.2.0.zip #${{ env.VERSION }}.zip
+          unzip -o replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
+          rm replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-unity-plugin-build-v0.2.0 #${{ env.VERSION }}
+          name: macos-unity-plugin-build-${{ env.VERSION }}
           path: ./
 
       - name: Extract Unity Plugin Artifact
         run: |
           # Create build directory
-          #mkdir -p replicantdrivesim/build/
           # Extract the file and overwrite existing files without prompting
-          unzip -o ./macos-unity-plugin-build-v0.2.0.zip #${{ env.VERSION }}.zip
+          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
           cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
           # Remove tar archive
-          rm -rf ./macos-unity-plugin-build-v0.2.0.zip #${{ env.VERSION }}.zip
-
-      #- name: Copy and Rename Executable
-      #  run: |
-      #    # Copy and rename binary executable
-      #    cp replicantdrivesim/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -249,7 +243,9 @@ jobs:
           python-version: '3.8'
 
       - name: Install dependencies
-        run: pip install --upgrade setuptools wheel twine pybind11
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine pybind11
 
       - name: Build Python package
         run: |
