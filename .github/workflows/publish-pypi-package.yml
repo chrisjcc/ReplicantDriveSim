@@ -113,7 +113,8 @@ jobs:
       - name: Extract Unity Plugin Build Artifacts
         run: |
           mkdir -p Assets/Plugins/TrafficSimulation/build/
-          unzip ./macos-unity-plugin-build-${{ env.VERSION }}.zip -d ./Assets/Plugins/TrafficSimulation/build/
+          # Extract the file and overwrite existing files without prompting
+          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip -d ./Assets/Plugins/TrafficSimulation/build/
           rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
       - name: Build Unity Project for macOS
@@ -219,7 +220,8 @@ jobs:
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip replicantdrivesim/macOS-unity-Build-project-v0.2.0.zip #${{ env.VERSION }}.zip
+          # Extract the file and overwrite existing files without prompting
+          unzip -o replicantdrivesim/macOS-unity-Build-project-v0.2.0.zip #${{ env.VERSION }}.zip
           rm replicantdrivesim/macOS-unity-Build-project-v0.2.0.zip #${{ env.VERSION }}.zip
 
       - name: Download Unity Plugin Artifact
@@ -232,8 +234,8 @@ jobs:
         run: |
           # Create build directory
           #mkdir -p replicantdrivesim/build/
-          # Extract the file
-          unzip ./macos-unity-plugin-build-v0.2.0.zip #${{ env.VERSION }}.zip
+          # Extract the file and overwrite existing files without prompting
+          unzip -o ./macos-unity-plugin-build-v0.2.0.zip #${{ env.VERSION }}.zip
           cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
           # Remove tar archive
           rm -rf ./macos-unity-plugin-build-v0.2.0.zip #${{ env.VERSION }}.zip
