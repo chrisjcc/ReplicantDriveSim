@@ -106,7 +106,7 @@ jobs:
           -d '{
             "event_type": "trigger_pypi_publish",
             "client_payload": {
-              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
+              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'",
               "version": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
             }
           }' \
