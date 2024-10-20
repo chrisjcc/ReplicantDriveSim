@@ -43,16 +43,15 @@ jobs:
         run: |
           if [[ ${{ github.event_name }} == 'release' ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
-          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            if [ -n "${{ github.event.inputs.version }}" ]; then
-              VERSION="${{ github.event.inputs.version }}"
-            else
-              VERSION=$(date +"%Y%m%d-%H%M%S") # Fallback to timestamp if no version is provided
-            fi
+          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+            VERSION="${{ github.event.client_payload.version }}"
           else
             VERSION=$(git describe --tags --always) # Use latest tag or commit hash
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Print version
+        run: echo "Building Docker image for version ${{ steps.get_version.outputs.VERSION }}"
 
       - name: Lowercase the repo name
         run: |
