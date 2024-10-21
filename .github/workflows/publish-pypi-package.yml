@@ -123,6 +123,8 @@ jobs:
         run: |
           # Extract the file and overwrite existing files without prompting
           unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+
+          # Remove the ZIP file
           rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip metadata.txt
 
       - name: Build Unity Project for macOS

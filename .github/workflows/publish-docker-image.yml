@@ -84,8 +84,11 @@ jobs:
 
       - name: Extract Unity Build Artifact
         run: |
-          unzip macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
-          rm macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+          # Extract the file and overwrite existing files without prompting
+          unzip -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+
+          # Remove the ZIP file
+          rm -rf ./macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
