@@ -265,7 +265,6 @@ def main():
         print("No results returned from tuner.fit(). Model registration skipped.")
 
     # Make sure to close the Unity environment at the end
-    ray.get(unity_env_handle.close.remote())
     ray.shutdown()
 
 
