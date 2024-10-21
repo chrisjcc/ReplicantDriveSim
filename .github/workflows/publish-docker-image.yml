@@ -40,6 +40,9 @@ jobs:
     steps:
       - name: Checkout Git repository
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0 # Fetch all history including tags
 
       - name: Determine version
         id: get_version
