@@ -228,8 +228,9 @@ jobs:
           # Remove the ZIP file
           rm macOS-unity-Build-project-${{ env.VERSION }}.zip
 
-          echo "Unzipping complete confirm Builds contents"
-          ls -larth replicantdrivesim/Builds/StandaloneOSX/libReplicantDriveSim.app/
+          echo "*** Unzipping complete confirm Builds contents ***"
+          ls -larth .
+          ls -larth Builds/StandaloneOSX/libReplicantDriveSim.app/
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
