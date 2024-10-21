@@ -139,7 +139,7 @@ jobs:
           # Enables caching the Unity Hub and Editor installation for MacOS runners (default: false).
           # This can significantly reduce project build times if you have enough available cache on Github Actions.
           cacheUnityInstallationOnMac: true
-          buildName: libReplicantDriveSim-${{ steps.slug.outputs.sha8 }}
+          buildName: libReplicantDriveSim
           buildsPath: ./Builds
           # Format: EditorNamespace.BuilderClassName.StaticBuildMethod
           buildMethod: UnityBuilderAction.BuildScript.PerformMacOSBuild
