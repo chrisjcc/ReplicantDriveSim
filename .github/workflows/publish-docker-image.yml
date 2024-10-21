@@ -78,7 +78,7 @@ jobs:
         with:
           name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
           path: ./
-          #github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: chrisjcc/ReplicantDriveSim #${{ github.repository }}
           run-id: 11446259278 #${{ github.event.workflow_run.id }}
           #merge-multiple: true
