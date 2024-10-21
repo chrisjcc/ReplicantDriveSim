@@ -10,6 +10,11 @@ on:
     types:
       - completed # Only triggers when the PyPI workflow has successfully completed
   workflow_dispatch:  # Allows manual triggering for debugging
+    inputs:
+      run_id:
+        description: 'Workflow run ID for artifact download (for manual dispatch)'
+        required: false
+        default: ''
 
 env:
   REGISTRY: ghcr.io
@@ -79,9 +84,8 @@ jobs:
           name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
           path: ./
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: chrisjcc/ReplicantDriveSim #${{ github.repository }}
-          run-id: 11446259278 #${{ github.event.workflow_run.id }}
-          #merge-multiple: true
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.inputs.run_id || github.event.workflow_run.id }}
 
       - name: Extract Unity Build Artifact
         run: |
