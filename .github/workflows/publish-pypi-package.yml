@@ -150,7 +150,6 @@ jobs:
 
       - name: Package Builds with metadata
         run: |
-          ls -larth Builds/StandaloneOSX/libReplicantDriveSim.app/Contents/
           zip -r macOS-unity-Build-project-${{ env.VERSION }}.zip ./Builds ./Logs metadata.txt
 
       - name: Upload Unity Build Artifact
@@ -181,16 +180,6 @@ jobs:
               name: `macOS-unity-Build-project-${process.env.VERSION}.zip`,
               data: fs.readFileSync(`./macOS-unity-Build-project-${process.env.VERSION}.zip`)
             });
-
-      #- name: Upload Release Asset
-      #  uses: actions/upload-release-asset@v1
-      #  env:
-      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #  with:
-      #    upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #    asset_path: ./macOS-unity-Build-project-${{ env.VERSION }}.zip
-      #    asset_name: macOS-unity-Build-project-${{ env.VERSION }}.zip
-      #    asset_content_type: application/zip
 
 
   build-and-publish-pypi:
@@ -228,9 +217,6 @@ jobs:
           # Remove the ZIP file
           rm macOS-unity-Build-project-${{ env.VERSION }}.zip
 
-          echo "*** Unzipping complete confirm Builds contents ***"
-          ls -larth Builds/StandaloneOSX/libReplicantDriveSim.app/Contents/*
-
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
         with:
@@ -241,10 +227,11 @@ jobs:
         run: |
           # Extract the file and overwrite existing files without prompting
           unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+
+          # Copy the compiled C extension Python module to the 'replicantdrivesim' directory and rename it appropriately
           cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
-          echo "Check Builds directory contents"
-          ls -larth replicantdrivesim/Builds/StandaloneOSX/libReplicantDriveSim.app/Contents/*
-          # Remove tar archive
+
+          # Remove the ZIP file
           rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
       - name: Set up Python
@@ -260,7 +247,6 @@ jobs:
       - name: Build Python package
         run: |
           # Build the Python wheel and source distribution
-          ls -larth replicantdrivesim/Builds/StandaloneOSX/libReplicantDriveSim.app/Contents/*
           python setup.py sdist bdist_wheel
 
       - name: Upload to PyPI to publish Python package
