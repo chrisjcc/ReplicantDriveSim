@@ -219,11 +219,17 @@ jobs:
 
       - name: Extract Unity Build Artifact
         run: |
+          # Change to the replicantdrivesim directory
+          cd replicantdrivesim
+
           # Extract the file and overwrite existing files without prompting
-          unzip -o replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
+          unzip -o macOS-unity-Build-project-${{ env.VERSION }}.zip
+
+          # Remove the ZIP file
+          rm macOS-unity-Build-project-${{ env.VERSION }}.zip
+
           echo "Unzipping complete confirm Builds contents"
           ls -larth replicantdrivesim/Builds/StandaloneOSX/libReplicantDriveSim.app/
-          rm replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
