@@ -80,6 +80,7 @@ jobs:
           #github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: chrisjcc/ReplicantDriveSim #${{ github.repository }}
           run-id: 11446259278 #${{ github.event.workflow_run.id }}
+          merge-multiple: true
 
       - name: Extract Unity Build Artifact
         run: |
