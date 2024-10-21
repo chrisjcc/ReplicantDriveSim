@@ -143,7 +143,7 @@ jobs:
           # Format: EditorNamespace.BuilderClassName.StaticBuildMethod
           buildMethod: UnityBuilderAction.BuildScript.PerformMacOSBuild
           projectPath: .
-          customParameters:  '-buildTarget OSXArm64 -logFile "./Logs/unity_build.log" -development -debugCode'
+          customParameters:  '-logFile "/github/workspace/Logs/unity_build.log" -development'
           androidExportType: "none"
           androidSymbolType: "none"
           allowDirtyBuild: False
