@@ -16,7 +16,7 @@ env:
   DOCKER_NAMESPACE: chrisjcc
   DOCKER_REPOSITORY: replicantdrivesim
 
-#jobs:
+jobs:
 #  wait-for-unity-build:
 #    runs-on: ubuntu-latest
 #    steps:
