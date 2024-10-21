@@ -25,6 +25,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Publish PyPI Package
           ref: ${{ github.event.client_payload.ref || github.ref }}
+          timeoutSeconds: 3600
 
   build-and-push-docker-image:
     needs: wait-for-unity-build
