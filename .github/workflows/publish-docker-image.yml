@@ -9,27 +9,29 @@ on:
     workflows: ["Publish PyPI Package"] # Ensures the Docker workflow runs after the PyPI workflow is completed
     types:
       - completed # Only triggers when the PyPI workflow has successfully completed
+  workflow_dispatch:  # Allows manual triggering for debugging
 
 env:
   REGISTRY: ghcr.io
   DOCKER_NAMESPACE: chrisjcc
   DOCKER_REPOSITORY: replicantdrivesim
 
-jobs:
-  wait-for-unity-build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for Unity Build Artifact
-        uses: fountainhead/action-wait-for-check@v1.1.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Publish PyPI Package
-          ref: ${{ github.event.client_payload.ref || github.ref }}
-          timeoutSeconds: 3600
+#jobs:
+#  wait-for-unity-build:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Wait for Unity Build Artifact
+#        uses: fountainhead/action-wait-for-check@v1.1.0
+#        with:
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          checkName: Publish PyPI Package
+#          ref: ${{ github.event.client_payload.ref || github.ref }}
+#          timeoutSeconds: 3600
 
   build-and-push-docker-image:
-    needs: wait-for-unity-build
+    #needs: wait-for-unity-build
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     permissions:
       contents: read
       packages: write
@@ -72,9 +74,9 @@ jobs:
         with:
           name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
           path: ./
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
+          #github-token: ${{ secrets.GITHUB_TOKEN }}
+          #repository: ${{ github.repository }}
+          #run-id: ${{ github.event.workflow_run.id }}
 
       - name: Extract Unity Build Artifact
         run: |
