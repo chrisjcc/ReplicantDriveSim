@@ -22,19 +22,19 @@ env:
   DOCKER_REPOSITORY: replicantdrivesim
 
 jobs:
-#  wait-for-unity-build:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Wait for Unity Build Artifact
-#        uses: fountainhead/action-wait-for-check@v1.1.0
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          checkName: Publish PyPI Package
-#          ref: ${{ github.event.client_payload.ref || github.ref }}
-#          timeoutSeconds: 3600
+  wait-for-unity-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Unity Build Artifact
+        uses: fountainhead/action-wait-for-check@v1.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Publish PyPI Package
+          ref: ${{ github.event.client_payload.ref || github.ref }}
+          timeoutSeconds: 3600
 
   build-and-push-docker-image:
-    #needs: wait-for-unity-build
+    needs: wait-for-unity-build
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     permissions:
@@ -50,20 +50,32 @@ jobs:
           ref: main
           fetch-depth: 0 # Fetch all history including tags
 
-      - name: Determine version
-        id: get_version
+      - name: Determine version and run ID
+        id: get_info
         run: |
           if [[ ${{ github.event_name }} == 'release' ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
           elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
             VERSION="${{ github.event.client_payload.version }}"
+          elif [[ ${{ github.event_name }} == 'workflow_run' ]]; then
+            VERSION=$(git describe --tags --abbrev=0)
           else
-            VERSION=$(git describe --tags --abbrev=0) # Use the exact latest tag or commit hash
+            VERSION=$(git describe --tags --abbrev=0)
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [[ ${{ github.event_name }} == 'workflow_run' ]]; then
+            echo "RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            echo "RUN_ID=${{ github.event.inputs.run_id }}" >> $GITHUB_OUTPUT
+          else
+            echo "RUN_ID=" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Print version
-        run: echo "Building Docker image for version ${{ steps.get_version.outputs.VERSION }}"
+      - name: Print version and run ID
+        run: |
+          echo "Building Docker image for version ${{ steps.get_info.outputs.VERSION }}"
+          echo "Using run ID: ${{ steps.get_info.outputs.RUN_ID }}"
 
       - name: Lowercase the repo name
         run: |
@@ -85,7 +97,7 @@ jobs:
           path: ./
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          run-id: ${{ github.event.inputs.run_id || github.event.workflow_run.id }}
+          run-id: ${{ steps.get_info.outputs.RUN_ID }}
 
       - name: Extract Unity Build Artifact
         run: |
