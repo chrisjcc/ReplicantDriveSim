@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     permissions:
+      actions: read
       contents: read
       packages: write
     outputs:
@@ -78,8 +79,8 @@ jobs:
           name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
           path: ./
           #github-token: ${{ secrets.GITHUB_TOKEN }}
-          #repository: chrisjcc/ReplicantDriveSim #${{ github.repository }}
-          #run-id: 11446259278 #${{ github.event.workflow_run.id }}
+          repository: chrisjcc/ReplicantDriveSim #${{ github.repository }}
+          run-id: 11446259278 #${{ github.event.workflow_run.id }}
           #merge-multiple: true
 
       - name: Extract Unity Build Artifact
