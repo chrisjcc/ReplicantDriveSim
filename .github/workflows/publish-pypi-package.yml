@@ -48,6 +48,12 @@ jobs:
         id: slug
         run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
 
+      - name: Create metadata file
+        run: |
+          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
+          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -63,12 +69,6 @@ jobs:
           cmake ..         
           make
 
-      - name: Create metadata file
-        run: |  
-          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
-          echo "Commit SHA: ${{ github.sha }}" >> metadata.txt
-          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
-
       - name: Archive Plugin Files
         run: |
           zip -r macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
@@ -80,6 +80,7 @@ jobs:
           path: ./macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
           include-hidden-files: true
           if-no-files-found: warn
+
 
   build-unity-project:
     needs: build-unity-plugin
@@ -93,19 +94,22 @@ jobs:
       - name: Debug VERSION
         run: echo "VERSION is ${{ env.VERSION }}"
 
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - name: Create metadata file
+        run: |
+          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
+          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
+
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # This is important to fetch all history for all tags and branches
           lfs: true
           ref: ${{ github.event.client_payload.ref || github.ref }}
-
-      - name: Get short SHA
-        id: slug
-        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
-
-      - name: Get version from previous job
-        run: echo "VERSION=${{ needs.build-unity-plugin.outputs.VERSION }}" >> $GITHUB_ENV
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
@@ -115,9 +119,11 @@ jobs:
 
       - name: Extract Unity Plugin Build Artifacts
         run: |
-          mkdir -p Assets/Plugins/TrafficSimulation/build/
+          ls -larth
           # Extract the file and overwrite existing files without prompting
-          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip -d ./Assets/Plugins/TrafficSimulation/build/
+          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip #-d ./Assets/Plugins/TrafficSimulation/build/
+          echo "Check build directory"
+          ls -larth ./Assets/Plugins/TrafficSimulation/build/
           rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
       - name: Build Unity Project for macOS
@@ -141,12 +147,7 @@ jobs:
           customParameters:  '-buildTarget OSXArm64 -logFile "./Logs/unity_build.log" -development -debugCode'
           androidExportType: "none"
           androidSymbolType: "none"
-
-      - name: Create metadata file
-        run: |
-          echo "Version: ${{ env.VERSION }}" > metadata.txt
-          echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
-          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
+          allowDirtyBuild: False
 
       - name: Package Builds with metadata
         run: |
@@ -158,16 +159,6 @@ jobs:
           name: macOS-unity-Build-project-${{ env.VERSION }}
           # Upload the entire Builds and Logs directories
           path: macOS-unity-Build-project-${{ env.VERSION }}.zip
-
-      #- name: Upload Release Asset
-      #  uses: actions/upload-release-asset@v1
-      #  env:
-      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #  with:
-      #    upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #    asset_path: ./macOS-unity-Build-project-${{ env.VERSION }}.zip
-      #    asset_name: macOS-unity-Build-project-${{ env.VERSION }}.zip
-      #    asset_content_type: application/zip
 
       - name: Update Release Asset
         uses: actions/github-script@v6
@@ -190,6 +181,16 @@ jobs:
               name: `macOS-unity-Build-project-${process.env.VERSION}.zip`,
               data: fs.readFileSync(`./macOS-unity-Build-project-${process.env.VERSION}.zip`)
             });
+
+      #- name: Upload Release Asset
+      #  uses: actions/upload-release-asset@v1
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #  with:
+      #    upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #    asset_path: ./macOS-unity-Build-project-${{ env.VERSION }}.zip
+      #    asset_name: macOS-unity-Build-project-${{ env.VERSION }}.zip
+      #    asset_content_type: application/zip
 
 
   build-and-publish-pypi:
@@ -218,6 +219,8 @@ jobs:
 
       - name: Extract Unity Build Artifact
         run: |
+          ls -larth
+          ls -larth replicantdrivesim/
           # Extract the file and overwrite existing files without prompting
           unzip -o replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
           rm replicantdrivesim/macOS-unity-Build-project-${{ env.VERSION }}.zip
@@ -230,10 +233,11 @@ jobs:
 
       - name: Extract Unity Plugin Artifact
         run: |
-          # Create build directory
           # Extract the file and overwrite existing files without prompting
           unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
           cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+          ls -larth  replicantdrivesim/
+
           # Remove tar archive
           rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
