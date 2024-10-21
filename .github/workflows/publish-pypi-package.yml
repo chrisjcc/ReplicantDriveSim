@@ -124,7 +124,7 @@ jobs:
           unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip #-d ./Assets/Plugins/TrafficSimulation/build/
           echo "Check build directory"
           ls -larth ./Assets/Plugins/TrafficSimulation/build/
-          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip metadata.txt
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
