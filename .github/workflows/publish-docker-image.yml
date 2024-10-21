@@ -52,7 +52,7 @@ jobs:
           elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
             VERSION="${{ github.event.client_payload.version }}"
           else
-            VERSION=$(git describe --tags --always) # Use latest tag or commit hash
+            VERSION=$(git describe --tags --abbrev=0) # Use the exact latest tag or commit hash
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
