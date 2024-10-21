@@ -132,7 +132,7 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          targetPlatform: StandaloneOSX # Build a macOS standalone.
+          targetPlatform: StandaloneOSX # Build a macOS standalone. Or StandaloneLinux64 for Linux
           unityVersion: auto # Use "auto" to get from your ProjectSettings/ProjectVersion.txt'
           versioning: Semantic
           # Enables caching the Unity Hub and Editor installation for MacOS runners (default: false).
