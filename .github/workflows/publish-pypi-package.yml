@@ -260,6 +260,7 @@ jobs:
       - name: Build Python package
         run: |
           # Build the Python wheel and source distribution
+          ls -larth replicantdrivesim/Builds/StandaloneOSX/libReplicantDriveSim.app/Contents/*
           python setup.py sdist bdist_wheel
 
       - name: Upload to PyPI to publish Python package
