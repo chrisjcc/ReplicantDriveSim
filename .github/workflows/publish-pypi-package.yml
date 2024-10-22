@@ -265,23 +265,6 @@ jobs:
           pip install ReplicantDriveSim
           pip show ReplicantDriveSim
 
-      #- name: Notify Release Completion
-      #  if: github.event_name == 'repository_dispatch'
-      #  uses: actions/github-script@v6
-      #  with:
-      #    github-token: ${{ secrets.GITHUB_TOKEN }}
-      #    script: |
-      #      const { owner, repo } = context.repo;
-      #      await github.rest.repos.createDispatchEvent({
-      #        owner,
-      #        repo,
-      #        event_type: 'pypi_publish_complete',
-      #        client_payload: {
-      #          version: process.env.VERSION,
-      #          status: 'success'
-      #        }
-      #      });
-
       # In the PyPI workflow
       - name: Notify Release Completion
         if: success()
@@ -290,12 +273,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             await github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              event_type: 'trigger_docker_publish',
-              client_payload: {
-                ref: process.env.VERSION,
-                version: process.env.VERSION,
-                status: 'success'
-              }
-           });
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             event_type: 'trigger_docker_publish',
+             client_payload: {
+               ref: process.env.VERSION,
+               version: process.env.VERSION,
+               status: 'success'
+            }
+          })
