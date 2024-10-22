@@ -41,6 +41,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Lowercase the repo name
+        run: |
           # Extract just the repository name without owner
           REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
           echo "REPO_LOWER=$REPO_NAME" >> $GITHUB_ENV
