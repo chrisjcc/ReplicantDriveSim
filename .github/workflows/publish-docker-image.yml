@@ -65,20 +65,21 @@ jobs:
             type=raw,value=${{ steps.get_version.outputs.VERSION }}
             type=raw,value=latest,enable={{is_default_branch}}
 
-      #- name: Download Unity Build Artifact
-      #  uses: actions/download-artifact@v4
-      #  with:
-      #    name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
-      #    path: ./
-      #    github-token: ${{ secrets.GITHUB_TOKEN }}
-      #    repository: ${{ github.repository }}
+      - name: Download Unity Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
+          path: ./
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.client_payload.run_id }}
 
-      - name: Download Unity Build Artifact from Release
-        run: |
-          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-               -H "Accept: application/octet-stream" \
-               https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.get_version.outputs.VERSION }}/assets/macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip \
-               -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+      #- name: Download Unity Build Artifact from Release
+      #  run: |
+      #    curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+      #         -H "Accept: application/octet-stream" \
+      #         https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.get_version.outputs.VERSION }}/assets/macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip \
+      #         -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
 
       - name: Extract Unity Build Artifact
         run: |
