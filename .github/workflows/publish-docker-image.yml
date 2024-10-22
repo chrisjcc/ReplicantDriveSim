@@ -39,7 +39,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Publish PyPI Package
-          ref: ${{ github.sha }}
+          ref: ${{ github.sha || github.event.client_payload.ref || github.ref }}
           timeoutSeconds: 3600
 
       - name: Check build status
