@@ -9,123 +9,146 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    outputs:
+      latest_tag: ${{ steps.get_latest_tag.outputs.tag }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Fetch all history and tags
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
 
-    - name: Generate Release Notes
-      id: generate_notes
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const { data: commits } = await github.rest.repos.listCommits({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            sha: context.ref,
-            per_page: 100
-          });
-          
-          const commitMessages = commits.map(commit => `- ${commit.commit.message}`).join('\n');
-          
-          // Collect unique contributors
-          const contributors = new Set();
-          commits.forEach(commit => {
-            if (commit.author && commit.author.login) {
-              contributors.add(commit.author.login);
-            }
-          });
-          
-          const contributorsSection = Array.from(contributors).map(contributor => `${contributor}`).join('\n');
-          
-          const changelogUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${context.ref}`;
-          const releaseNotes = `## What's Changed\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\n**Full Changelog**: ${changelogUrl}`;
-          core.setOutput('releaseNotes', releaseNotes);
-    
-    - name: Create Release with GitHub CLI
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh release create ${{ github.ref }} --title "Release ${{ github.ref }}" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Get the latest repository tag
-      id: get_latest_tag
-      run: |
-        latest_tag=$(git tag --sort=-creatordate | head -n 1)
-        echo "Latest semver tag: $latest_tag"
-        echo "tag=$latest_tag" >> $GITHUB_OUTPUT
+      - name: Generate Release Notes
+        id: generate_notes
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: commits } = await github.rest.repos.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.ref,
+              per_page: 100
+            });
+            
+            const commitMessages = commits.map(commit => `- ${commit.commit.message}`).join('\n');
+            
+            const contributors = new Set();
+            commits.forEach(commit => {
+              if (commit.author && commit.author.login) {
+                contributors.add(commit.author.login);
+              }
+            });
+            
+            const contributorsSection = Array.from(contributors).map(contributor => `${contributor}`).join('\n');
+            
+            const changelogUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${context.ref}`;
+            const releaseNotes = `## What's Changed\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\n**Full Changelog**: ${changelogUrl}`;
+            core.setOutput('releaseNotes', releaseNotes);
 
-    - name: Trigger GitHub Pages Workflow
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl -v -X POST \
-          -H "Authorization: token $GITHUB_TOKEN" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Content-Type: application/json" \
-          https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d '{
-            "event_type": "trigger_gh_pages",
-            "client_payload": {
-              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
-            }
-          }' \
-          -w "\n\nResponse code: %{http_code}\n"
+      - name: Create Release with GitHub CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ github.ref }} --title "Release ${{ github.ref }}" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
 
-    - name: Trigger Read the Docs Workflow
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl -v -X POST \
-          -H "Authorization: token $GITHUB_TOKEN" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Content-Type: application/json" \
-          https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d '{
-            "event_type": "trigger_readthedocs",
-            "client_payload": {
-              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
-            }
-          }' \
-          -w "\n\nResponse code: %{http_code}\n"
+      - name: Get the latest repository tag
+        id: get_latest_tag
+        run: |
+          latest_tag=$(git tag --sort=-creatordate | head -n 1)
+          echo "Latest semver tag: $latest_tag"
+          echo "tag=$latest_tag" >> $GITHUB_OUTPUT
 
-    - name: Trigger Unity Project Publish Workflow
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl -v -X POST \
-          -H "Authorization: token $GITHUB_TOKEN" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Content-Type: application/json" \
-          https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d '{
-            "event_type": "trigger_pypi_publish",
-            "client_payload": {
-              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'",
-              "version": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
-            }
-          }' \
-          -w "\n\nResponse code: %{http_code}\n"
+  trigger_docs:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger GitHub Pages Workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+            -d '{
+              "event_type": "trigger_gh_pages",
+              "client_payload": {
+                "ref": "'"${{ needs.release.outputs.latest_tag }}"'"
+              }
+            }'
 
-    - name: Trigger Docker Image Workflow
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl -v -X POST \
-          -H "Authorization: token $GITHUB_TOKEN" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Content-Type: application/json" \
-          https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-          -d '{
-            "event_type": "trigger_docker_publish",
-            "client_payload": {
-              "ref": "'"${{ steps.get_latest_tag.outputs.tag }}"'",
-              "version": "'"${{ steps.get_latest_tag.outputs.tag }}"'"
-            }
-          }' \
-          -w "\n\nResponse code: %{http_code}\n"
+      - name: Trigger Read the Docs Workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+            -d '{
+              "event_type": "trigger_readthedocs",
+              "client_payload": {
+                "ref": "'"${{ needs.release.outputs.latest_tag }}"'"
+              }
+            }'
+
+
+  trigger_unity:
+    needs: release
+    runs-on: ubuntu-latest
+    outputs:
+      unity_status: ${{ steps.unity_publish.outputs.status }}
+    steps:
+      - name: Trigger Unity Project Publish Workflow
+        id: unity_publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+            -d '{
+              "event_type": "trigger_pypi_publish",
+              "client_payload": {
+                "ref": "'"${{ needs.release.outputs.latest_tag }}"'",
+                "version": "'"${{ needs.release.outputs.latest_tag }}"'"
+              }
+            }')
+          http_code=$(echo "$response" | tail -n1)
+          if [ "$http_code" -eq 204 ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+
+  trigger_docker:
+    needs: trigger_unity
+    runs-on: ubuntu-latest
+    if: needs.trigger_unity.outputs.unity_status == 'success'
+    steps:
+      - name: Trigger Docker Image Workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+            -d '{
+              "event_type": "trigger_docker_publish",
+              "client_payload": {
+                "ref": "'"${{ needs.release.outputs.latest_tag }}"'",
+                "version": "'"${{ needs.release.outputs.latest_tag }}"'"
+              }
+            }'
