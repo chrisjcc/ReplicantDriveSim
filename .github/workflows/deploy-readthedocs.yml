@@ -50,7 +50,7 @@ jobs:
         run: |
           # Trigger build and capture response
           response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Authorization: Token $READTHEDOCS_TOKEN" \
+            -H "Authorization: Token \"$READTHEDOCS_TOKEN\"" \
             -H "Content-Type: application/json" \
             -d '{
               "ref": "${{ steps.version.outputs.version }}",
