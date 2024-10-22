@@ -58,7 +58,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: build-and-publish-pypi
-          ref: ${{ steps.get-pypi-run.outputs.RUN_ID }}
+          ref: 673a2c59 #${{ steps.get-pypi-run.outputs.RUN_ID }}
           timeoutSeconds: 3600
           intervalSeconds: 60
 
