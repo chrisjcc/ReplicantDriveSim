@@ -48,15 +48,20 @@ jobs:
         env:
           READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
         run: |
+          PAYLOAD=$(cat <<EOF
+          {
+            "ref": "${{ steps.version.outputs.version }}",
+            "build_config": true,
+            "build_environment": true
+          }
+          EOF
+          )
+
           # Trigger build and capture response
           response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Authorization: Token \"$READTHEDOCS_TOKEN\"" \
+            -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d '{
-              "ref": "${{ steps.version.outputs.version }}",
-              "build_config": true,
-              "build_environment": true
-            }' \
+            -d "$PAYLOAD" \
             "https://readthedocs.org/api/v3/projects/${{ env.REPO_LOWER }}/builds/")
           
           http_code=$(echo "$response" | tail -n1)
@@ -102,9 +107,9 @@ jobs:
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.client_payload.ref || github.sha }}" \
-            -d '{
-              "state": "'"$STATUS"'",
-              "target_url": "${{ needs.build.outputs.build_url }}",
-              "description": "Read the Docs build '"$STATUS"'",
-              "context": "readthedocs/build"
-            }'
+            -d "{
+              \"state\": \"$STATUS\",
+              \"target_url\": \"${{ needs.build.outputs.build_url }}\",
+              \"description\": \"Read the Docs build $STATUS\",
+              \"context\": \"readthedocs/build\"
+            }"
