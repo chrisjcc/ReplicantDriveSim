@@ -1,16 +1,17 @@
 name: Publish PyPI Package
 
 on:
-  release:
-    types: [published]
+  # Triggered by the release workflow via repository_dispatch
   repository_dispatch:
     types: [trigger_pypi_publish]
+  # Keep manual trigger for testing/debugging
   workflow_dispatch:
     inputs:
       version:
         description: 'Version (for manual dispatch)'
         required: false
         default: ''
+
 
 jobs:
   build-unity-plugin:
@@ -21,14 +22,13 @@ jobs:
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           ref: ${{ github.event.client_payload.ref || github.ref }}
 
       - name: Determine version
         id: get_version
         run: |
-          if [[ ${{ github.event_name }} == 'release' ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+          if [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
             VERSION="${{ github.event.client_payload.version }}"
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             if [ -n "${{ github.event.inputs.version }}" ]; then
@@ -37,7 +37,7 @@ jobs:
               VERSION=$(git describe --tags --always)
             fi
           else
-            VERSION=$(git describe --tags --always) # Use latest tag or commit hash
+            VERSION=$(git describe --tags --always)
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
@@ -264,3 +264,20 @@ jobs:
         run: |
           pip install ReplicantDriveSim
           pip show ReplicantDriveSim
+
+      - name: Notify Release Completion
+        if: github.event_name == 'repository_dispatch'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.repos.createDispatchEvent({
+              owner,
+              repo,
+              event_type: 'pypi_publish_complete',
+              client_payload: {
+                version: process.env.VERSION,
+                status: 'success'
+              }
+            });
