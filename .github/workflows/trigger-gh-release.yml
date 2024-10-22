@@ -130,25 +130,34 @@ jobs:
             exit 1
           fi
 
-
   trigger_docker:
-    needs: trigger_unity
-    runs-on: ubuntu-latest
-    if: needs.trigger_unity.outputs.unity_status == 'success'
-    steps:
-      - name: Trigger Docker Image Workflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Content-Type: application/json" \
-            https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
-            -d '{
-              "event_type": "trigger_docker_publish",
-              "client_payload": {
-                "ref": "'"${{ needs.release.outputs.latest_tag }}"'",
-                "version": "'"${{ needs.release.outputs.latest_tag }}"'"
-              }
-            }'
+      needs: trigger_unity
+      runs-on: ubuntu-latest
+      if: needs.trigger_unity.outputs.unity_status == 'success'
+      outputs:
+        docker_status: ${{ steps.docker_publish.outputs.status }}
+      steps:
+        - name: Trigger Docker Image Workflow
+          id: docker_publish
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/json" \
+              https://api.github.com/repos/chrisjcc/ReplicantDriveSim/dispatches \
+              -d '{
+                "event_type": "trigger_docker_publish",
+                "client_payload": {
+                  "ref": "'"${{ needs.release.outputs.latest_tag }}"'",
+                  "version": "'"${{ needs.release.outputs.latest_tag }}"'"
+                }
+              }')
+            http_code=$(echo "$response" | tail -n1)
+            if [ "$http_code" -eq 204 ]; then
+              echo "status=success" >> $GITHUB_OUTPUT
+            else
+              echo "status=failure" >> $GITHUB_OUTPUT
+              exit 1
+            fi
