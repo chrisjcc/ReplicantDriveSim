@@ -273,12 +273,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             await github.rest.repos.createDispatchEvent({
-             owner: context.repo.owner,
-             repo: context.repo.repo,
-             event_type: 'trigger_docker_publish',
-             client_payload: {
-               ref: process.env.VERSION,
-               version: process.env.VERSION,
-               status: 'success'
-            }
-          })
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'trigger_docker_publish',
+              client_payload: {
+                ref: process.env.VERSION,
+                version: process.env.VERSION,
+                status: 'success'
+              }
+            })
