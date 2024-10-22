@@ -40,15 +40,27 @@ jobs:
           echo "Ref: ${{ github.ref }}"
           echo "Client Ref : ${{ github.event.client_payload.ref }}"
           echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
+          echo "PyPI Run ID: ${{ steps.get-pypi-run.outputs.RUN_ID }}"
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}"
 
-      - name: Wait for Unity Build Artifact
+      - name: Get latest successful PyPI workflow run
+        id: get-pypi-run
+        run: |
+          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows -q '.workflows[] | select(.name=="Publish PyPI Package") | .id')
+          RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs -q '.workflow_runs[] | select(.conclusion=="success") | .id' | head -n1)
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for PyPI Package Publication
         uses: fountainhead/action-wait-for-check@v1.2.0
         id: wait-for-build
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: build-unity-project
-          ref: ${{ github.ref }}
+          checkName: build-and-publish-pypi
+          ref: ${{ steps.get-pypi-run.outputs.RUN_ID }}
           timeoutSeconds: 3600
+          intervalSeconds: 60
 
       - name: Check build status
         if: steps.wait-for-build.outputs.conclusion != 'success'
@@ -109,7 +121,8 @@ jobs:
           path: ./
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          run-id: ${{ steps.get_info.outputs.RUN_ID }}
+          #run-id: ${{ steps.get_info.outputs.RUN_ID }}
+          run-id: ${{ steps.get-pypi-run.outputs.RUN_ID }}
 
       - name: Extract Unity Build Artifact
         run: |
