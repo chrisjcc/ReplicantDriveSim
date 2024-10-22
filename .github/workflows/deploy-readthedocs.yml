@@ -89,6 +89,9 @@ jobs:
             exit 1
           fi
 
+      - name: Lowercase the repo name
+        run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Create GitHub Status Check
         if: github.event_name == 'repository_dispatch'
         env:
@@ -98,7 +101,7 @@ jobs:
           curl -X POST \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.client_payload.ref || github.sha }}" \
+            "https://api.github.com/repos/${{ env.REPO_LOWER }}/statuses/${{ github.event.client_payload.ref || github.sha }}" \
             -d '{
               "state": "'"$STATUS"'",
               "target_url": "${{ needs.build.outputs.build_url }}",
