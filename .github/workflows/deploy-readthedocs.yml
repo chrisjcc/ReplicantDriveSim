@@ -41,38 +41,57 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Lowercase the repo name
-        run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          # Extract just the repository name without owner
+          REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
+          echo "REPO_LOWER=$REPO_NAME" >> $GITHUB_ENV
+          echo "Using repository name: $REPO_NAME"
 
       - name: Trigger Read the Docs Build
         id: rtd_build
         env:
           READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
         run: |
-          # Create JSON payload using printf
-          PAYLOAD=$(printf '{"ref":"%s","build_config":true,"build_environment":true}' "${{ steps.version.outputs.version }}")
-          
+          # Create JSON payload
+          PAYLOAD=$(jq -n \
+            --arg ref "${{ steps.version.outputs.version }}" \
+            '{
+              "ref": $ref,
+              "build_config": true,
+              "build_environment": true
+            }')
+
+          echo "Using payload: $PAYLOAD"
+
           # Trigger build and capture response
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "${PAYLOAD}" \
-            "https://readthedocs.org/api/v3/projects/${{ env.REPO_LOWER }}/builds/")
-          
+            -d "$PAYLOAD" \
+            "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/builds/")
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
-          
+
           echo "Response body: $body"
           echo "HTTP code: $http_code"
-          
-          # Extract build URL from response if available
-          build_url=$(echo "$body" | jq -r '.build_url // empty')
-          
-          if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            [ ! -z "$build_url" ] && echo "build_url=$build_url" >> $GITHUB_OUTPUT
+
+          # Check if the body is valid JSON
+          if echo "$body" | jq empty 2>/dev/null; then
+            # Extract build URL from response if available
+            build_url=$(echo "$body" | jq -r '.build_url // empty')
+
+            if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
+              echo "status=success" >> $GITHUB_OUTPUT
+              [ ! -z "$build_url" ] && echo "build_url=$build_url" >> $GITHUB_OUTPUT
+            else
+              echo "status=failure" >> $GITHUB_OUTPUT
+              echo "Error triggering Read the Docs build: $body"
+              exit 1
+            fi
           else
             echo "status=failure" >> $GITHUB_OUTPUT
-            echo "Error triggering Read the Docs build: $body"
+            echo "Error: Invalid JSON response from Read the Docs API"
+            echo "Response body: $body"
             exit 1
           fi
 
