@@ -279,7 +279,7 @@ jobs:
               client_payload: {
                 ref: process.env.VERSION,
                 version: process.env.VERSION,
-                run_id: '${{ steps.run_id.outputs.RUN_ID }}',
+                run_id: '${{ github.run_id }}',
                 status: 'success'
               }
             })

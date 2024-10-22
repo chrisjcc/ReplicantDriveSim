@@ -68,11 +68,12 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
+          #name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
+          name: macOS-unity-Build-project-${{ github.event.client_payload.version }}
           path: ./
+          run-id: ${{ github.event.client_payload.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          run-id: ${{ github.event.client_payload.run_id }}
 
       #- name: Download Unity Build Artifact from Release
       #  run: |
