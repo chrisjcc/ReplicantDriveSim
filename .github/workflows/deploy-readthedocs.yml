@@ -48,24 +48,21 @@ jobs:
         env:
           READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
         run: |
-          PAYLOAD=$(cat <<EOF
-          {
-            "ref": "${{ steps.version.outputs.version }}",
-            "build_config": true,
-            "build_environment": true
-          }
-          EOF
-          )
-
+          # Create JSON payload using printf
+          PAYLOAD=$(printf '{"ref":"%s","build_config":true,"build_environment":true}' "${{ steps.version.outputs.version }}")
+          
           # Trigger build and capture response
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD" \
+            -d "${PAYLOAD}" \
             "https://readthedocs.org/api/v3/projects/${{ env.REPO_LOWER }}/builds/")
           
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
+          
+          echo "Response body: $body"
+          echo "HTTP code: $http_code"
           
           # Extract build URL from response if available
           build_url=$(echo "$body" | jq -r '.build_url // empty')
@@ -78,6 +75,7 @@ jobs:
             echo "Error triggering Read the Docs build: $body"
             exit 1
           fi
+
 
   notify:
     needs: build
