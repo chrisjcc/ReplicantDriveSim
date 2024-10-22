@@ -51,25 +51,6 @@ jobs:
       - name: Print version
         run: echo "Building Docker Image for version ${{ steps.get_version.outputs.VERSION }}"
 
-      #- name: Debug Info
-      #  run: |
-      #    echo "Event name: ${{ github.event_name }}"
-      #    echo "Version from dispatch: ${{ github.event.client_payload.version }}"
-      #    echo "Version from manual input: ${{ github.event.inputs.version }}"
-
-      #- name: Set version
-      #  id: set_version
-      #  run: |
-      #    VERSION="${GITHUB_REF##*/}" # This gets the last part of the ref, which should be your tag
-      #    if [[ -z "$VERSION" ]]; then
-      #      echo "No version specified"
-      #      exit 1
-      #    fi
-      #    echo "Using version: $VERSION"
-      #    echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-      #    echo "Client payload version: ${{ github.event.client_payload.version }}"
-      #    echo "Inputs version: ${{ github.event.inputs.version }}"
-
       - name: Lowercase the repo name
         run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
