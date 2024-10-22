@@ -117,7 +117,7 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
+          name: macOS-unity-Build-project-v0.2.7 #${{ steps.get_version.outputs.VERSION }}
           path: ./
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
@@ -127,10 +127,10 @@ jobs:
       - name: Extract Unity Build Artifact
         run: |
           # Extract the file and overwrite existing files without prompting
-          unzip -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+          unzip -o macOS-unity-Build-project-v0.2.7.zip #${{ steps.get_version.outputs.VERSION }}.zip
 
           # Remove the ZIP file
-          rm -rf ./macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+          rm -rf ./macOS-unity-Build-project-v0.2.7.zip #${{ steps.get_version.outputs.VERSION }}.zip
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
