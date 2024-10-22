@@ -33,6 +33,51 @@ jobs:
     outputs:
       VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
+      - name: Get latest successful PyPI workflow run
+        id: get-pypi-run
+        run: |
+          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows -q '.workflows[] | select(.name=="Publish PyPI Package") | .id')
+          RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs -q '.workflow_runs[] | select(.conclusion=="success") | .id' | head -n1)
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [[ ${{ github.event_name }} == 'release' ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+            VERSION="${{ github.event.client_payload.version }}"
+          elif [[ ${{ github.event_name }} == 'workflow_run' ]]; then
+            VERSION=$(git describe --tags --abbrev=0)
+          else
+            VERSION=$(git describe --tags --abbrev=0)
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      #- name: Determine version and run ID
+      #  id: get_info
+      #  run: |
+      #    if [[ ${{ github.event_name }} == 'release' ]]; then
+      #      VERSION="${GITHUB_REF#refs/tags/}"
+      #    elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+      #      VERSION="${{ github.event.client_payload.version }}"
+      #    elif [[ ${{ github.event_name }} == 'workflow_run' ]]; then
+      #      VERSION=$(git describe --tags --abbrev=0)
+      #    else
+      #      VERSION=$(git describe --tags --abbrev=0)
+      #    fi
+      #    echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      #    
+      #    if [[ ${{ github.event_name }} == 'workflow_run' ]]; then
+      #      echo "RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+      #    elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+      #      echo "RUN_ID=${{ github.event.inputs.run_id }}" >> $GITHUB_OUTPUT
+      #    else
+      #      echo "RUN_ID=" >> $GITHUB_OUTPUT
+      #    fi
+
       - name: Debug Info
         run: |
           echo "Event name: ${{ github.event_name }}"
@@ -43,22 +88,13 @@ jobs:
           echo "PyPI Run ID: ${{ steps.get-pypi-run.outputs.RUN_ID }}"
           echo "Version: ${{ steps.get_version.outputs.VERSION }}"
 
-      - name: Get latest successful PyPI workflow run
-        id: get-pypi-run
-        run: |
-          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows -q '.workflows[] | select(.name=="Publish PyPI Package") | .id')
-          RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs -q '.workflow_runs[] | select(.conclusion=="success") | .id' | head -n1)
-          echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Wait for PyPI Package Publication
         uses: fountainhead/action-wait-for-check@v1.2.0
         id: wait-for-build
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: build-and-publish-pypi
-          ref: 673a2c59 #${{ steps.get-pypi-run.outputs.RUN_ID }}
+          ref: ${{ github.sha }}
           timeoutSeconds: 3600
           intervalSeconds: 60
 
@@ -73,33 +109,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 0 # Fetch all history including tags
-
-      - name: Determine version and run ID
-        id: get_info
-        run: |
-          if [[ ${{ github.event_name }} == 'release' ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
-            VERSION="${{ github.event.client_payload.version }}"
-          elif [[ ${{ github.event_name }} == 'workflow_run' ]]; then
-            VERSION=$(git describe --tags --abbrev=0)
-          else
-            VERSION=$(git describe --tags --abbrev=0)
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          
-          if [[ ${{ github.event_name }} == 'workflow_run' ]]; then
-            echo "RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            echo "RUN_ID=${{ github.event.inputs.run_id }}" >> $GITHUB_OUTPUT
-          else
-            echo "RUN_ID=" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Print version and run ID
-        run: |
-          echo "Building Docker image for version ${{ steps.get_info.outputs.VERSION }}"
-          echo "Using run ID: ${{ steps.get_info.outputs.RUN_ID }}"
 
       - name: Lowercase the repo name
         run: |
@@ -117,20 +126,19 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-v0.2.7 #${{ steps.get_version.outputs.VERSION }}
+          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
           path: ./
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          #run-id: ${{ steps.get_info.outputs.RUN_ID }}
           run-id: ${{ steps.get-pypi-run.outputs.RUN_ID }}
 
       - name: Extract Unity Build Artifact
         run: |
           # Extract the file and overwrite existing files without prompting
-          unzip -o macOS-unity-Build-project-v0.2.7.zip #${{ steps.get_version.outputs.VERSION }}.zip
+          unzip -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
 
           # Remove the ZIP file
-          rm -rf ./macOS-unity-Build-project-v0.2.7.zip #${{ steps.get_version.outputs.VERSION }}.zip
+          rm -rf ./macOS-unity-Build-project-{{ steps.get_version.outputs.VERSION }}.zip
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
