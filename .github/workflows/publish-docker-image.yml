@@ -1,20 +1,13 @@
 name: Publish Docker Image
 
 on:
-  release:
-    types: [published] # Triggers when a new release is published
   repository_dispatch:
     types: [trigger_docker_publish] # Triggers when the dispatch event is called
-  workflow_run:
-    workflows: ["Publish PyPI Package"] # Ensures the Docker workflow runs after the PyPI workflow is completed
-    types:
-      - completed # Only triggers when the PyPI workflow has successfully completed
-  workflow_dispatch:  # Allows manual triggering for debugging
+  workflow_dispatch:
     inputs:
-      run_id:
-        description: 'Workflow run ID for artifact download (for manual dispatch)'
-        required: false
-        default: ''
+      version:
+        description: 'Version tag to build (e.g., v1.0.0)'
+        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -25,123 +18,68 @@ env:
 jobs:
   build-and-push-docker-image:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     permissions:
       actions: read
       contents: read
       packages: write
-    outputs:
-      VERSION: ${{ steps.get_version.outputs.VERSION }}
+
     steps:
-      - name: Get latest successful PyPI workflow run
-        id: get-pypi-run
-        run: |
-          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows -q '.workflows[] | select(.name=="Publish PyPI Package") | .id')
-          RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs -q '.workflow_runs[] | select(.conclusion=="success") | .id' | head -n1)
-          echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get version
-        id: get_version
-        run: |
-          if [[ ${{ github.event_name }} == 'release' ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
-            VERSION="${{ github.event.client_payload.version }}"
-          elif [[ ${{ github.event_name }} == 'workflow_run' || ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            # Get the run ID either from workflow_run event or manual input
-            RUN_ID="${{ github.event.workflow_run.id }}"
-            if [[ -z "$RUN_ID" ]]; then
-              RUN_ID="${{ github.event.inputs.run_id }}"
-            fi
-            
-            # Get artifacts from the specified run
-            ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/${RUN_ID}/artifacts \
-              -q '.artifacts[] | select(.name | startswith("macOS-unity-Build-project-")) | .name')
-            
-            # Extract version from artifact name
-            if [[ ! -z "$ARTIFACTS" ]]; then
-              VERSION=$(echo "$ARTIFACTS" | sed 's/macOS-unity-Build-project-v\(.*\)/\1/')
-            else
-              echo "No matching artifacts found in run ${RUN_ID}"
-              exit 1
-            fi
-          else
-            VERSION=$(git describe --tags --abbrev=0)
-          fi
-          
-          if [[ -z "$VERSION" ]]; then
-            echo "Failed to determine version"
-            exit 1
-          fi
-          
-          echo "Determined version: $VERSION"
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Debug Info
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "SHA: ${{ github.sha }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Client Ref : ${{ github.event.client_payload.ref }}"
-          echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
-          echo "PyPI Run ID: ${{ steps.get-pypi-run.outputs.RUN_ID }}"
-          echo "Version: ${{ steps.get_version.outputs.VERSION }}"
+          echo "Version from dispatch: ${{ github.event.client_payload.version }}"
+          echo "Version from manual input: ${{ github.event.inputs.version }}"
 
-      - name: Wait for PyPI Package Publication
-        uses: fountainhead/action-wait-for-check@v1.2.0
-        id: wait-for-build
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: build-and-publish-pypi
-          ref: ${{ github.sha }}
-          timeoutSeconds: 3600
-          intervalSeconds: 60
-
-      - name: Check build status
-        if: steps.wait-for-build.outputs.conclusion != 'success'
+      - name: Set version
+        id: set_version
         run: |
-          echo "Build failed or timed out"
-          exit 1
+          VERSION="${{ github.event.client_payload.version || github.event.inputs.version }}"
+          if [[ -z "$VERSION" ]]; then
+            echo "No version specified"
+            exit 1
+          fi
+          echo "Using version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.client_payload.ref || github.event.inputs.version }}
           fetch-depth: 0 # Fetch all history including tags
 
       - name: Lowercase the repo name
-        run: |
-          echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
+          images: |
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}
+            ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=raw,value=${{ steps.get_version.outputs.VERSION }}
-            type=raw,value=latest,enable={{is_default_branch}} 
+            type=raw,value=${{ steps.set_version.outputs.VERSION }}
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
+          name: macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}
           path: ./
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          run-id: ${{ steps.get-pypi-run.outputs.RUN_ID }}
 
       - name: Extract Unity Build Artifact
         run: |
-          # Extract the file and overwrite existing files without prompting
-          unzip -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
-
-          # Remove the ZIP file
-          rm -rf ./macOS-unity-Build-project-{{ steps.get_version.outputs.VERSION }}.zip
+          if [ -f "macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}.zip" ]; then
+            # Extract the file and overwrite existing files without prompting
+            unzip -o "macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}.zip"
+            # Remove the ZIP file
+            rm -f "macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}.zip"
+          else
+            echo "Unity build artifact not found"
+            exit 1
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -171,3 +109,15 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Report Build Status
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "Docker image build status: $STATUS"
+          echo "Version: ${{ steps.set_version.outputs.VERSION }}"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+          
+          if [ "$STATUS" != "success" ]; then
+            exit 1
+          fi
