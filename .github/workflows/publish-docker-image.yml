@@ -22,28 +22,28 @@ env:
   DOCKER_REPOSITORY: replicantdrivesim
 
 jobs:
-  wait-for-unity-build:
-    runs-on: ubuntu-latest
-    id: wait-for-build
-    if: ${{ github.event_name == 'workflow_run' }}  # Only run this job for workflow_run events
-    steps:
-      - name: Wait for Unity Build Artifact
-        uses: fountainhead/action-wait-for-check@v1.2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Publish PyPI Package
-          #ref: ${{ github.event.client_payload.ref || github.ref }}
-          ref: ${{ github.sha }}  # Use the commit SHA instead
-          timeoutSeconds: 3600
+#  wait-for-unity-build:
+#    runs-on: ubuntu-latest
+#    id: wait-for-build
+#    if: ${{ github.event_name == 'workflow_run' }}  # Only run this job for workflow_run events
+#    steps:
+#      - name: Wait for Unity Build Artifact
+#        uses: fountainhead/action-wait-for-check@v1.2.0
+#        with:
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          checkName: Publish PyPI Package
+#          #ref: ${{ github.event.client_payload.ref || github.ref }}
+#          ref: ${{ github.sha }}  # Use the commit SHA instead
+#          timeoutSeconds: 3600
 
-      - name: Do something with a passing build
-        if: steps.wait-for-build.outputs.conclusion == 'success'
+#      - name: Do something with a passing build
+#        if: steps.wait-for-build.outputs.conclusion == 'success'
 
-      - name: Do something with a failing build
-        if: steps.wait-for-build.outputs.conclusion == 'failure'
+#      - name: Do something with a failing build
+#        if: steps.wait-for-build.outputs.conclusion == 'failure'
 
   build-and-push-docker-image:
-    needs: [wait-for-unity-build]
+    #needs: [wait-for-unity-build]
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     permissions:
