@@ -20,7 +20,6 @@ permissions:
   id-token: write
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -66,25 +65,26 @@ jobs:
 
           echo "Using payload: $PAYLOAD"
 
-          # First, try the versioned URL
-          response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD" \
-            "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${{ steps.version.outputs.rtd_version }}/builds/")
+          function trigger_build() {
+            local url=$1
+            local response=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" \
+              "$url")
 
+            echo "$response"
+          }
+
+          # Try version-specific build first
+          response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${{ steps.version.outputs.rtd_version }}/builds/")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
 
           # If version-specific build fails, try latest
           if [ "$http_code" -eq 404 ]; then
             echo "Version-specific build failed, trying 'latest' version..."
-            response=$(curl -s -w "\n%{http_code}" -X POST \
-              -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$PAYLOAD" \
-              "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/latest/builds/")
-            
+            response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/latest/builds/")
             http_code=$(echo "$response" | tail -n1)
             body=$(echo "$response" | head -n-1)
           fi
@@ -92,23 +92,23 @@ jobs:
           echo "Response body: $body"
           echo "HTTP code: $http_code"
 
-          if echo "$body" | jq empty 2>/dev/null; then
-            build_url=$(echo "$body" | jq -r '.build_url // empty')
-
-            if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
-              echo "status=success" >> $GITHUB_OUTPUT
-              [ ! -z "$build_url" ] && echo "build_url=$build_url" >> $GITHUB_OUTPUT
-            else
-              echo "status=failure" >> $GITHUB_OUTPUT
-              echo "Error triggering Read the Docs build: $body"
-              exit 1
+          # Parse the response
+          if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
+            if echo "$body" | jq empty 2>/dev/null; then
+              build_url=$(echo "$body" | jq -r '.build.urls.build // empty')
+              if [ ! -z "$build_url" ]; then
+                echo "status=success" >> $GITHUB_OUTPUT
+                echo "build_url=$build_url" >> $GITHUB_OUTPUT
+                echo "Build triggered successfully at: $build_url"
+                exit 0
+              fi
             fi
-          else
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "Error: Invalid JSON response from Read the Docs API"
-            echo "Response body: $body"
-            exit 1
           fi
+
+          echo "status=failure" >> $GITHUB_OUTPUT
+          echo "Error triggering Read the Docs build. HTTP code: $http_code"
+          echo "Response body: $body"
+          exit 1
 
 
   notify:
