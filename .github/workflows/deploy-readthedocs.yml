@@ -64,11 +64,12 @@ jobs:
           echo "Using payload: $PAYLOAD"
 
           # Trigger build and capture response
+          # Note the corrected API endpoint URL
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
-            "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/builds/")
+            "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${REPO_LOWER}/builds/")
 
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
