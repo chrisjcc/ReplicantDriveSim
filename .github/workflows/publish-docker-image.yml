@@ -1,8 +1,10 @@
 name: Publish Docker Image
 
 on:
+  # Triggered by the release workflow via repository_dispatch
   repository_dispatch:
     types: [trigger_docker_publish] # Triggers when the dispatch event is called
+  # Keep manual trigger for testing/debugging
   workflow_dispatch:
     inputs:
       version:
@@ -24,30 +26,49 @@ jobs:
       packages: write
 
     steps:
-      - name: Debug Info
-        run: |
-          echo "Event name: ${{ github.event_name }}"
-          echo "Version from dispatch: ${{ github.event.client_payload.version }}"
-          echo "Version from manual input: ${{ github.event.inputs.version }}"
-
-      - name: Set version
-        id: set_version
-        run: |
-          VERSION="${GITHUB_REF##*/}" # This gets the last part of the ref, which should be your tag
-          if [[ -z "$VERSION" ]]; then
-            echo "No version specified"
-            exit 1
-          fi
-          echo "Using version: $VERSION"
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Client payload version: ${{ github.event.client_payload.version }}"
-          echo "Inputs version: ${{ github.event.inputs.version }}"
-
       - name: Checkout Git repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.ref || github.event.inputs.version }}
           fetch-depth: 0 # Fetch all history including tags
+
+      - name: Determine version
+        id: get_version
+        run: |
+          if [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+            VERSION="${{ github.event.client_payload.version }}"
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              VERSION="${{ github.event.inputs.version }}"
+            else
+              VERSION=$(git describe --tags --always)
+            fi
+          else
+            VERSION=$(git describe --tags --always)
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Print version
+        run: echo "Building Docker Image for version ${{ steps.get_version.outputs.VERSION }}"
+
+      #- name: Debug Info
+      #  run: |
+      #    echo "Event name: ${{ github.event_name }}"
+      #    echo "Version from dispatch: ${{ github.event.client_payload.version }}"
+      #    echo "Version from manual input: ${{ github.event.inputs.version }}"
+
+      #- name: Set version
+      #  id: set_version
+      #  run: |
+      #    VERSION="${GITHUB_REF##*/}" # This gets the last part of the ref, which should be your tag
+      #    if [[ -z "$VERSION" ]]; then
+      #      echo "No version specified"
+      #      exit 1
+      #    fi
+      #    echo "Using version: $VERSION"
+      #    echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      #    echo "Client payload version: ${{ github.event.client_payload.version }}"
+      #    echo "Inputs version: ${{ github.event.inputs.version }}"
 
       - name: Lowercase the repo name
         run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -60,24 +81,24 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}
             ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=raw,value=${{ steps.set_version.outputs.VERSION }}
+            type=raw,value=${{ steps.get_version.outputs.VERSION }}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}
+          name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
           path: ./
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
 
       - name: Extract Unity Build Artifact
         run: |
-          if [ -f "macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}.zip" ]; then
+          if [ -f "macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip" ]; then
             # Extract the file and overwrite existing files without prompting
-            unzip -o "macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}.zip"
+            unzip -o "macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip"
             # Remove the ZIP file
-            rm -f "macOS-unity-Build-project-${{ steps.set_version.outputs.VERSION }}.zip"
+            rm -f "macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip"
           else
             echo "Unity build artifact not found"
             exit 1
@@ -117,7 +138,7 @@ jobs:
         run: |
           STATUS="${{ job.status }}"
           echo "Docker image build status: $STATUS"
-          echo "Version: ${{ steps.set_version.outputs.VERSION }}"
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}"
           echo "Tags: ${{ steps.meta.outputs.tags }}"
           
           if [ "$STATUS" != "success" ]; then
