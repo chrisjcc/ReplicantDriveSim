@@ -295,7 +295,7 @@ jobs:
               event_type: 'trigger_docker_publish',
               client_payload: {
                 ref: process.env.VERSION,
-                version: process.env.VERSION
+                version: process.env.VERSION,
                 status: 'success'
               }
            });
