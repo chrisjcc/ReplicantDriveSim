@@ -37,8 +37,11 @@ jobs:
         id: version
         run: |
           VERSION="${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}"
+          # Remove 'v' prefix if present for Read the Docs
+          RTD_VERSION=$(echo "$VERSION" | sed 's/^v//')
           echo "Using version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "rtd_version=$RTD_VERSION" >> $GITHUB_OUTPUT
 
       - name: Lowercase the repo name
         run: |
@@ -63,23 +66,33 @@ jobs:
 
           echo "Using payload: $PAYLOAD"
 
-          # Trigger build and capture response
-          # Note the corrected API endpoint URL
+          # First, try the versioned URL
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
-            "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${REPO_LOWER}/builds/")
+            "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${{ steps.version.outputs.rtd_version }}/builds/")
 
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
 
+          # If version-specific build fails, try latest
+          if [ "$http_code" -eq 404 ]; then
+            echo "Version-specific build failed, trying 'latest' version..."
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" \
+              "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/latest/builds/")
+            
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | head -n-1)
+          fi
+
           echo "Response body: $body"
           echo "HTTP code: $http_code"
 
-          # Check if the body is valid JSON
           if echo "$body" | jq empty 2>/dev/null; then
-            # Extract build URL from response if available
             build_url=$(echo "$body" | jq -r '.build_url // empty')
 
             if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
