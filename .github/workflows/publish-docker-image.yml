@@ -49,34 +49,37 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/}"
           elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
             VERSION="${{ github.event.client_payload.version }}"
-          elif [[ ${{ github.event_name }} == 'workflow_run' ]]; then
-            VERSION=$(git describe --tags --abbrev=0)
+          elif [[ ${{ github.event_name }} == 'workflow_run' || ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            # Get the run ID either from workflow_run event or manual input
+            RUN_ID="${{ github.event.workflow_run.id }}"
+            if [[ -z "$RUN_ID" ]]; then
+              RUN_ID="${{ github.event.inputs.run_id }}"
+            fi
+            
+            # Get artifacts from the specified run
+            ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/${RUN_ID}/artifacts \
+              -q '.artifacts[] | select(.name | startswith("macOS-unity-Build-project-")) | .name')
+            
+            # Extract version from artifact name
+            if [[ ! -z "$ARTIFACTS" ]]; then
+              VERSION=$(echo "$ARTIFACTS" | sed 's/macOS-unity-Build-project-v\(.*\)/\1/')
+            else
+              echo "No matching artifacts found in run ${RUN_ID}"
+              exit 1
+            fi
           else
             VERSION=$(git describe --tags --abbrev=0)
           fi
+          
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to determine version"
+            exit 1
+          fi
+          
+          echo "Determined version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      #- name: Determine version and run ID
-      #  id: get_info
-      #  run: |
-      #    if [[ ${{ github.event_name }} == 'release' ]]; then
-      #      VERSION="${GITHUB_REF#refs/tags/}"
-      #    elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
-      #      VERSION="${{ github.event.client_payload.version }}"
-      #    elif [[ ${{ github.event_name }} == 'workflow_run' ]]; then
-      #      VERSION=$(git describe --tags --abbrev=0)
-      #    else
-      #      VERSION=$(git describe --tags --abbrev=0)
-      #    fi
-      #    echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-      #    
-      #    if [[ ${{ github.event_name }} == 'workflow_run' ]]; then
-      #      echo "RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
-      #    elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-      #      echo "RUN_ID=${{ github.event.inputs.run_id }}" >> $GITHUB_OUTPUT
-      #    else
-      #      echo "RUN_ID=" >> $GITHUB_OUTPUT
-      #    fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Debug Info
         run: |
