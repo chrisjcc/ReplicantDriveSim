@@ -48,8 +48,8 @@ The ReplicantDriveSim environment implements a parameterized action space, align
 #### Action Space Structure
 The action space is defined as a tuple containing two elements:
 
-- Discrete Action: A single value representing high-level decisions or action types.
-- Continuous Action Vector: A 3-dimensional vector for fine-grained control.
+- **Discrete Action**: A single value representing high-level decisions or action types.
+- **Continuous Action Vector**: A 3-dimensional vector for fine-grained control.
 
 ```python
 self._single_agent_action_space = gym.spaces.Tuple(
@@ -66,17 +66,17 @@ self._single_agent_action_space = gym.spaces.Tuple(
 ```
 
 #### Key Features
-- Combined high-level and precise control: Agents can make both high-level choices and precise adjustments.
-- Unity-compatible action formatting: Actions are converted to a Unity-compatible format using the `_convert_to_action_tuple` method.
-- Complex agent behaviors: The parameterized action space enables sophisticated agent behaviors, ideal for scenarios requiring nuanced control.
+- **Combined high-level and precise control**: Agents can make both high-level choices and precise adjustments.
+- **Unity-compatible action formatting**: Actions are converted to a Unity-compatible format using the `_convert_to_action_tuple` method.
+- **Complex agent behaviors**: The parameterized action space enables sophisticated agent behaviors, ideal for scenarios requiring nuanced control.
 
 This implementation allows for a wide range of agent actions, from broad strategic decisions to fine-tuned movements, making it well-suited for complex reinforcement learning tasks in the ReplicantDriveSim environment.
 
 ### Running the Traffic Simulation
 The traffic simulation supports both discrete high-level decision-making and continuous low-level control. Below is an example Python script demonstrating how to run the simulation and interact with the environment with agents performing both random actions.
 The simulation supports two types of control:
-- Discrete high-level decision-making: Actions such as lane changes (left or right), maintaining the current lane, speeding up, or slowing down.
-- Continuous low-level control: Actions such as steering, throttle control, and braking.
+- **Discrete high-level decision-making**: Actions such as lane changes (left or right), maintaining the current lane, speeding up, or slowing down.
+- **Continuous low-level control**: Actions such as steering, throttle control, and braking.
 
 ```python
 import os
