@@ -42,7 +42,6 @@ The `trainer.py` script includes several configuration options to customize the 
 - **Hyperparameters**: Adjust each agent's learning rates, batch sizes, and other hyperparameters.
 - **Multi-Agent Setup**: Define the policies and mapping from agents to policies in the multi-agent environment.
 
-
 ### Parameterized Action Space
 The ReplicantDriveSim environment implements a parameterized action space, aligning with the concept described in the paper ["Continuous Deep Q-Learning with Model-based Acceleration"](https://arxiv.org/abs/1603.00748). This approach combines discrete and continuous actions, allowing for both high-level decision-making and fine-tuned control.
 
@@ -67,43 +66,11 @@ self._single_agent_action_space = gym.spaces.Tuple(
 ```
 
 #### Key Features
-- Flexible Decision Making: Agents can make both high-level choices and precise adjustments.
-- Unity Integration: Actions are converted to a Unity-compatible format using the `_convert_to_action_tuple` method.
-- Complex Behaviors: The parameterized action space enables sophisticated agent behaviors, ideal for scenarios requiring nuanced control.
+- Combined high-level and precise control: Agents can make both high-level choices and precise adjustments.
+- Unity-compatible action formatting: Actions are converted to a Unity-compatible format using the `_convert_to_action_tuple` method.
+- Complex agent behaviors: The parameterized action space enables sophisticated agent behaviors, ideal for scenarios requiring nuanced control.
 
 This implementation allows for a wide range of agent actions, from broad strategic decisions to fine-tuned movements, making it well-suited for complex reinforcement learning tasks in the ReplicantDriveSim environment.
-
-
-### Script Overview
-- trainer.py: The main script for configuring and running the multi-agent training using Ray RLlib. It includes setting up the environment, configuring the RLlib trainer, and executing the training loop.
-
-
-### Results and Evaluation
-After training, the results and checkpoints will be saved to the directory specified in the script. 
-
-`~/ray_results/PPO_Highway_Experiment/PPO_CustomUnityMultiAgentEnv_2e073_00000_0_2024-10-22_16-59-04/`
-
-You can use these checkpoints to evaluate the trained agents' performance or resume training.
-
-#### View Previous Runs via the MLflow UI
-If your `mlruns` folder contains your experiment runs, you can start an MLflow tracking server to view them.
-
-### Start the MLflow UI:
-
-- Navigate to the directory where the mlruns folder is located.
-- Start the MLflow UI by running:
-
-```bash
-mlflow ui
-```
-
-This will start the MLflow UI on `localhost:5000`. Open a browser and go to:
-
-```
-http://127.0.0.1:5000
-```
-
-You can view all your experiments, metrics, parameters, and artifacts through the web interface.
 
 ### Running the Traffic Simulation
 The traffic simulation supports both discrete high-level decision-making and continuous low-level control. Below is an example Python script demonstrating how to run the simulation and interact with the environment with agents performing both random actions.
@@ -197,6 +164,36 @@ if __name__ == "__main__":
 ```
 
 This script sets up the environment, runs a series of episodes where agents perform actions, and allows you to modify actions programmatically before sending them to the environment. You can adjust the number of episodes and provide a custom configuration file path using command-line arguments.
+
+### Training Script Overview
+- `trainer.py`: The main script for configuring and running the multi-agent training using Ray RLlib. It includes setting up the environment, configuring the RLlib trainer, and executing the training loop.
+
+### Results and Evaluation
+After training, the results and checkpoints will be saved to the directory specified in the script. 
+
+`~/ray_results/PPO_Highway_Experiment/PPO_CustomUnityMultiAgentEnv_2e073_00000_0_2024-10-22_16-59-04/`
+
+You can use these checkpoints to evaluate the trained agents' performance or resume training.
+
+#### View Previous Runs via the MLflow UI
+If your `mlruns` folder contains your experiment runs, you can start an MLflow tracking server to view them.
+
+### Start the MLflow UI:
+
+- Navigate to the directory where the mlruns folder is located.
+- Start the MLflow UI by running:
+
+```bash
+mlflow ui
+```
+
+This will start the MLflow UI on `localhost:5000`. Open a browser and go to:
+
+```
+http://127.0.0.1:5000
+```
+
+You can view all your experiments, metrics, parameters, and artifacts through the web interface.
 
 ### Additional Resources
 
