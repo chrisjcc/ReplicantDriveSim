@@ -8,18 +8,17 @@ permalink: /External/
 
 <img src="https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim_Raycasting.png" alt="Nissan GTR" width="800" height="600"/>
 
-Table of Contents
-Prerequisites
-Verifying Git LFS Installation
-Initializing Submodules
-Building the Traffic Simulation Library
-MacOS Deployment Target
-Standalone Traffic Library
-Installing the Traffic Simulation Package
-Example Usage
-Running Unit Tests
-Versioning with Git Tags
-
+## Table of Contents
+- [Prerequisites](#prerequisites)
+  - [Verifying Git LFS Installation](#verifying-git-lfs-installation)
+  - [Initializing Submodules](#initialize-submodules)
+- [Building the Traffic Simulation Library](#build-the-traffic-simulation-library)
+  - [MacOS Deployment Target](#macos-deployment-target)
+  - [Standalone Traffic Library](#standalone-traffic-library)
+- [Installing the Traffic Simulation Package](#install-traffic-simulation-package)
+- [Example Usage](#example-usage)
+- [Running Unit Tests](#run-unit-tests)
+- [Versioning with Git Tags](#steps-to-create-a-git-tag-and-push-it-to-a-remote-repository)
 
 # Prerequisites
 
