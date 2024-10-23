@@ -51,13 +51,6 @@ The pipeline handles release notes generation and tags releases automatically, p
 
 With ReplicantDriveSim, you can simulate complex traffic environments, leverage reinforcement learning for training autonomous agents, and benefit from a unified system that integrates C++, Unity, and Python, all within a streamlined workflow.
 
-### Installation
-You can install the library via pip:
-
-```bash
-pip install replicantdrivesim
-```
-
 ### License
 ReplicantDriveSim is licensed under the MIT License. See the LICENSE file for more details.
 
