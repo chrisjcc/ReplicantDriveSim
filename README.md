@@ -4,6 +4,8 @@ title: "ReplicantDriveSimulation"
 permalink: /External/
 ---
 
+![Workflow Status](https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/deploy-gh-pages.yml/badge.svg?branch=main)
+
 # ReplicantDriveSim Library
 
 **ReplicantDriveSim** is an advanced and fully integrated traffic simulation library designed to bridge Unity, Python, and C++ environments, providing seamless support for autonomous driving research and multi-agent reinforcement learning (RL).
