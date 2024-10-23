@@ -25,6 +25,7 @@ pip install -r requirements.txt
 Alternatively, can create a conda environment:
 ```shell
 conda env create -f environment.yml
+conda activate drive
 ```
 
 ### Usage
@@ -184,7 +185,7 @@ If your `mlruns` folder contains your experiment runs, you can start an MLflow t
 - Start the MLflow UI by running:
 
 ```bash
-mlflow ui
+mlflow ui --backend-store-uri file:mlruns
 ```
 
 This will start the MLflow UI on `localhost:5000`. Open a browser and go to:
