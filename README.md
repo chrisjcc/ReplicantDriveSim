@@ -15,7 +15,14 @@ The Unity-based traffic simulation is now registered with PyPi, making it easily
 pip install replicantdrivesim
 ```
 
-This simplifies the setup process and ensures quick integration into your projects.
+This command simplifies the setup process by downloading and installing the package along with its dependencies. Once installed, you can quickly integrate it into your projects by importing the library in your Python scripts.
+
+```python
+import replicantdrivesim
+```
+
+For more detailed usage instructions, please refer to the documentation in the repository.
+
 
 ### 2. Automated Release Pipeline
 The project is equipped with a robust continuous integration and deployment (CI/CD) pipeline that:
