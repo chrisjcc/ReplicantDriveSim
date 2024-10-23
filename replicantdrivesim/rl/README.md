@@ -28,20 +28,19 @@ conda env create -f environment.yml
 ```
 
 ### Usage
-The main training script is trainer.py. This script leverages Ray's RLlib to set up and train multiple agents within a specified environment.
+The main training script is `trainer.py`, which leverages Ray's RLlib to set up and train multiple agents within the specified environment. To start the training process, run:
 
-To run the training process, execute:
 ```shell
 python examples/trainer.py
 ```
 
 ### Configuration
-The trainer.py script includes several configuration options to customize the training process:
+The `trainer.py` script includes several configuration options to customize the training process:
 
-- Environment: You can specify the environment for MARL training, which could be a custom or predefined Gym environment.
-- Algorithm: Choose from various RL algorithms supported by RLlib such as PPO, DQN, A3C, etc.
-- Hyperparameters: Adjust each agent's learning rates, batch sizes, and other hyperparameters.
-- Multi-Agent Setup: Define the policies and mapping from agents to policies in the multi-agent environment.
+- **Environment**: Define the environment for MARL training, whe are using our `CustomUnityMultiAgentEnv` a custom Gym-based multi-agent environment.
+- **Algorithm**: Choose from various RL algorithms supported by RLlib such as PPO, DQN, A3C, etc.
+- **Hyperparameters**: Adjust each agent's learning rates, batch sizes, and other hyperparameters.
+- **Multi-Agent Setup**: Define the policies and mapping from agents to policies in the multi-agent environment.
 
 
 ### Parameterized Action Space
@@ -69,7 +68,7 @@ self._single_agent_action_space = gym.spaces.Tuple(
 
 #### Key Features
 - Flexible Decision Making: Agents can make both high-level choices and precise adjustments.
-- Unity Integration: Actions are converted to a Unity-compatible format using the _convert_to_action_tuple method.
+- Unity Integration: Actions are converted to a Unity-compatible format using the `_convert_to_action_tuple` method.
 - Complex Behaviors: The parameterized action space enables sophisticated agent behaviors, ideal for scenarios requiring nuanced control.
 
 This implementation allows for a wide range of agent actions, from broad strategic decisions to fine-tuned movements, making it well-suited for complex reinforcement learning tasks in the ReplicantDriveSim environment.
@@ -80,13 +79,37 @@ This implementation allows for a wide range of agent actions, from broad strateg
 
 
 ### Results and Evaluation
-After training, the results and checkpoints will be saved to the directory specified in the script. You can use these checkpoints to evaluate the trained agents' performance or resume training.
+After training, the results and checkpoints will be saved to the directory specified in the script. 
+
+`~/ray_results/PPO_Highway_Experiment/PPO_CustomUnityMultiAgentEnv_2e073_00000_0_2024-10-22_16-59-04/`
+
+You can use these checkpoints to evaluate the trained agents' performance or resume training.
+
+#### View Previous Runs via the MLflow UI
+If your `mlruns` folder contains your experiment runs, you can start an MLflow tracking server to view them.
+
+### Start the MLflow UI:
+
+- Navigate to the directory where the mlruns folder is located.
+- Start the MLflow UI by running:
+
+```bash
+mlflow ui
+```
+
+This will start the MLflow UI on `localhost:5000`. Open a browser and go to:
+
+```
+http://127.0.0.1:5000
+```
+
+You can view all your experiments, metrics, parameters, and artifacts through the web interface.
 
 ### Running the Traffic Simulation
-This section explains how to execute the traffic simulation with agents performing both random and structured actions. The simulation supports two types of control:
-Discrete high-level decision-making: Actions such as lane changes (left or right), maintaining the current lane, speeding up, or slowing down.
+The traffic simulation supports both discrete high-level decision-making and continuous low-level control. Below is an example Python script demonstrating how to run the simulation and interact with the environment with agents performing both random actions.
+The simulation supports two types of control:
+- Discrete high-level decision-making: Actions such as lane changes (left or right), maintaining the current lane, speeding up, or slowing down.
 - Continuous low-level control: Actions such as steering, throttle control, and braking.
-- Below is a Python script example demonstrating how to run the simulation, modify actions, and interact with the environment.
 
 ```python
 import os
