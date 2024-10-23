@@ -67,7 +67,7 @@ self._single_agent_action_space = gym.spaces.Tuple(
 )
 ```
 
-** Key Features**
+#### Key Features
 - Flexible Decision Making: Agents can make both high-level choices and precise adjustments.
 - Unity Integration: Actions are converted to a Unity-compatible format using the _convert_to_action_tuple method.
 - Complex Behaviors: The parameterized action space enables sophisticated agent behaviors, ideal for scenarios requiring nuanced control.
