@@ -1,9 +1,3 @@
----
-layout: default
-title: "AI"
-permalink: /rl/
----
-
 # Multi-Agent Reinforcement Learning (MARL) with Ray RLlib
 
 This repository demonstrates how to train multi-agent reinforcement learning (MARL) models using [Ray RLlib](https://docs.ray.io/en/latest/rllib.html). The `trainer.py` script allows you to configure, train, and evaluate MARL agents within a customizable environment.
@@ -28,7 +22,12 @@ Install the required dependencies using pip:
 pip install -r requirements.txt
 ```
 
-## Usage
+Alternatively, can create a conda environment:
+```shell
+conda env create -f environment.yml
+```
+
+### Usage
 The main training script is trainer.py. This script leverages Ray's RLlib to set up and train multiple agents within a specified environment.
 
 To run the training process, execute:
@@ -36,7 +35,7 @@ To run the training process, execute:
 python examples/trainer.py
 ```
 
-## Configuration
+### Configuration
 The trainer.py script includes several configuration options to customize the training process:
 
 - Environment: You can specify the environment for MARL training, which could be a custom or predefined Gym environment.
@@ -44,19 +43,50 @@ The trainer.py script includes several configuration options to customize the tr
 - Hyperparameters: Adjust each agent's learning rates, batch sizes, and other hyperparameters.
 - Multi-Agent Setup: Define the policies and mapping from agents to policies in the multi-agent environment.
 
-## Script Overview
+
+### Parameterized Action Space
+The ReplicantDriveSim environment implements a parameterized action space, aligning with the concept described in the paper ["Continuous Deep Q-Learning with Model-based Acceleration"](https://arxiv.org/abs/1603.00748). This approach combines discrete and continuous actions, allowing for both high-level decision-making and fine-tuned control.
+
+#### Action Space Structure
+The action space is defined as a tuple containing two elements:
+
+- Discrete Action: A single value representing high-level decisions or action types.
+- Continuous Action Vector: A 3-dimensional vector for fine-grained control.
+
+```python
+self._single_agent_action_space = gym.spaces.Tuple(
+    (
+        gym.spaces.Discrete(self.behavior_spec.action_spec.discrete_branches),
+        gym.spaces.Box(
+            low=np.array([-0.610865, 0.0, -8.0]),
+            high=np.array([0.610865, 4.5, 0.0]),
+            shape=(self.behavior_spec.action_spec.continuous_size,),
+            dtype=np.float32,
+        ),
+    )
+)
+```
+
+** Key Features**
+- Flexible Decision Making: Agents can make both high-level choices and precise adjustments.
+- Unity Integration: Actions are converted to a Unity-compatible format using the _convert_to_action_tuple method.
+- Complex Behaviors: The parameterized action space enables sophisticated agent behaviors, ideal for scenarios requiring nuanced control.
+
+This implementation allows for a wide range of agent actions, from broad strategic decisions to fine-tuned movements, making it well-suited for complex reinforcement learning tasks in the ReplicantDriveSim environment.
+
+
+### Script Overview
 - trainer.py: The main script for configuring and running the multi-agent training using Ray RLlib. It includes setting up the environment, configuring the RLlib trainer, and executing the training loop.
 
 
-## Results and Evaluation
+### Results and Evaluation
 After training, the results and checkpoints will be saved to the directory specified in the script. You can use these checkpoints to evaluate the trained agents' performance or resume training.
 
 ### Running the Traffic Simulation
 This section explains how to execute the traffic simulation with agents performing both random and structured actions. The simulation supports two types of control:
-
-- Discrete high-level decision-making: Actions such as lane changes (left or right), maintaining the current lane, speeding up, or slowing down.
+Discrete high-level decision-making: Actions such as lane changes (left or right), maintaining the current lane, speeding up, or slowing down.
 - Continuous low-level control: Actions such as steering, throttle control, and braking.
-Below is a Python script example demonstrating how to run the simulation, modify actions, and interact with the environment.
+- Below is a Python script example demonstrating how to run the simulation, modify actions, and interact with the environment.
 
 ```python
 import os
@@ -83,9 +113,9 @@ def run_episodes(env, num_episodes):
                 discrete_action, continuous_actions = actions[agent]
  
                 # Breakdown of continuous actions
-                # continuous_actions[0] = 0.0  # Set steering to zero
-                # continuous_actions[1] = 0.1  # Some other modification
-                # continuous_actions[2] = 0.0  # Another modification
+                # continuous_actions = 0.0  # Set steering to zero
+                # continuous_actions = 0.1  # Some other modification
+                # continuous_actions = 0.0  # Another modification
 
                 actions[agent] = (discrete_action, continuous_actions)
 
@@ -107,8 +137,8 @@ def main():
     parser = argparse.ArgumentParser(description="Run a Unity environment simulation.")
     parser.add_argument(
         "--num-episodes",
-        type=int, 
-        default=10, 
+        type=int,
+        default=10,
         help="Number of episodes to run (default: 10)"
     )
     parser.add_argument(
@@ -145,15 +175,13 @@ if __name__ == "__main__":
 
 This script sets up the environment, runs a series of episodes where agents perform actions, and allows you to modify actions programmatically before sending them to the environment. You can adjust the number of episodes and provide a custom configuration file path using command-line arguments.
 
-## Additional Resources
+### Additional Resources
+
 [Ray RLlib Documentation](https://docs.ray.io/en/latest/rllib/index.html)
 
 [Multi-Agent Training](https://marllib.readthedocs.io/en/latest/index.html)
 
-
-## Acknowledgments
+### Acknowledgments
 - The Ray Team for creating RLlib
 - OpenAI Gym for providing standard RL environments
-
-
 This `README.md` provides an overview of the MARL training setup with Ray RLlib, instructions for getting started, and a brief example. You can adapt this template as needed to fit the specifics of your project.
