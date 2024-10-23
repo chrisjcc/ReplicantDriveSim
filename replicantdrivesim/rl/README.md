@@ -33,7 +33,7 @@ The main training script is trainer.py. This script leverages Ray's RLlib to set
 
 To run the training process, execute:
 ```shell
-python trainer.py
+python examples/trainer.py
 ```
 
 ## Configuration
