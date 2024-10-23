@@ -10,18 +10,11 @@ permalink: /
 
 This README is intended for developers interested in contributing to the Unity codebase of the ReplicantDriveSim traffic simulation project. Below are instructions and guidelines for setting up the development environment, updating the codebase, and managing dependencies for the Unity portion of the simulation.
 
-
-[AI Page](https://chrisjcc.github.io/ReplicantDriveSim/rl/)
-
-[GitHub Page](https://github.com/chrisjcc/ReplicantDriveSim/)
-
-[Read the Docs](https://replicantdrivesim.readthedocs.io/en/latest/)
-
 ![Nissan GTR](https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim.png)
 
 ## Accessing ReplicantDriveSim Library via PyPI
 
-The `ReplicantDriveSim` library is available on the Python Package Index (PyPI). You can find it at [https://pypi.org/project/ReplicantDriveSim/](https://pypi.org/project/ReplicantDriveSim/).
+The `ReplicantDriveSim` library is available on the Python Package Index (PyPI). You can find it at [PyPI-ReplicantDriveSim](https://pypi.org/project/ReplicantDriveSim/).
 
 # Project Setup
 
@@ -50,7 +43,7 @@ To generate code documentation for the Unity codebase, Doxygen is used. Ensure y
    ```bash
    doxygen Doxyfile
    ```
-   This will produce HTML and LaTeX documentation for the project's source code.  [Doxygen Documentation](https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/)
+   This will produce HTML and LaTeX documentation for the project's source code, [Doxygen Documentation](https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/).
 
 ## Building the Unity Project
 
