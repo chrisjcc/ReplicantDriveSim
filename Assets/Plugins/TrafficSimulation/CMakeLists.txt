@@ -29,6 +29,7 @@ set(UNITY_SOURCES
     ${CMAKE_SOURCE_DIR}/src/vehicle.cpp
     ${CMAKE_SOURCE_DIR}/src/simulation.cpp
     ${CMAKE_SOURCE_DIR}/src/traffic_simulation_c_api.cpp
+    ${CMAKE_SOURCE_DIR}/src/bicycle_model.cpp
 )
 
 set(UNITY_HEADERS
@@ -36,6 +37,7 @@ set(UNITY_HEADERS
     ${CMAKE_SOURCE_DIR}/include/vehicle.h
     ${CMAKE_SOURCE_DIR}/include/simulation.h
     ${CMAKE_SOURCE_DIR}/include/traffic_simulation_c_api.h
+    ${CMAKE_SOURCE_DIR}/include/bicycle_model.h
 )
 
 # Create build directory for Unity target
@@ -83,6 +85,7 @@ set(PYPI_SOURCE_FILES
     ${CMAKE_SOURCE_DIR}/src/traffic.cpp
     ${CMAKE_SOURCE_DIR}/src/vehicle.cpp
     ${CMAKE_SOURCE_DIR}/src/bindings.cpp
+    ${CMAKE_SOURCE_DIR}/src/bicycle_model.cpp
 )
 
 # Set the output directory for the PyPI target
