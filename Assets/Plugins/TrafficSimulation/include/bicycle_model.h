@@ -12,6 +12,7 @@
  */
 class BicycleModel {
 private:
+    // Vehicle parameters
     double wheelbase;    ///< Distance between the front and rear axles (m)
     double mass;         ///< Vehicle mass (kg)
     double Iz;           ///< Yaw moment of inertia (kg*m^2)
@@ -34,8 +35,11 @@ public:
      * @param front_stiffness Front cornering stiffness (N/rad)
      * @param rear_stiffness Rear cornering stiffness (N/rad)
      */
-    BicycleModel(double wb, double m, double inertia, double front_length, 
-                 double rear_length, double front_stiffness, double rear_stiffness);
+    BicycleModel(double wb = 2.7, double m = 1500.0, double inertia = 2500.0,
+                 double front_length = 1.35, double rear_length = 1.35,
+                 double front_stiffness = 50000.0, double rear_stiffness = 50000.0)
+        : wheelbase(wb), mass(m), Iz(inertia), lf(front_length), lr(rear_length),
+          Cf(front_stiffness), Cr(rear_stiffness) {}
 
     /**
      * @struct VehicleState
@@ -80,6 +84,23 @@ public:
      * @return The steady-state yaw rate (rad/s)
      */
     double calculateSteadyStateYawRate(double steering_angle, double velocity);
+
+    /**
+     * @brief Updates the kinematics of the vehicle.
+     *
+     * This method computes the next state of the vehicle based on the current state,
+     * steering angle, acceleration, and time step using dynamic equations of the bicycle model.
+     *
+     * @param current_state The current state of the vehicle
+     * @param steering_angle The front wheel steering angle (rad)
+     * @param acceleration Longitudinal acceleration (m/s^2)
+     * @param dt The time step for integration (s)
+     * @return The updated state of the vehicle after time step dt
+     */
+    VehicleState updateKinematics(const VehicleState& current_state,
+                                  double steering_angle,
+                                  double acceleration,
+                                  double dt);
 };
 
 #endif // BICYCLE_MODEL_H

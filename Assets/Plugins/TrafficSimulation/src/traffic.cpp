@@ -27,6 +27,8 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
 
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
+    vehicle_models.resize(num_agents);
+    vehicle_states.resize(num_agents);
 
     // Initialize agents with random positions and attributes
     for (int i = 0; i < num_agents; ++i) {
@@ -48,6 +50,14 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
 
         // Initialize previous positions with current positions
         previous_positions[i] = agents[i];
+
+        // Initialize bicycle model state
+        vehicle_states[i].x = agents[i].getX();
+        vehicle_states[i].y = agents[i].getY();
+        vehicle_states[i].psi = agents[i].getSteering();
+        vehicle_states[i].v_x = agents[i].getVz();  // Note: Your z is forward direction
+        vehicle_states[i].v_y = agents[i].getVx();  // Note: Your x is lateral direction
+        vehicle_states[i].yaw_rate = 0.0;
     }
 }
 
@@ -159,57 +169,47 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_orientati
  * @param low_level_action The low-level actions to apply.
  */
 void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action) {
-    // Bound kinematics to physical constraints
-    float steering = clamp(low_level_action[0], -0.610865f, 0.610865f); // Clamp steering between -35 and 35 degrees in radians
-    vehicle.setSteering(steering);
+    int vehicle_id = vehicle.getId();
 
-    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f); // Acceleration (m/s^2)
-    float braking = clamp(low_level_action[2], -8.0f, 0.0f); // Braking deceleration (m/s^2)
+    // Store previous position
+    previous_positions[vehicle_id] = vehicle;
+
+    // Get current bicycle model state
+    BicycleModel::VehicleState& current_state = vehicle_states[vehicle_id];
+
+    // Process steering and acceleration inputs
+    float steering = clamp(low_level_action[0], -0.610865f, 0.610865f);
+    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f);
+    float braking = clamp(low_level_action[2], -8.0f, 0.0f);
     float net_acceleration = 0.0f;
 
     // Process high-level actions
     switch (high_level_action) {
-        case 0: // Keep lane
-            // No changes are needed to keep the lane
-            break;
-        case 1: // Left lane change
-            net_acceleration = 0.0;
-            break;
-        case 2: // Right lane change
-            net_acceleration = 0.0;
-            break;
         case 3: // Speed up
             net_acceleration = acceleration;
             break;
         case 4: // Slow down
             net_acceleration = braking;
             break;
+        default:
+            net_acceleration = 0.0f;
     }
 
-    // Update the velocities
-    float initial_velocity_z = vehicle.getVz();
-    float initial_velocity_x = vehicle.getVx();
+    // Update vehicle state using bicycle model
+    current_state = vehicle_models[vehicle_id].updateKinematics(
+        current_state,
+        steering,
+        net_acceleration,
+        time_step
+    );
 
-    // Calculate the components of the net acceleration in the z and x directions
-    float acceleration_z = net_acceleration * std::cos(steering);
-    float acceleration_x = net_acceleration * std::sin(steering);
+    // Update vehicle properties based on bicycle model state
+    vehicle.setX(current_state.y);  // Map bicycle model y to vehicle x (lateral position)
+    vehicle.setZ(current_state.x);  // Map bicycle model x to vehicle z (forward position)
+    vehicle.setSteering(current_state.psi);
+    vehicle.setVx(current_state.v_y);  // Map bicycle model v_y to vehicle vx
+    vehicle.setVz(current_state.v_x);  // Map bicycle model v_x to vehicle vz
 
-    // TODO: Remove constraints
-    float new_velocity_z = clamp(initial_velocity_z + acceleration_z * time_step, -max_velocity, max_velocity);
-    float new_velocity_x = clamp(initial_velocity_x + acceleration_x * time_step, -max_velocity / 10.0f, max_velocity / 10.0f);
-
-    vehicle.setVz(new_velocity_z);
-    vehicle.setVx(new_velocity_x);
-
-    // Update the position using the kinematic equations
-    float delta_z = initial_velocity_z * time_step + 0.5f * acceleration_z * time_step * time_step;
-    float delta_x = initial_velocity_x * time_step + 0.5f * acceleration_x * time_step * time_step;
-
-    float new_z = vehicle.getZ() + delta_z;
-    float new_x = vehicle.getX() + delta_x;
-
-    vehicle.setZ(new_z);
-    vehicle.setX(new_x);
 
     // Wrap around horizontally
     if (vehicle.getZ() < 0) vehicle.setZ(vehicle.getZ() + SCREEN_WIDTH);
@@ -217,6 +217,9 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
 
     // Constrain vertically within the road
     //vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
+
+    // Update bicycle model state for wraparound
+    vehicle_states[vehicle_id].x = vehicle.getZ();
 }
 
 /**
