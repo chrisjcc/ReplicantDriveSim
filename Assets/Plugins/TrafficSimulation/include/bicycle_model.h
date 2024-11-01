@@ -3,12 +3,36 @@
 
 #include <cmath>
 
+
 /**
  * @class BicycleModel
- * @brief A simple dynamic bicycle model for vehicle kinematics and control.
+ * @brief A simplified kinematic bicycle model for vehicle kinematics and control.
  *
- * This class simulates the kinematic and dynamic behavior of a vehicle using
- * a bicycle model, which simplifies the vehicle dynamics to two wheels: front and rear.
+ * This class implements a pure kinematic bicycle model, which is often used
+ * in scenarios where dynamic effects like tire forces and slip angles are negligible.
+ * The model simplifies vehicle dynamics to two representative wheels (front and rear)
+ * and is particularly suitable for applications in path planning and low-speed maneuvering.
+ *
+ * ## Model Overview
+ *
+ * This model uses the classic kinematic bicycle equations:
+ * - β = arctan(lr * tan(δ) / L)   where δ is the steering angle
+ * - ψ̇ = (v * cos(β) * tan(δ)) / L
+ * - ẋ = v * cos(ψ + β)
+ * - ẏ = v * sin(ψ + β)
+ *
+ * Here:
+ * - **β** represents the slip angle, a function of the steering angle **δ**.
+ * - **ψ̇** is the yaw rate.
+ * - **v** is the vehicle's velocity.
+ * - **ẋ** and **ẏ** are the longitudinal and lateral velocity components in global coordinates.
+ *
+ * ## Use Cases
+ *
+ * This model is ideal for:
+ * - Path planning algorithms where precision at lower speeds is required.
+ * - Low-speed maneuvering tasks such as parking or confined-space navigation.
+ * - Scenarios where dynamic tire forces and slip effects are not significant.
  */
 class BicycleModel {
 private:
