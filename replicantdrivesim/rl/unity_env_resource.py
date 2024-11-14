@@ -8,7 +8,7 @@ from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 
-from utils import CustomSideChannel 
+from .utils import CustomSideChannel
 
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"

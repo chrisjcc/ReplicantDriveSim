@@ -78,9 +78,6 @@ Generate Documentation
    :maxdepth: 2
    :caption: Contents:
 
-   module1
-   module2
-
 Indices and tables
 ==================
 

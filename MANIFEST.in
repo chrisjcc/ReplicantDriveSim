@@ -1,0 +1,4 @@
+include replicantdrivesim/*.so
+recursive-include replicantdrivesim/configs *.yaml
+recursive-include replicantdrivesim/Builds *
+recursive-include replicantdrivesim/rl *

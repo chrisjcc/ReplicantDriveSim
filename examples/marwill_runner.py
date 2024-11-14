@@ -6,7 +6,7 @@ import json
 import numpy as np
 from environment import CustomUnityMultiAgentEnv
 from unity_env_resource import create_unity_env
-from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.policy.sample_batch import SampleBatch, MultiAgentBatch
 
 def load_config(config_path, config_schema_path):
     """Load and validate configuration files."""
@@ -28,6 +28,7 @@ def create_env(config_data, unity_executable_path):
         "initial_agent_count": config_data["env_config"]["initial_agent_count"],
         "unity_env_handle": unity_env_handle,
         "episode_horizon": config_data["env_config"]["episode_horizon"],
+        "_disable_action_flattening": True,
     }
     
     env = CustomUnityMultiAgentEnv(config=env_config, unity_env_handle=unity_env_handle)
@@ -36,11 +37,29 @@ def create_env(config_data, unity_executable_path):
 def run_episodes(env, num_episodes, output_file):
     """Run a defined number of episodes with the environment."""
     all_episodes_data = []
+    total_count = 0  # Initialize total step count
 
     for episode in range(num_episodes):
         print(f"Starting episode {episode + 1}")
 
-        episode_data = {}
+        episode_data = {
+            "type": "MultiAgentBatch",
+            "policy_batches": {
+                "shared_policy": {
+                    "obs": [],
+                    "actions": {
+                        "discrete": [],
+                        "continuous": []
+                    },
+                    "rewards": [],
+                    "new_obs": [],
+                    "dones": [],
+                    "t": [],
+                    "action_prob": [],
+                }
+            }
+        }
+
         obs, _ = env.reset()
         done = False
         step = 0
@@ -55,25 +74,12 @@ def run_episodes(env, num_episodes, output_file):
 
             print(f"Step {step} actions: ", actions)
 
-            # Collect pre-step data
+           # Collect pre-step data
             for agent_id, agent_obs in obs.items():
-                if agent_id not in episode_data:
-                    episode_data[str(agent_id)] = {
-                        SampleBatch.OBS: [],
-                        SampleBatch.ACTIONS: {
-                            "discrete": [],
-                            "continuous": []
-                        },
-                        SampleBatch.REWARDS: [],
-                        SampleBatch.NEXT_OBS: [],
-                        SampleBatch.DONES: [],
-                        "t": [],
-                        "action_prob": [],  # Placeholder for action probabilities
-                    }
-                episode_data[agent_id][SampleBatch.OBS].append(agent_obs.tolist())
+                episode_data["policy_batches"]["shared_policy"]["obs"].append(agent_obs.tolist())
                 discrete_action, continuous_actions = actions[agent_id]
-                episode_data[agent_id][SampleBatch.ACTIONS]["discrete"].append(discrete_action)
-                episode_data[agent_id][SampleBatch.ACTIONS]["continuous"].append(continuous_actions)
+                episode_data["policy_batches"]["shared_policy"]["actions"]["discrete"].append(discrete_action)
+                episode_data["policy_batches"]["shared_policy"]["actions"]["continuous"].append(continuous_actions)
 
             # Step the environment
             new_obs, rewards, terminateds, truncateds, infos = env.step(actions)
@@ -82,36 +88,62 @@ def run_episodes(env, num_episodes, output_file):
 
             # Collect post-step data
             for agent_id in obs.keys():
-                episode_data[agent_id][SampleBatch.REWARDS].append(float(rewards[agent_id]))
+                episode_data["policy_batches"]["shared_policy"]["rewards"].append(float(rewards[agent_id]))
                 agent_done = terminateds.get(agent_id, False) or truncateds.get(agent_id, False)
-                episode_data[agent_id][SampleBatch.DONES].append(agent_done)
-                episode_data[agent_id][SampleBatch.NEXT_OBS].append(new_obs[agent_id].tolist())
-                episode_data[agent_id]["t"].append(step)
-                episode_data[agent_id]["action_prob"].append(1.0)
+                episode_data["policy_batches"]["shared_policy"]["dones"].append(agent_done)
+                episode_data["policy_batches"]["shared_policy"]["new_obs"].append(new_obs[agent_id].tolist())
+                episode_data["policy_batches"]["shared_policy"]["t"].append(step)
+                episode_data["policy_batches"]["shared_policy"]["action_prob"].append(1.0)  # Placeholder for action probabilities
 
             # Check if the episode is done
             done = terminateds.get("__all__", False) or truncateds.get("__all__", False)
             obs = new_obs
             step += 1
 
-        # Convert lists to numpy arrays and add to all_episodes_data
-        for agent_id, agent_data in episode_data.items():
-            for key in agent_data:
-                if key == SampleBatch.ACTIONS:
-                    agent_data[key]["discrete"] = np.array(agent_data[key]["discrete"])
-                    agent_data[key]["continuous"] = np.array(agent_data[key]["continuous"])
-                else:
-                    agent_data[key] = np.array(agent_data[key])
-            agent_data["type"] = "MultiAgentBatch"  # Add the 'type' field
-            agent_data["policy_id"] = "shared_policy"  # Add the 'policy_id' field
-
+        # Add count of environment steps
+        episode_data["count"] = step
+        total_count += step  # Add the episode step count to the total count
 
         all_episodes_data.append(episode_data)
         print(f"Episode {episode + 1} finished")
 
+    # Combine all data from episodes into a single batch
+    combined_data = {
+        "type": "MultiAgentBatch",
+        "policy_batches": {
+            "shared_policy": {
+                SampleBatch.OBS: [],
+                SampleBatch.ACTIONS: {
+                    'discrete': [],
+                    'continuous': []
+                },
+                SampleBatch.REWARDS: [],
+                SampleBatch.NEXT_OBS: [],
+                SampleBatch.DONES: [],
+                SampleBatch.ACTION_PROB: [],
+                "t": []
+            }
+        },
+        "count": total_count  # Add the total count of steps
+    }
+
+    # Aggregate episode data into combined_data
+    for episode in all_episodes_data:
+        policy_data = episode["policy_batches"]["shared_policy"]
+        combined_policy_data = combined_data["policy_batches"]["shared_policy"]
+        combined_policy_data[SampleBatch.OBS].extend(policy_data['obs'])
+        combined_policy_data[SampleBatch.ACTIONS]['discrete'].extend(policy_data['actions']['discrete'])
+        combined_policy_data[SampleBatch.ACTIONS]['continuous'].extend(policy_data['actions']['continuous'])
+        combined_policy_data[SampleBatch.REWARDS].extend(policy_data['rewards'])
+        combined_policy_data[SampleBatch.NEXT_OBS].extend(policy_data['new_obs'])
+        combined_policy_data[SampleBatch.DONES].extend(policy_data['dones'])
+        combined_policy_data[SampleBatch.ACTION_PROB].extend(policy_data['action_prob'])
+        combined_policy_data["t"].extend(policy_data['t'])
+
     # Save all_episodes_data to a JSON file
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(all_episodes_data, f, cls=NumpyEncoder)
+        #json.dump(all_episodes_data, f, cls=NumpyEncoder)
+        json.dump(combined_data, f, cls=NumpyEncoder)
     print(f"Data saved to {output_file}")
 
 
@@ -119,7 +151,12 @@ class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
         return json.JSONEncoder.default(self, obj)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Run a Unity environment simulation.")

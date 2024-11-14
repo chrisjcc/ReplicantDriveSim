@@ -12,6 +12,11 @@ on:
     types: [trigger_gh_pages]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy (tag or branch)'
+        required: false
+        default: 'main'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -33,6 +38,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.ref || github.event.inputs.ref || 'main' }}
+          fetch-depth: 0  # Fetch all history for proper versioning
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -42,6 +50,15 @@ jobs:
 
       - name: Install Doxygen
         run: sudo apt-get install doxygen -y
+
+      - name: Set version in documentation
+        run: |
+          VERSION="${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}"
+          echo "Documenting version: $VERSION"
+          # You might want to update version information in your documentation config
+          if [ -f "_config.yml" ]; then
+            sed -i "s/version:.*/version: ${VERSION}/" _config.yml
+          fi
 
       - name: Generate Doxygen Documentation
         run: doxygen Doxyfile
@@ -55,6 +72,7 @@ jobs:
         run: bundle exec jekyll build
         env:
           JEKYLL_ENV: production
+          SITE_VERSION: ${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}
 
       - name: Upload combined artifact
         uses: actions/upload-pages-artifact@v3
@@ -69,8 +87,14 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
+    outputs:
+      deployment_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Report deployment status
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          echo "Deployed version ${{ github.event.client_payload.ref || 'latest' }} to ${{ steps.deployment.outputs.page_url }}"

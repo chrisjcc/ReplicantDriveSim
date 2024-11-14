@@ -1,0 +1,285 @@
+name: Publish PyPI Package
+
+on:
+  # Triggered by the release workflow via repository_dispatch
+  repository_dispatch:
+    types: [trigger_pypi_publish] # Triggers when the dispatch event is called
+  # Keep manual trigger for testing/debugging
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (for manual dispatch)'
+        required: false
+        default: ''
+
+
+jobs:
+  build-unity-plugin:
+    runs-on: macos-latest
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.client_payload.ref || github.ref }}
+
+      - name: Determine version
+        id: get_version
+        run: |
+          if [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+            VERSION="${{ github.event.client_payload.version }}"
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              VERSION="${{ github.event.inputs.version }}"
+            else
+              VERSION=$(git describe --tags --always)
+            fi
+          else
+            VERSION=$(git describe --tags --always)
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Print version
+        run: echo "Building PyPI package for version ${{ steps.get_version.outputs.VERSION }}"
+
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - name: Create metadata file
+        run: |
+          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
+          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install pybind11
+        run: |
+          python -m pip install --upgrade pip
+          pip install pybind11
+
+      - name: Compile C++ code
+        working-directory: Assets/Plugins/TrafficSimulation
+        run: |
+          mkdir build && cd build
+          cmake ..         
+          make
+
+      - name: Archive Plugin Files
+        run: |
+          zip -r macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
+
+      - name: Upload Unity Plugin Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}
+          path: ./macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip
+          include-hidden-files: true
+          if-no-files-found: warn
+
+
+  build-unity-project:
+    needs: build-unity-plugin
+    runs-on: macos-latest
+    outputs:
+      VERSION: ${{ needs.build-unity-plugin.outputs.VERSION }}
+    steps:
+      - name: Set VERSION from previous job
+        run: echo "VERSION=${{ needs.build-unity-plugin.outputs.VERSION }}" >> $GITHUB_ENV
+
+      - name: Debug VERSION
+        run: echo "VERSION is ${{ env.VERSION }}"
+
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - name: Create metadata file
+        run: |
+          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
+          echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
+
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # This is important to fetch all history for all tags and branches
+          lfs: true
+          ref: ${{ github.event.client_payload.ref || github.ref }}
+
+      - name: Download Unity Plugin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-unity-plugin-build-${{ env.VERSION }}
+          path: ./
+
+      - name: Extract Unity Plugin Build Artifacts
+        run: |
+          # Extract the file and overwrite existing files without prompting
+          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+
+          # Remove the ZIP file
+          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip metadata.txt
+
+      - name: Build Unity Project for macOS
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: StandaloneOSX # Build a macOS standalone. Or StandaloneLinux64 for Linux
+          unityVersion: auto # Use "auto" to get from your ProjectSettings/ProjectVersion.txt'
+          versioning: Semantic
+          # Enables caching the Unity Hub and Editor installation for MacOS runners (default: false).
+          # This can significantly reduce project build times if you have enough available cache on Github Actions.
+          cacheUnityInstallationOnMac: true
+          buildName: libReplicantDriveSim
+          buildsPath: ./Builds
+          # Format: EditorNamespace.BuilderClassName.StaticBuildMethod
+          buildMethod: UnityBuilderAction.BuildScript.PerformMacOSBuild
+          projectPath: .
+          customParameters:  '-logFile "/github/workspace/Logs/unity_build.log" -development'
+          androidExportType: "none"
+          androidSymbolType: "none"
+          allowDirtyBuild: False
+
+      - name: Package Builds with metadata
+        run: |
+          zip -r macOS-unity-Build-project-${{ env.VERSION }}.zip ./Builds ./Logs metadata.txt
+
+      - name: Upload Unity Build Artifact
+        uses: actions/upload-artifact@v4
+        with:	
+          name: macOS-unity-Build-project-${{ env.VERSION }}
+          # Upload the entire Builds and Logs directories
+          path: macOS-unity-Build-project-${{ env.VERSION }}.zip
+
+      - name: Update Release Asset
+        uses: actions/github-script@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const release = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+               tag: process.env.VERSION
+            });
+
+            await github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id: release.data.id,
+              name: `macOS-unity-Build-project-${process.env.VERSION}.zip`,
+              data: fs.readFileSync(`./macOS-unity-Build-project-${process.env.VERSION}.zip`)
+            });
+
+
+  build-and-publish-pypi:
+    needs: build-unity-project
+    runs-on: macos-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Set VERSION from previous job
+        run: echo "VERSION=${{ needs.build-unity-project.outputs.VERSION }}" >> $GITHUB_ENV
+
+      - name: Debug VERSION
+        run: echo "VERSION is ${{ env.VERSION }}"
+
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.ref || github.ref }}
+
+      - name: Download Unity Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-unity-Build-project-${{ env.VERSION }}
+          path: ./replicantdrivesim
+
+      - name: Extract Unity Build Artifact
+        run: |
+          # Change to the replicantdrivesim directory
+          cd replicantdrivesim
+
+          # Extract the file and overwrite existing files without prompting
+          unzip -o macOS-unity-Build-project-${{ env.VERSION }}.zip
+
+          # Remove the ZIP file
+          rm macOS-unity-Build-project-${{ env.VERSION }}.zip
+
+      - name: Download Unity Plugin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-unity-plugin-build-${{ env.VERSION }}
+          path: ./
+
+      - name: Extract Unity Plugin Artifact
+        run: |
+          # Extract the file and overwrite existing files without prompting
+          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+
+          # Copy the compiled C extension Python module to the 'replicantdrivesim' directory and rename it appropriately
+          cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+
+          # Remove the ZIP file
+          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine pybind11
+
+      - name: Build Python package
+        run: |
+          # Build the Python wheel and source distribution
+          python setup.py sdist bdist_wheel
+
+      - name: Upload to PyPI to publish Python package
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          # Check and upload the package to PyPI
+          twine check dist/*
+          twine upload dist/*
+
+      - name: Verify PyPi package installation
+        run: |
+          pip install ReplicantDriveSim
+          pip show ReplicantDriveSim
+
+      # In the PyPI workflow
+      - name: Notify Release Completion
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'trigger_docker_publish',
+              client_payload: {
+                ref: process.env.VERSION,
+                version: process.env.VERSION,
+                run_id: '${{ github.run_id }}',
+                status: 'success'
+              }
+            })

@@ -6,10 +6,15 @@
 #include "vehicle.h"
 #include "traffic.h"
 
+#ifndef VERSION_INFO
+#define VERSION_INFO "dev"
+#endif
+
 namespace py = pybind11;
 
 PYBIND11_MODULE(simulation, m) {
     m.doc() = "Traffic simulation module";
+    m.attr("__version__") = VERSION_INFO;
 
     // Bind the Vehicle class
     py::class_<Vehicle>(m, "Vehicle")
