@@ -18,7 +18,6 @@ public class TrafficManager : MonoBehaviour
     // Constants
     private const string DllName = "ReplicantDriveSim";
 
-
     // Serialized Fields for Unity Editor (Unity Inspector variables)
     [SerializeField] private GameObject agentPrefab; // e.g., NISSAN-GTR)
     [SerializeField] private int initialAgentCount = 2;
@@ -161,6 +160,9 @@ public class TrafficManager : MonoBehaviour
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     private static extern void Traffic_setMaxVelocity(IntPtr traffic, float maxVelocity);
 
+    public string openDriveFilePath;
+    public GameObject roadPrefab;
+
     /// <summary>
     /// Initializes the TrafficManager component when the script instance is being loaded.
     /// This method is called only once during the lifetime of the script instance.
@@ -181,6 +183,13 @@ public class TrafficManager : MonoBehaviour
 
         InitializeFields();
         SetupFloatPropertiesChannel();
+
+
+        GameObject roadLoaderObject = new GameObject("RoadLoader");
+        OpenDriveLoader roadLoader = roadLoaderObject.AddComponent<OpenDriveLoader>();
+        roadLoader.openDriveFilePath = openDriveFilePath;
+        roadLoader.roadPrefab = roadPrefab;
+
 
         LogDebug("TrafficManager::Awake completed successfully.");
     }
