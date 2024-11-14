@@ -1,0 +1,136 @@
+name: Publish Docker Image
+
+on:
+  # Triggered by the release workflow via repository_dispatch
+  repository_dispatch:
+    types: [trigger_docker_publish] # Triggers when the dispatch event is called
+  # Keep manual trigger for testing/debugging
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to build (e.g., v1.0.0)'
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+  DOCKER_NAMESPACE: chrisjcc
+  DOCKER_REPOSITORY: replicantdrivesim
+
+
+jobs:
+  build-and-push-docker-image:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Git repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.ref || github.event.inputs.version }}
+          fetch-depth: 0 # Fetch all history including tags
+
+      - name: Determine version
+        id: get_version
+        run: |
+          if [[ "${{ github.event_name }}" == 'repository_dispatch' ]]; then
+            VERSION="${{ github.event.client_payload.version }}"
+          elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              VERSION="${{ github.event.inputs.version }}"
+            else
+              VERSION=$(git describe --tags --always)
+            fi
+          else
+            VERSION=$(git describe --tags --always)
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Print version
+        run: echo "Building Docker Image for version ${{ steps.get_version.outputs.VERSION }}"
+
+      - name: Lowercase the repo name
+        run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}
+            ${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_REPOSITORY }}
+          tags: |
+            type=raw,value=${{ steps.get_version.outputs.VERSION }}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Download Unity Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          #name: macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}
+          name: macOS-unity-Build-project-${{ github.event.client_payload.version }}
+          path: ./
+          run-id: ${{ github.event.client_payload.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+
+      #- name: Download Unity Build Artifact from Release
+      #  run: |
+      #    curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+      #         -H "Accept: application/octet-stream" \
+      #         https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.get_version.outputs.VERSION }}/assets/macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip \
+      #         -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+
+      - name: Extract Unity Build Artifact
+        run: |
+          if [ -f "macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip" ]; then
+            # Extract the file and overwrite existing files without prompting
+            unzip -o macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+            # Remove the ZIP file
+            rm -f macOS-unity-Build-project-${{ steps.get_version.outputs.VERSION }}.zip
+          else
+            echo "Unity build artifact not found"
+            exit 1
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Report Build Status
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "Docker image build status: $STATUS"
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+          
+          if [ "$STATUS" != "success" ]; then
+            exit 1
+          fi

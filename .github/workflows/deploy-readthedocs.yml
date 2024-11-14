@@ -1,0 +1,147 @@
+# Building and deploying Documentation
+name: Deploy Read the Docs
+
+on:
+  # Add this section to listen for the repository dispatch event
+  repository_dispatch:
+    types: [trigger_readthedocs]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy (tag or branch)'
+        required: false
+        default: 'main'
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      build_status: ${{ steps.rtd_build.outputs.status }}
+      build_url: ${{ steps.rtd_build.outputs.build_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.ref || github.event.inputs.ref || 'main' }}
+          fetch-depth: 0
+
+      - name: Set version information
+        id: version
+        run: |
+          VERSION="${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}"
+          # Remove 'v' prefix if present for Read the Docs
+          RTD_VERSION=$(echo "$VERSION" | sed 's/^v//')
+          echo "Using version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "rtd_version=$RTD_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Lowercase the repo name
+        run: |
+          # Extract just the repository name without owner
+          REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
+          echo "REPO_LOWER=$REPO_NAME" >> $GITHUB_ENV
+          echo "Using repository name: $REPO_NAME"
+
+      - name: Trigger Read the Docs Build
+        id: rtd_build
+        env:
+          READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
+        run: |
+          # Create JSON payload
+          PAYLOAD=$(jq -n \
+            --arg ref "${{ steps.version.outputs.version }}" \
+            '{
+              "ref": $ref,
+              "build_config": true,
+              "build_environment": true
+            }')
+
+          echo "Using payload: $PAYLOAD"
+
+          function trigger_build() {
+            local url=$1
+            local response=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" \
+              "$url")
+
+            echo "$response"
+          }
+
+          # Try version-specific build first
+          response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${{ steps.version.outputs.rtd_version }}/builds/")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          # If version-specific build fails, try latest
+          if [ "$http_code" -eq 404 ]; then
+            echo "Version-specific build failed, trying 'latest' version..."
+            response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/latest/builds/")
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | head -n-1)
+          fi
+
+          echo "Response body: $body"
+          echo "HTTP code: $http_code"
+
+          # Parse the response
+          if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
+            if echo "$body" | jq empty 2>/dev/null; then
+              build_url=$(echo "$body" | jq -r '.build.urls.build // empty')
+              if [ ! -z "$build_url" ]; then
+                echo "status=success" >> $GITHUB_OUTPUT
+                echo "build_url=$build_url" >> $GITHUB_OUTPUT
+                echo "Build triggered successfully at: $build_url"
+                exit 0
+              fi
+            fi
+          fi
+
+          echo "status=failure" >> $GITHUB_OUTPUT
+          echo "Error triggering Read the Docs build. HTTP code: $http_code"
+          echo "Response body: $body"
+          exit 1
+
+
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Report Build Status
+        run: |
+          if [ "${{ needs.build.outputs.build_status }}" == "success" ]; then
+            echo "✅ Read the Docs build triggered successfully"
+            echo "Version: ${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}"
+            if [ ! -z "${{ needs.build.outputs.build_url }}" ]; then
+              echo "Build URL: ${{ needs.build.outputs.build_url }}"
+            fi
+          else
+            echo "❌ Read the Docs build failed to trigger"
+            exit 1
+          fi
+
+      - name: Create GitHub Status Check
+        if: github.event_name == 'repository_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STATUS="${{ needs.build.outputs.build_status == 'success' && 'success' || 'failure' }}"
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.client_payload.ref || github.sha }}" \
+            -d "{
+              \"state\": \"$STATUS\",
+              \"target_url\": \"${{ needs.build.outputs.build_url }}\",
+              \"description\": \"Read the Docs build $STATUS\",
+              \"context\": \"readthedocs/build\"
+            }"

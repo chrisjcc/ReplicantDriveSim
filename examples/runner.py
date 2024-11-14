@@ -45,22 +45,32 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Run a Unity environment simulation.")
     parser.add_argument(
-        "--num_episodes",
+        "--num-episodes",
         type=int, 
         default=10, 
         help="Number of episodes to run (default: 10)"
     )
-
+    parser.add_argument(
+       "--config-path",
+       type=str,
+       default=os.path.join("replicantdrivesim", "configs", "config.yaml"),
+       help="Environment configuration."
+    )
     # Parse command-line arguments
     args = parser.parse_args()
 
-    num_episodes = args.num_episodes
+    num_episodes = int(args.num_episodes)
+    config_path = str(args.config_path)
+
+    # Load configuration from YAML file
+    with open(config_path, "r") as config_file:
+        config_data = yaml.safe_load(config_file)
 
     # Initialize Ray
     ray.init()
 
     # Create the Unity environment
-    env = replicantdrivesim.make("replicantdrivesim-v0")
+    env = replicantdrivesim.make(env_name="replicantdrivesim-v0", config=config_data)
 
     # Run the episodes
     run_episodes(env, num_episodes)

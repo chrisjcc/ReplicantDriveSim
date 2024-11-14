@@ -32,14 +32,14 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             config (EnvContext): Configuration dictionary containing environment settings.
         """
         super().__init__()
-        self.initial_agent_count = config.get("initial_agent_count", 2)
+        self.initial_agent_count = config.get("env_config", {}).get("initial_agent_count", 2)
 
         # Set up signal handler for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
         # Reset entire env every this number of step calls.
-        self.max_episode_steps = config.get("episode_horizon", 1000)
+        self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
 
         # Keep track of how many times we have called `step` so far.
         self.episode_timesteps = 0
