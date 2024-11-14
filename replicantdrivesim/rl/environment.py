@@ -2,8 +2,13 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import gymnasium as gym
 import numpy as np
+import signal
+import sys
+
 import ray
 from mlagents_envs.base_env import ActionTuple
+from mlagents_envs.exception import UnityCommunicatorStoppedException
+
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import AgentID, MultiAgentDict, PolicyID
@@ -29,6 +34,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         super().__init__()
         self.initial_agent_count = config.get("initial_agent_count", 2)
 
+        # Set up signal handler for graceful shutdown
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
         # Reset entire env every this number of step calls.
         self.max_episode_steps = config.get("episode_horizon", 1000)
 
@@ -36,6 +45,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self.episode_timesteps = 0
 
         self.unity_env_handle = config["unity_env_handle"]
+        self.env_is_closed = False
 
         self.current_agent_count = self.initial_agent_count
 
@@ -59,9 +69,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         # Reset the Unity environment
         try:
             ray.get(self.unity_env_handle.reset.remote())
-        except Exception as e:
-            print(f"Error resetting Unity environment: {e}")
-            # Handle the error appropriately, maybe re-initialize the environment
+        except ray.exceptions.RayActorError:
+            print("Unity environment has been closed unexpectedly. Returning empty observation.")
+            self.env_is_closed = True
+            return self._get_empty_reset_results()
 
         # Access the behavior specifications
         behavior_specs = ray.get(self.unity_env_handle.get_behavior_specs.remote())
@@ -281,114 +292,119 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
     def reset(
         self, *, seed: Optional[int] = None, options: Optional[dict] = None
-    ) -> Union[Any, Tuple[Any, Dict]]:
-        """
-        Resets the environment to an initial state and returns the initial observation.
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
+        if self.env_is_closed:
+            print("Unity environment is closed. Returning empty observation.")
+            return self._get_empty_reset_results()
 
-        This method is used to reset the environment at the beginning of an episode.
-        If a seed is provided, it ensures the environment's behavior is deterministic
-        by starting from a reproducible state. Additional options can be passed to
-        modify the reset behavior.
-
-        Args:
-            seed (Optional[int]): An optional integer to seed the environment's random number generator.
-            options (Optional[dict]): An optional dictionary with parameters to customize the reset behavior.
-
-        Returns:
-            Union[Any, Tuple[Any, dict]]:
-                - Any: The initial observation of the environment after resetting.
-                - Tuple[Any, Dict]: A tuple containing the initial observation and an optional info dictionary.
-        """
-        # Handle seed if provided
         if seed is not None:
             np.random.seed(seed)
 
-        # Check if options contain a new agent count
         if options and "new_agent_count" in options:
             new_agent_count = options["new_agent_count"]
-
             if new_agent_count != self.current_agent_count:
-                ray.get(
-                    self.unity_env_handle.set_float_property.remote(
-                        "initialAgentCount", new_agent_count
+                try:
+                    ray.get(
+                        self.unity_env_handle.set_float_property.remote(
+                            "initialAgentCount", new_agent_count
+                        )
                     )
-                )
-                print(f"Setting new agent count to: {new_agent_count}")
+                    print(f"Setting new agent count to: {new_agent_count}")
+                    self.current_agent_count = new_agent_count
+                except ray.exceptions.RayActorError:
+                    print("Unity environment has been closed unexpectedly. Returning empty reset results.")
+                    self.env_is_closed = True
+                    return self._get_empty_reset_results()
 
         self.episode_timesteps = 0
 
-        # Reset the environment only once (ideally)
-        ray.get(self.unity_env_handle.reset.remote())
+        try:
+            ray.get(self.unity_env_handle.reset.remote())
+            print("Environment reset successfully.")
 
-        # Get decision steps after the reset
-        decision_steps, _ = ray.get(
-            self.unity_env_handle.get_steps.remote(self.behavior_name)
-        )
-        self.num_agents = len(decision_steps)
+            decision_steps, _ = ray.get(
+                self.unity_env_handle.get_steps.remote(self.behavior_name)
+            )
+            self.num_agents = len(decision_steps)
 
-        # Update num_agents and observation_space
-        self._update_spaces()
+            self._update_spaces()
 
-        obs_dict = {}
-        for i, agent_id in enumerate(decision_steps.agent_id):
-            obs = decision_steps[agent_id].obs[0].astype(np.float32)
-            agent_key = f"agent_{i}"
-            obs_dict[agent_key] = obs
+            obs_dict = {
+                f"agent_{i}": decision_steps[agent_id].obs[0].astype(np.float32)
+                for i, agent_id in enumerate(decision_steps.agent_id)
+            }
 
-        # Checking if the observations are within the bounds of the observation space
-        for agent_id, obs in obs_dict.items():
-            if not self.observation_space[agent_id].contains(obs):
-                print(f"Warning: Observation for {agent_key} is out of bounds:")
-                print(f"Observation: {obs}")
-                print(f"Observation space: {self.observation_space[agent_id]}")
-
-        # Returning the observations and an empty info dict
-        return obs_dict, {}
+            return obs_dict, {}
+        except UnityCommunicatorStoppedException:
+            print("Unity environment was closed. Exiting the Python program.")
+            self.close()
+            return self._get_empty_reset_results()
+        except Exception as e:
+            print(f"Error during reset: {str(e)}")
+            self.close()
+            return self._get_empty_reset_results()
 
     def step(
-        self, action_dict: MultiAgentDict
+        self, action_dict: Dict[str, Any]
     ) -> Tuple[
-        MultiAgentDict, MultiAgentDict, MultiAgentDict, MultiAgentDict, MultiAgentDict
+        Dict[str, np.ndarray],
+        Dict[str, float],
+        Dict[str, bool],
+        Dict[str, bool],
+        Dict[str, Dict[str, Any]]
     ]:
-        """
-        Steps the environment with the given actions.
+        if self.env_is_closed:
+            print("Unity environment is closed. Returning empty step results.")
+            return self._get_empty_step_results()
 
-        Args:
-            action_dict (Dict[str, Any]): A dictionary mapping agent IDs to actions.
-
-        Returns:
-            Tuple[Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Any]]:
-                A tuple containing observations, rewards, done flags, and additional info.
-        """
-        action_tuple = self._convert_to_action_tuple(action_dict)
-        ray.get(
-            self.unity_env_handle.set_actions.remote(self.behavior_name, action_tuple)
-        )
-
-        # Step the Unity environment
-        for _ in range(self.fps):
-            ray.get(self.unity_env_handle.step.remote())
-
-        obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict = (
-            self._get_step_results()
-        )
-
-        # Global horizon reached? -> Return __all__ truncated=True, so user
-        # can reset. Set all agents' individual `truncated` to True as well.
-        self.episode_timesteps += 1
-
-        if self.episode_timesteps > self.max_episode_steps:
-            truncateds_dict = dict(
-                {"__all__": True}, **{agent_id: True for agent_id in self._agent_ids}
+        try:
+            action_tuple = self._convert_to_action_tuple(action_dict)
+            ray.get(
+                self.unity_env_handle.set_actions.remote(self.behavior_name, action_tuple)
             )
 
-        # Check if all agents are terminated
-        terminateds_dict["__all__"] = all(terminateds_dict.values())
+            for _ in range(self.fps):
+                ray.get(self.unity_env_handle.step.remote())
 
-        # Check if all agents are truncated
-        truncateds_dict["__all__"] = any(truncateds_dict.values())
+            obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict = (
+                self._get_step_results()
+            )
 
-        return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
+            self.episode_timesteps += 1
+            if self.episode_timesteps > self.max_episode_steps:
+                truncateds_dict = {agent_id: True for agent_id in self._agent_ids}
+                truncateds_dict["__all__"] = True
+
+            terminateds_dict["__all__"] = all(terminateds_dict.values())
+            truncateds_dict["__all__"] = any(truncateds_dict.values())
+
+            return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
+
+        except UnityCommunicatorStoppedException:
+            print("Unity environment was closed unexpectedly. Returning empty step results.")
+            self.env_is_closed = True
+            return self._get_empty_step_results()
+        except Exception as e:
+            print(f"An error occurred during step: {e}")
+            self.close()
+            return self._get_empty_step_results()
+
+    def _get_empty_reset_results(self):
+        empty_obs = {
+            agent_id: np.zeros(self.single_agent_obs_space.shape, dtype=np.float32)
+            for agent_id in self._agent_ids
+        }
+        return empty_obs, {}
+
+    def _get_empty_step_results(self):
+        empty_dict = {agent_id: None for agent_id in self._agent_ids}
+        return (
+            {agent_id: np.zeros(self.single_agent_obs_space.shape, dtype=np.float32) for agent_id in self._agent_ids},
+            {agent_id: 0.0 for agent_id in self._agent_ids},
+            {agent_id: True for agent_id in self._agent_ids},
+            {agent_id: True for agent_id in self._agent_ids},
+            {agent_id: {} for agent_id in self._agent_ids}
+        )
 
     def _get_step_results(self):
         """Collects those agents' obs/rewards that have to act in next `step`.
@@ -399,7 +415,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                     Only those observations for which to get new actions are
                     returned.
                 rewards: Rewards dict matching `obs`.
-                dones: Done dict with only an __all__ multi-agent entry in it.
+               dones: Done dict with only an __all__ multi-agent entry in it.
                     __all__=True, if episode is done for all agents.
         """
         # Process observations, rewards, and done flags
@@ -439,6 +455,11 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
 
+    def _signal_handler(self, sig, frame):
+        print('Received shutdown signal. Closing environment gracefully.')
+        self.close()
+        sys.exit(0)
+
     def close(self):
         """
         Close the Unity environment and release any resources associated with it.
@@ -456,4 +477,12 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             # Close the Unity environment
             env.close()
         """
-        ray.get(self.unity_env_handle.close.remote())
+        if self.unity_env_handle:
+            try:
+                ray.get(self.unity_env_handle.close.remote())
+            except Exception as e:
+                print(f"Error closing Unity environment: {e}")
+            finally:
+                self.unity_env_handle = None
+                self.env_is_closed = True
+        print("Environment closed.")
