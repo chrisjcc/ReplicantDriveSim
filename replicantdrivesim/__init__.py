@@ -35,8 +35,8 @@ except ImportError as e:
     print(f"Current working directory: {os.getcwd()}")
     raise
 
-from .rl.environment import CustomUnityMultiAgentEnv
-from .rl.unity_env_resource import create_unity_env
+from .envs.environment import CustomUnityMultiAgentEnv
+from .envs.unity_env_resource import create_unity_env
 
 
 def get_unity_executable_path():
