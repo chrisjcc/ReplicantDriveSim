@@ -1,4 +1,10 @@
 include replicantdrivesim/*.so
 recursive-include replicantdrivesim/configs *.yaml
-recursive-include replicantdrivesim/Builds *
+recursive-include replicantdrivesim/Builds/StandaloneOSX *
+recursive-include replicantdrivesim/Builds/Windows *
+recursive-include replicantdrivesim/Builds/Linux *
 recursive-include replicantdrivesim/rl *
+global-exclude __pycache__
+global-exclude *.py[cod]
+prune replicantdrivesim/Builds
+prune replicantdrivesim/configs
