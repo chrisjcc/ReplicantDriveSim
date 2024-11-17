@@ -2,6 +2,7 @@
 #define TRAFFIC_H
 
 #include "vehicle.h"
+#include "bicycle_model.h"
 
 #include <vector>
 #include <unordered_map>
@@ -21,6 +22,12 @@ public:
 
     // Maximum velocity (m/s)
     float max_velocity = 60.0f;
+
+    // Bicycle model to handle more realistic vehicle motion
+    std::vector<BicycleModel> vehicle_models;
+
+    // To track vehicle state
+    std::vector<BicycleModel::VehicleState> vehicle_states;
 
     /**
      * @brief Constructs a Traffic object with the specified number of agents.
