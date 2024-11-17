@@ -55,34 +55,16 @@ class UnityEnvResource:
         # We can get the observations using the get_steps() method.
         # The decision_steps and terminal_steps objects contain the observations for agents that are still active
         # and those that have terminated, respectively.
-        self.unity_env = None
-        self.initialized = False
-        self.initialize_unity_env(file_name, worker_id, base_port, no_graphics)
 
-    def initialize_unity_env(self, file_name: str, worker_id: int, base_port: int, no_graphics: bool, seed: int=42) -> None:
-        # Establishing the environment and checking if it initialized correctly
-        try:
-            # Initialize the Unity environment with communication channels
-            self.unity_env = UnityEnvironment(
-                file_name=file_name,
-                worker_id=worker_id,
-                base_port=base_port,
-                side_channels=[self.engine_configuration_channel, self.float_props_channel, self.field_value_channel],
-                no_graphics=no_graphics,
-                seed=seed,
-            )
-            self.initialized = True
-            print("Unity environment initialized successfully.")
-        except UnityCommunicatorStoppedException as e:
-            # If Unity closes, we catch the exception and initiate cleanup
-            print(f"Unity environment closed unexpectedly: {str(e)}")
-            self.close()
-            self.initialized = False
-        except Exception as e:
-            # General exception handling
-            print(f"Failed to initialize the Unity environment: {str(e)}")
-            self.close()
-            raise e
+        # Initialize the Unity environment with communication channels
+        self.unity_env = UnityEnvironment(
+            file_name=file_name,
+            worker_id=worker_id,
+            base_port=base_port,
+            side_channels=[self.engine_configuration_channel, self.float_props_channel, self.field_value_channel],
+            no_graphics=no_graphics,
+            seed=42,
+        )
 
     def set_float_property(self, key: str, value: float) -> None:
         """
@@ -153,6 +135,7 @@ class UnityEnvResource:
         """
         if not self.unity_env:
             raise ValueError("Unity environment is not initialized.")
+    
         try:
             self.unity_env.reset()
         except Exception as e:
@@ -164,23 +147,23 @@ class UnityEnvResource:
         """
         Advances the Unity environment by one step.
 
+        Raises:
+            UnityCommunicatorStoppedException: If Unity is closed unexpectedly.
+            Exception: For other errors encountered during the step process.
+
         Returns:
             None
         """
-        if not self.initialized:
-            raise Exception("Environment not initialized. Cannot step.")
         try:
-            # Proceeding with a step in the Unity environment
             self.unity_env.step()
         except UnityCommunicatorStoppedException:
-            # If Unity is closed, we catch the exception and gracefully shut down
             print("Unity application was closed. Shutting down the environment.")
             self.close()
-            return None
+            return
         except Exception as e:
             print(f"Error during step: {str(e)}")
             self.close()
-            raise e
+            raise
 
     def close(self) -> None:
         """
@@ -189,15 +172,15 @@ class UnityEnvResource:
         Returns:
             None
         """
-        if self.unity_env is not None:
+        if self.unity_env:
             try:
                 self.unity_env.close()
-                print("Unity environment closed successfully.")
             except Exception as e:
-                print(f"Error while closing environment: {str(e)}")
-
-        self.unity_env = None
-        self.initialized = False
+                print(f"Error closing Unity environment: {e}")
+            finally:
+                self.unity_env = None
+        else:
+            print("Unity environment is already closed or was not properly initialized.")
 
     def __enter__(self) -> 'UnityEnvResource':
         return self
