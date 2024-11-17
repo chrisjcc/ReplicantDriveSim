@@ -53,7 +53,7 @@ def main():
     parser.add_argument(
        "--config-path",
        type=str,
-       default=os.path.join("replicantdrivesim", "configs", "config.yaml"),
+       default=os.path.join("examples", "configs", "config.yaml"),
        help="Environment configuration."
     )
     # Parse command-line arguments
