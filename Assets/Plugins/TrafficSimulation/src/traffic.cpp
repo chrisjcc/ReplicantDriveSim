@@ -195,26 +195,6 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
             net_acceleration = 0.0f;
     }
 
-    // Update vehicle state using bicycle model
-    /*
-    current_state = vehicle_models[vehicle_id].updateKinematics(
-        current_state,
-        steering,
-        net_acceleration,
-        time_step
-    );
-    */
-
-    // Update vehicle state using bicycle model
-    /*
-    current_state = vehicle_models[vehicle_id].updateKinematicState(
-         current_state,
-         steering,
-         net_acceleration,
-         time_step
-    );
-    */
-
     // Update vehicle state using enhanced dynamic bicycle model
     current_state = vehicle_models[vehicle_id].updateDynamicState(
         current_state,
