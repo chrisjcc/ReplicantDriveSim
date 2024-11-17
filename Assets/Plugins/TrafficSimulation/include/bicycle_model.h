@@ -3,17 +3,14 @@
 
 #include <cmath>
 
-
 /**
  * @class BicycleModel
  * @brief A simplified kinematic bicycle model for vehicle kinematics and control.
  *
- * This class implements a pure kinematic bicycle model, which is often used
- * in scenarios where dynamic effects like tire forces and slip angles are negligible.
- * The model simplifies vehicle dynamics to two representative wheels (front and rear)
- * and is particularly suitable for applications in path planning and low-speed maneuvering.
+ * This class implements a kinematic and dynamic bicycle model, commonly used in
+ * path planning and vehicle control, especially for low-speed and moderate-speed applications.
  *
- * ## Model Overview
+ * Model Overview:
  *
  * This model uses the classic kinematic bicycle equations:
  * - β = arctan(lr * tan(δ) / L)   where δ is the steering angle
@@ -28,7 +25,7 @@
  * - **ẋ** and **ẏ** are the longitudinal and lateral velocity components in global coordinates.
  *
  *
- * ## Use Cases
+ * Use Cases:
  *
  * This model is ideal for:
  * - Path planning and trajectory generation where precision at lower speeds is required.
@@ -38,7 +35,15 @@
  * - Constant velocity during each time step.
  * - Only geometric constraints matter.
  * - Initial prototyping and testing.
+
+ * Key Features:
+ * - Includes both kinematic and dynamic bicycle model equations.
+ * - Calculates vehicle state updates and steady-state yaw rates.
+ * - Simulates tire forces with a linear tire model.
+ * - Normalizes yaw angles for circular coordinate consistency.
  */
+
+
 class BicycleModel {
 private:
     // Vehicle parameters
@@ -52,7 +57,7 @@ private:
 
 public:
     /**
-     * @brief Constructor for the BicycleModel class.
+     * @brief Constructor to initialize the BicycleModel with default or custom parameters.
      * 
      * Initializes the vehicle parameters for the bicycle model.
      * 
@@ -72,7 +77,7 @@ public:
 
     /**
      * @struct VehicleState
-     * @brief Struct representing the state of the vehicle.
+     * @brief Represents the state of the vehicle, including position, velocity, and orientation.
      *
      * This structure contains the dynamic variables that describe the state
      * of the vehicle at any given time.
@@ -88,7 +93,7 @@ public:
     };
 
     /**
-     * @brief Calculates the next state of the vehicle using kinematic equations.
+     * @brief Calculates the next vehicle state using kinematic equations.
      * 
      * This method uses a dynamic bicycle model to compute the next state of the
      * vehicle based on current state, steering angle, and velocity.
@@ -99,11 +104,11 @@ public:
      * @param dt The time step for integration (s)
      * @return The next state of the vehicle after time step dt
      */
-    VehicleState calculateKinematics(double steering_angle, double velocity, 
+    VehicleState calculateKinematics(double steering_angle, double velocity,
                                      const VehicleState& current_state, double dt);
 
     /**
-     * @brief Calculates the steady-state yaw rate of the vehicle.
+     * @brief Computes the steady-state yaw rate under steady-state conditions.
      * 
      * This method calculates the steady-state yaw rate for the vehicle under
      * a given steering angle and velocity, assuming steady-state conditions.
@@ -112,10 +117,10 @@ public:
      * @param velocity The vehicle's longitudinal velocity (m/s)
      * @return The steady-state yaw rate (rad/s)
      */
-    double calculateSteadyStateYawRate(double steering_angle, double velocity);
+    double calculateSteadyStateYawRate(double steering_angle, double velocity) const;
 
     /**
-     * @brief Updates the kinematics of the vehicle.
+     * @brief Updates the kinematic state based on the current state and inputs.
      *
      * This method computes the next state of the vehicle based on the current state,
      * steering angle, acceleration, and time step using dynamic equations of the bicycle model.
@@ -129,10 +134,10 @@ public:
     VehicleState updateKinematicState(const VehicleState& current_state,
                                       double steering_angle,
                                       double velocity,
-                                      double dt);
+                                      double dt) const;
 
     /**
-     * @brief Computes the linear tire force based on cornering stiffness and slip angle.
+     * @brief Computes lateral tire force using a linear approximation for small slip angles.
      * 
      * This method calculates the force exerted by the tire in the lateral direction
      * using a linear approximation of tire dynamics. It is suitable for small slip angles
@@ -142,10 +147,10 @@ public:
      * @param slip_angle The slip angle of the tire (rad)
      * @return The lateral tire force (N)
      */
-    double linearTireForce(double stiffness, double slip_angle);
+    double linearTireForce(double stiffness, double slip_angle) const;
 
     /**
-     * @brief Updates the dynamic state of the vehicle using dynamic equations.
+     * @brief Updates the dynamic state of the vehicle considering yaw dynamics.
      * 
      * This method calculates the next state of the vehicle, considering dynamic effects
      * like yaw inertia and lateral forces from the tires. It provides a more detailed 
@@ -160,8 +165,7 @@ public:
     VehicleState updateDynamicState(const VehicleState& current_state,
                                     double steering_angle,
                                     double acceleration,
-                                    double dt);
-
+                                    double dt) const;
 
     /**
      * @brief Normalizes an angle to the range [-π, π].
@@ -173,7 +177,7 @@ public:
      * @param angle The input angle in radians
      * @return The normalized angle within the range [-π, π]
      */
-    double normalizeAngle(double angle);
+    double normalizeAngle(double angle) const;
 };
 
 #endif // BICYCLE_MODEL_H
