@@ -7,6 +7,7 @@ from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
+from mlagents_envs.exception import UnityCommunicatorStoppedException
 
 from .utils import CustomSideChannel
 
@@ -134,16 +135,35 @@ class UnityEnvResource:
         """
         if not self.unity_env:
             raise ValueError("Unity environment is not initialized.")
-        self.unity_env.reset()
+    
+        try:
+            self.unity_env.reset()
+        except Exception as e:
+            print(f"Error during reset: {e}")
+            self.close()
+            raise
 
     def step(self) -> None:
         """
         Advances the Unity environment by one step.
 
+        Raises:
+            UnityCommunicatorStoppedException: If Unity is closed unexpectedly.
+            Exception: For other errors encountered during the step process.
+
         Returns:
             None
         """
-        self.unity_env.step()
+        try:
+            self.unity_env.step()
+        except UnityCommunicatorStoppedException:
+            print("Unity application was closed. Shutting down the environment.")
+            self.close()
+            return
+        except Exception as e:
+            print(f"Error during step: {str(e)}")
+            self.close()
+            raise
 
     def close(self) -> None:
         """

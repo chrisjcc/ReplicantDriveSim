@@ -38,7 +38,6 @@ except ImportError as e:
 from .envs.environment import CustomUnityMultiAgentEnv
 from .envs.unity_env_resource import create_unity_env
 
-
 def get_unity_executable_path():
     # Get the package's directory and locate the Unity executable
     package_dir = os.path.dirname(__file__)
@@ -68,6 +67,7 @@ def get_unity_executable_path():
         )
 
     return unity_executable_path
+
 
 def make(env_name, config: dict):
     """Create a Unity environment using the given configuration."""
