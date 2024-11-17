@@ -5,7 +5,7 @@
 #include <cmath>
 #include <random>
 
-const int SCREEN_WIDTH = 3000;
+//const int SCREEN_WIDTH = 3000;
 const int LANE_WIDTH = 5;
 
 // Custom clamp function for C++11
@@ -40,10 +40,10 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
 
         float delta = (LANE_WIDTH - agents[i].getWidth());
 
-        agents[i].setX(randFloat(-0.5 * delta, 0.5 * delta));
+        agents[i].setX(randFloat(-0.5f * delta, 0.5f * delta));
         agents[i].setY(0.0f);
         agents[i].setZ(randFloat(0.0f, 4.0f * agents[i].getLength()));
-        agents[i].setVx(randNormal(0.0f, 0.5f));  // Initial lateral speed
+        agents[i].setVx(0.0f);  // Initial lateral speed
         agents[i].setVy(0.0f);  // Initial verticle speed
         agents[i].setVz(randNormal(50.0f, 2.0f)); // Initial longitudinal speed
         agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
@@ -52,11 +52,11 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
         previous_positions[i] = agents[i];
 
         // Initialize bicycle model state
-        vehicle_states[i].x = agents[i].getX();
-        vehicle_states[i].y = agents[i].getY();
         vehicle_states[i].psi = agents[i].getSteering();
-        vehicle_states[i].v_x = agents[i].getVz();  // Note: Your z is forward direction
-        vehicle_states[i].v_y = agents[i].getVx();  // Note: Your x is lateral direction
+        vehicle_states[i].z = agents[i].getZ();  // forward direction
+        vehicle_states[i].x = agents[i].getX();  // lateral direction
+        vehicle_states[i].v_z = agents[i].getVz();  // forward direction
+        vehicle_states[i].v_x = agents[i].getVx();  // lateral direction
         vehicle_states[i].yaw_rate = 0.0;
     }
 }
@@ -196,7 +196,27 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     }
 
     // Update vehicle state using bicycle model
+    /*
     current_state = vehicle_models[vehicle_id].updateKinematics(
+        current_state,
+        steering,
+        net_acceleration,
+        time_step
+    );
+    */
+
+    // Update vehicle state using bicycle model
+    /*
+    current_state = vehicle_models[vehicle_id].updateKinematicState(
+         current_state,
+         steering,
+         net_acceleration,
+         time_step
+    );
+    */
+
+    // Update vehicle state using enhanced dynamic bicycle model
+    current_state = vehicle_models[vehicle_id].updateDynamicState(
         current_state,
         steering,
         net_acceleration,
@@ -204,22 +224,14 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     );
 
     // Update vehicle properties based on bicycle model state
-    vehicle.setX(current_state.y);  // Map bicycle model y to vehicle x (lateral position)
-    vehicle.setZ(current_state.x);  // Map bicycle model x to vehicle z (forward position)
+    vehicle.setX(current_state.x);  // lateral position
+    vehicle.setZ(current_state.z);  // forward position
     vehicle.setSteering(current_state.psi);
-    vehicle.setVx(current_state.v_y);  // Map bicycle model v_y to vehicle vx
-    vehicle.setVz(current_state.v_x);  // Map bicycle model v_x to vehicle vz
-
-
-    // Wrap around horizontally
-    if (vehicle.getZ() < 0) vehicle.setZ(vehicle.getZ() + SCREEN_WIDTH);
-    if (vehicle.getZ() >= SCREEN_WIDTH) vehicle.setZ(vehicle.getZ() - SCREEN_WIDTH);
-
-    // Constrain vertically within the road
-    //vehicle.setX(std::fmin(std::fmax(vehicle.getX(), -0.5 * (LANE_WIDTH - vehicle.getWidth())), 0.5 * (LANE_WIDTH - vehicle.getWidth())));
+    vehicle.setVx(current_state.v_x);
+    vehicle.setVz(current_state.v_z);
 
     // Update bicycle model state for wraparound
-    vehicle_states[vehicle_id].x = vehicle.getZ();
+    vehicle_states[vehicle_id].z = vehicle.getZ();
 }
 
 /**

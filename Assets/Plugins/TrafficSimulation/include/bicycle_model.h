@@ -27,12 +27,17 @@
  * - **v** is the vehicle's velocity.
  * - **ẋ** and **ẏ** are the longitudinal and lateral velocity components in global coordinates.
  *
+ *
  * ## Use Cases
  *
  * This model is ideal for:
- * - Path planning algorithms where precision at lower speeds is required.
- * - Low-speed maneuvering tasks such as parking or confined-space navigation.
- * - Scenarios where dynamic tire forces and slip effects are not significant.
+ * - Path planning and trajectory generation where precision at lower speeds is required.
+ * - Low-speed (< 5 m/s) maneuvering tasks such as parking or confined-space navigation.
+ * - Scenarios where dynamic tire forces and slip effects are not significant, no slip (pure rolling).
+ * - Simple maneuvers without significant lateral acceleration.
+ * - Constant velocity during each time step.
+ * - Only geometric constraints matter.
+ * - Initial prototyping and testing.
  */
 class BicycleModel {
 private:
@@ -74,10 +79,10 @@ public:
      */
     struct VehicleState {
         double x;        ///< Global X position (m)
-        double y;        ///< Global Y position (m)
+        double z;        ///< Global Z position (m)
         double psi;      ///< Yaw angle (rad)
-        double v_x;      ///< Longitudinal velocity (m/s)
-        double v_y;      ///< Lateral velocity (m/s)
+        double v_x;      ///< Lateral velocity (m/s)
+        double v_z;      ///< Longitudinal velocity (m/s)
         double yaw_rate; ///< Yaw rate (rad/s)
         double beta;     ///< Sideslip angle (rad)
     };
@@ -125,6 +130,20 @@ public:
                                   double steering_angle,
                                   double acceleration,
                                   double dt);
+
+    VehicleState updateKinematicState(const VehicleState& current_state,
+                                      double steering_angle,
+                                      double velocity,
+                                      double dt);
+
+    double linearTireForce(double stiffness, double slip_angle);
+
+    VehicleState updateDynamicState(const VehicleState& current_state,
+                                    double steering_angle,
+                                    double acceleration,
+                                    double dt);
+
+    double normalizeAngle(double angle);
 };
 
 #endif // BICYCLE_MODEL_H
