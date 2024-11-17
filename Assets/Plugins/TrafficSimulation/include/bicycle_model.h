@@ -126,23 +126,53 @@ public:
      * @param dt The time step for integration (s)
      * @return The updated state of the vehicle after time step dt
      */
-    VehicleState updateKinematics(const VehicleState& current_state,
-                                  double steering_angle,
-                                  double acceleration,
-                                  double dt);
-
     VehicleState updateKinematicState(const VehicleState& current_state,
                                       double steering_angle,
                                       double velocity,
                                       double dt);
 
+    /**
+     * @brief Computes the linear tire force based on cornering stiffness and slip angle.
+     * 
+     * This method calculates the force exerted by the tire in the lateral direction
+     * using a linear approximation of tire dynamics. It is suitable for small slip angles
+     * where the relationship between force and slip angle is approximately linear.
+     * 
+     * @param stiffness The cornering stiffness of the tire (N/rad)
+     * @param slip_angle The slip angle of the tire (rad)
+     * @return The lateral tire force (N)
+     */
     double linearTireForce(double stiffness, double slip_angle);
 
+    /**
+     * @brief Updates the dynamic state of the vehicle using dynamic equations.
+     * 
+     * This method calculates the next state of the vehicle, considering dynamic effects
+     * like yaw inertia and lateral forces from the tires. It provides a more detailed 
+     * simulation compared to the pure kinematic model.
+     * 
+     * @param current_state The current state of the vehicle
+     * @param steering_angle The front wheel steering angle (rad)
+     * @param acceleration The longitudinal acceleration of the vehicle (m/s^2)
+     * @param dt The time step for integration (s)
+     * @return The updated state of the vehicle after time step dt
+     */
     VehicleState updateDynamicState(const VehicleState& current_state,
                                     double steering_angle,
                                     double acceleration,
                                     double dt);
 
+
+    /**
+     * @brief Normalizes an angle to the range [-π, π].
+     * 
+     * This method ensures that the input angle is wrapped within the range 
+     * of [-π, π], which is commonly required in applications involving 
+     * circular coordinates such as yaw angles.
+     * 
+     * @param angle The input angle in radians
+     * @return The normalized angle within the range [-π, π]
+     */
     double normalizeAngle(double angle);
 };
 
