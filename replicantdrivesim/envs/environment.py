@@ -261,6 +261,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         Returns:
             ActionTuple: The corresponding ActionTuple.
         """
+        # Extract bounds for clipping continuous actions
+        low_bounds = self._single_agent_action_space[1].low
+        high_bounds = self._single_agent_action_space[1].high
+
         # Split the actions into continuous and discrete actions
         continuous_actions = []
         discrete_actions = []
@@ -268,6 +272,9 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         for agent_id, agent_actions in actions_dict.items():
             # Agent actions is a tuple where the first element is discrete and the rest are continuous
             discrete_action, continuous_action = agent_actions
+
+            # Clip continuous actions to their defined range
+            continuous_action = np.clip(continuous_action, low_bounds, high_bounds)
 
             discrete_actions.append([discrete_action])
             continuous_actions.append(list(continuous_action))
