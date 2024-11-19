@@ -103,3 +103,69 @@ BicycleModel::VehicleState BicycleModel::updateDynamicState(
 
     return next_state;
 }
+
+// Update coupled dynamic state
+BicycleModel::VehicleState BicycleModel::updateCoupledState(
+    const VehicleState& current_state,
+    double steering_angle_rad,
+    double throttle, // Throttle or brake input
+    double dt) const {
+
+    if (dt <= 0.0) {
+        throw std::invalid_argument("Time step (dt) must be positive.");
+    }
+
+    VehicleState next_state = current_state;
+
+    // Calculate normal forces with weight transfer
+    const double a_x = throttle * engine_force - brake_force / mass;
+    const double F_normal_front = (mass * g * lr - mass * h * a_x) / wheelbase;
+    const double F_normal_rear = (mass * g * lf + mass * h * a_x) / wheelbase;
+
+    // Calculate slip angles
+    const double alpha_f = steering_angle_rad - atan2(
+        (current_state.v_x + lf * current_state.yaw_rate), current_state.v_z);
+    const double alpha_r = -atan2(
+        (current_state.v_x - lr * current_state.yaw_rate), current_state.v_z);
+
+    // Tire forces (using a nonlinear model, e.g., Pacejka or combined slip)
+    const double F_yf = computeNonlinearTireForce(Cf, F_normal_front, alpha_f, a_x);
+    const double F_yr = computeNonlinearTireForce(Cr, F_normal_rear, alpha_r, a_x);
+
+    // Update longitudinal and lateral accelerations
+    const double ax = (F_yf * cos(steering_angle_rad) - F_drag) / mass;
+    const double ay = (F_yf + F_yr) / mass;
+
+    // Update velocities and yaw rate
+    next_state.v_x += ax * dt - current_state.yaw_rate * current_state.v_z;
+    next_state.v_z += ay * dt + current_state.yaw_rate * current_state.v_x;
+    next_state.yaw_rate += (F_yf * lf - F_yr * lr) / Iz * dt;
+
+    // Update position and heading
+    next_state.psi = normalizeAngle(current_state.psi + next_state.yaw_rate * dt);
+    const double cos_psi = cos(next_state.psi);
+    const double sin_psi = sin(next_state.psi);
+    next_state.z += (next_state.v_z * cos_psi - next_state.v_x * sin_psi) * dt;
+    next_state.x += (next_state.v_z * sin_psi + next_state.v_x * cos_psi) * dt;
+
+    return next_state;
+}
+
+double BicycleModel::computeNonlinearTireForce(
+    double cornering_stiffness,    // Cornering stiffness (e.g., Cf or Cr)
+    double normal_force,           // Normal force acting on the tire
+    double slip_angle,             // Slip angle (radians)
+    double longitudinal_accel      // Longitudinal acceleration (optional, unused here)
+) const {
+    // Parameters for the Magic Formula
+    const double B = 10.0;  // Stiffness factor
+    const double C = 1.9;   // Shape factor
+    const double D = normal_force; // Peak factor proportional to normal force
+    const double E = 0.97;  // Curvature factor
+
+    // Calculate the lateral force using the Magic Formula
+    const double term = B * slip_angle;
+    const double Fy = D * sin(C * atan(term - E * (term - atan(term))));
+
+    return Fy;
+}
