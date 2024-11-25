@@ -68,10 +68,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         # Access the behavior specifications
         self.behavior_specs = ray.get(self.unity_env_handle.get_behavior_specs.remote())
-        print(f"Behavior specs: {self.behavior_specs.keys()}")
+        print(f"Behavior specs: {list(self.behavior_specs.keys())}")
 
         # Store the behavior name for later use
-        self._behavior_name = next(iter(self.behavior_specs.keys())).split('?')[0]
+        self._behavior_name = next(iter(self.behavior_specs.keys()))
         print(f"Initialized with behavior name: {self._behavior_name}")
 
         self.behavior_spec = self.behavior_specs[self._behavior_name]
@@ -88,8 +88,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         decision_steps, _ = ray.get(
             self.unity_env_handle.get_steps.remote(self._behavior_name)
         )
-        self.num_agents = len(decision_steps)
-        print(f"Initial number of agents: {self.num_agents}")
+
+        # Get the number of active agents
+        self.num_active_agents = len(decision_steps.agent_id)
+        print(f"Initial number of agents: {self.num_active_agents}")
 
         # Get observation size
         self.size_of_single_agent_obs = self.behavior_spec.observation_specs[0].shape[0]
@@ -126,7 +128,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         )
 
         # Add the private attribute `_agent_ids`, which is a set containing the ids of agents supported by the environment
-        self._agent_ids = {f"agent_{i}" for i in range(self.num_agents)}
+        self._agent_ids = {f"agent_{i}" for i in range(self.num_active_agents)}
 
         # Establish observation and action spaces
         self._update_spaces()
@@ -157,16 +159,16 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             None
         """
         # Populate observation_spaces and action_spaces for each agent
-        for i in range(self.num_agents):
+        for i in range(self.num_active_agents):
             agent_key = f"agent_{i}"
             self.observation_spaces[agent_key] = self.single_agent_obs_space
             self.action_spaces[agent_key] = self.single_agent_action_space
 
         self.observation_space = {
-            f"agent_{i}": self.single_agent_obs_space for i in range(self.num_agents)
+            f"agent_{i}": self.single_agent_obs_space for i in range(self.num_active_agents)
         }
         self.action_space = {
-            f"agent_{i}": self.single_agent_action_space for i in range(self.num_agents)
+            f"agent_{i}": self.single_agent_action_space for i in range(self.num_active_agents)
         }
 
     def __str__(self):
@@ -339,7 +341,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         # Get decision steps after the reset
         decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self._behavior_name))
 
-        self.num_agents = len(decision_steps)
+        # Get the number of active agents
+        self.num_active_agents = len(decision_steps.agent_id)
 
         # Update num_agents and observation_space
         self._update_spaces()
@@ -446,7 +449,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             infos_dict[agent_key] = {}
 
         # All Agents Done Check: Only use dones if all agents are done, then we should do a reset.
-        terminateds_dict["__all__"] = len(terminal_steps) == self.num_agents
+        terminateds_dict["__all__"] = len(terminal_steps) == self.num_active_agents
         truncateds_dict["__all__"] = all(truncateds_dict.values())
 
         return obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict
