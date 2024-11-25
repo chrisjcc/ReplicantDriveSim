@@ -63,10 +63,19 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             print(f"Error resetting Unity environment: {e}")
             # Handle the error appropriately, maybe re-initialize the environment
 
+        api_version_string = ray.get(self.unity_env_handle.get_api_version.remote())
+        print(f"API Version: {api_version_string}")
+
         # Access the behavior specifications
-        behavior_specs = ray.get(self.unity_env_handle.get_behavior_specs.remote())
-        self.behavior_name = list(behavior_specs.keys())[0]
-        self.behavior_spec = behavior_specs[self.behavior_name]
+        self.behavior_specs = ray.get(self.unity_env_handle.get_behavior_specs.remote())
+        print(f"Behavior specs: {self.behavior_specs.keys()}")
+
+        # Store the behavior name for later use
+        self._behavior_name = next(iter(self.behavior_specs.keys())).split('?')[0]
+        print(f"Initialized with behavior name: {self._behavior_name}")
+
+        self.behavior_spec = self.behavior_specs[self._behavior_name]
+        print(f"Action spec - Continuous: {self.behavior_spec.action_spec.continuous_size}, Discrete: {self.behavior_spec.action_spec.discrete_branches}")
 
         # Initialize observation and action spaces
         self.observation_space = None
@@ -77,7 +86,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         # Get the actual number of agents after environment reset
         decision_steps, _ = ray.get(
-            self.unity_env_handle.get_steps.remote(self.behavior_name)
+            self.unity_env_handle.get_steps.remote(self._behavior_name)
         )
         self.num_agents = len(decision_steps)
         print(f"Initial number of agents: {self.num_agents}")
@@ -328,9 +337,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         ray.get(self.unity_env_handle.reset.remote())
 
         # Get decision steps after the reset
-        decision_steps, _ = ray.get(
-            self.unity_env_handle.get_steps.remote(self.behavior_name)
-        )
+        decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self._behavior_name))
+
         self.num_agents = len(decision_steps)
 
         # Update num_agents and observation_space
@@ -368,9 +376,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                 A tuple containing observations, rewards, done flags, and additional info.
         """
         action_tuple = self._convert_to_action_tuple(action_dict)
-        ray.get(
-            self.unity_env_handle.set_actions.remote(self.behavior_name, action_tuple)
-        )
+
+        ray.get(self.unity_env_handle.set_actions.remote(self._behavior_name, action_tuple))
 
         # Step the Unity environment
         for _ in range(self.fps):
@@ -417,9 +424,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         infos_dict = {}
 
         # Get the new state
-        decision_steps, terminal_steps = ray.get(
-            self.unity_env_handle.get_steps.remote(self.behavior_name)
-        )
+        decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self._behavior_name))
 
         # Alternative, decision_steps.agent_id_to_index
         for agent_id in decision_steps.agent_id:
