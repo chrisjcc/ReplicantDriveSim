@@ -5,8 +5,12 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: bc11b2d9242ef48adb5f866366a9910e
+  - enabled: 1
+    path: Assets/Scenes/TrafficScene.unity
+    guid: 05f910fbc1b694d688bb05b3bd96b368
   m_configObjects:
     com.unity.ml-agents.settings: {fileID: 11400000, guid: d9309e26956034add883cebd2ffdceb8, type: 2}
+  m_UseUCBPForAssetBundles: 0

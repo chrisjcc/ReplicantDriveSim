@@ -52,14 +52,14 @@ public class TrafficAgent : Agent
     /// Throws an exception if TrafficManager is not found in the scene.
     ///
     /// </summary>
-    private void Awake()
+    protected override void Awake()
     {
         LogDebug("TrafficAgent::Awake Start started.");
 
         // Try to find the TrafficManager in the scene
         if (trafficManager == null)
         {
-            trafficManager = FindObjectOfType<TrafficManager>();
+            trafficManager = FindFirstObjectByType<TrafficManager>();
 
             if (trafficManager == null)
             {
@@ -722,7 +722,7 @@ public class TrafficAgent : Agent
 
         if (rb != null)
         {
-            float speed = rb.velocity.magnitude / 50.0f; // Normalize speed (assuming max speed is 50)
+            float speed = rb.linearVelocity.magnitude / 50.0f; // Normalize speed (assuming max speed is 50)
             sensor.AddObservation(speed);
         }
         else
@@ -731,7 +731,7 @@ public class TrafficAgent : Agent
             Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
         }
 
-        LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
+        LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.linearVelocity}");
     }
 
     /// <summary>
