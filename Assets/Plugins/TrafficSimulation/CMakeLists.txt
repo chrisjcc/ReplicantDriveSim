@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.4...3.18)
 project(ReplicantDriveSim VERSION 1.0.0 LANGUAGES CXX)
 
 # Define target names
-set(UNITY_TARGET ReplicantDriveSim)
-set(PYPI_TARGET replicantdrivesim_pypi)
+set(UNITY_TARGET libReplicantDriveSim)
+set(PYPI_TARGET replicantdrivesim)
 
 # Define VERSION_INFO for PyPI build
 if (VERSION_INFO)
@@ -50,6 +50,7 @@ add_library(${UNITY_TARGET} SHARED ${UNITY_SOURCES})
 
 # Set properties for Unity library
 set_target_properties(${UNITY_TARGET} PROPERTIES
+    PREFIX ""  # To avoid prepending "lib" to target libary e.g. libReplicantDriveSim.dylib
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON
@@ -125,6 +126,7 @@ pybind11_add_module(${PYPI_TARGET} ${PYPI_SOURCE_FILES})
 set_target_properties(${PYPI_TARGET} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
     PREFIX ""
+    SUFFIX ".so"  # Explicitly set .so suffix
 )
 
 # MacOS-specific settings for PyPI
