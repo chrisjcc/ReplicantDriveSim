@@ -48,6 +48,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -4163138524807180329, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4163138524807180329, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4163138524807180329, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -822578017894059060, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -822578017894059060, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -822578017894059060, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
       propertyPath: m_Name
       value: NISSAN-GTR
@@ -55,6 +79,18 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
       propertyPath: m_TagString
       value: TrafficAgent
+      objectReference: {fileID: 0}
+    - target: {fileID: 5590324888869176691, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5590324888869176691, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5590324888869176691, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -75,6 +111,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2474822421161976964}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1255974876024628840}
   m_SourcePrefab: {fileID: 100100000, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
 --- !u!1 &4109849008543767089 stripped
 GameObject:
@@ -167,7 +206,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 5, y: 3, z: 12}
-  m_Center: {x: 2, y: 2, z: -2}
+  m_Center: {x: 0, y: 1.25, z: 0}
 --- !u!54 &2474822421161976964
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -195,3 +234,31 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
+--- !u!114 &1255974876024628840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4109849008543767089}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6bb6b867a41448888c1cd4f99643ad71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SensorName: RayPerceptionSensor
+  m_DetectableTags:
+  - TrafficAgent
+  - RoadBoundary
+  m_RaysPerDirection: 15
+  m_MaxRayDegrees: 180
+  m_SphereCastRadius: 0.5
+  m_RayLength: 100
+  m_RayLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  m_ObservationStacks: 1
+  rayHitColor: {r: 1, g: 0, b: 0, a: 1}
+  rayMissColor: {r: 1, g: 1, b: 1, a: 1}
+  m_StartVerticalOffset: 2.5
+  m_EndVerticalOffset: 0
