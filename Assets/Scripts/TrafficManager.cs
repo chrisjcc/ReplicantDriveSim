@@ -1,4 +1,5 @@
 using System; // IntPtr
+using Unity.MLAgents.SideChannels;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
