@@ -1,6 +1,6 @@
 #include "simulation.h"
 
-Simulation::Simulation(const int& num_agents, const unsigned& seed, const int& num_rays)
+Simulation::Simulation(const int& num_agents, const unsigned& seed)
     : trafficSimulation(num_agents, seed) {}
 
 Simulation::~Simulation() = default;

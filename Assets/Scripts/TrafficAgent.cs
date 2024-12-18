@@ -540,88 +540,6 @@ public class TrafficAgent : Agent
     }
 
     /// <summary>
-    /// Collects and adds raycast-based observations to the agent's sensor.
-    ///
-    /// This method performs the following operations:
-    /// 1. Determines the starting point for raycasts based on the agent's collider.
-    /// 2. Casts multiple rays in a fan pattern around the agent.
-    /// 3. For each ray, adds observations about:
-    ///    - The normalized distance to the hit point (or max distance if no hit).
-    ///    - The type of object hit (agent, road boundary, or other).
-    ///
-    /// Raycast Configuration:
-    /// - Number of rays: Defined by trafficManager.numberOfRays
-    /// - Angle between rays: Calculated using trafficManager.AngleStep
-    /// - Total angle covered: trafficManager.raycastAngle
-    /// - Ray length: trafficManager.rayLength
-    ///
-    /// Observation Encoding:
-    /// - Distance: Normalized value between 0 and 1 (hit distance / max ray length)
-    /// - Hit Type:
-    ///   1.0 for TrafficAgent
-    ///   2.0 for RoadBoundary
-    ///   0.0 for other objects or no hit
-    ///
-    /// Dependencies:
-    /// - Requires initialized TrafficManager with proper raycast configuration.
-    /// - Uses Unity's Physics.Raycast for collision detection.
-    ///
-    /// Performance Considerations:
-    /// - Multiple raycasts per frame can be computationally expensive. Optimize ray count if needed.
-    ///
-    /// Usage:
-    /// Call this method as part of the agent's observation collection process, typically within a larger
-    /// CollectObservations method.
-    ///
-    /// Note:
-    /// - Ensure consistent use of tags ("TrafficAgent", "RoadBoundary") across the project.
-    /// - The method logs debug information about the agent's rotation; consider making this conditional.
-    /// - Adjust the observation encoding if more detailed hit information is required.
-    /// - Consider visualizing these raycasts in debug mode for easier understanding and troubleshooting.
-    ///
-    /// </summary>
-    /// <param name="sensor">The VectorSensor to which observations are added.</param>
-    /*
-    private void CollectRaycastObservations(VectorSensor sensor)
-    {
-        // Raycast observations (e.g., observations for nearby agents and road boundaries)
-        Vector3 rayStart = GetRayStartPosition(agentCollider);
-
-        for (int i = 0; i < trafficManager.numberOfRays; i++)
-        {
-            float angle = trafficManager.AngleStep * i;
-            Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raycastAngle / 2, 0) * Vector3.forward);
-
-            if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
-            {
-                sensor.AddObservation(hit.distance / trafficManager.rayLength);
-
-                // Add information about what was hit
-                if (hit.collider.CompareTag("TrafficAgent"))
-                {
-                    sensor.AddObservation(1.0f); // Indicates hit another agent
-                }
-                else if (hit.collider.CompareTag("RoadBoundary"))
-                {
-                    sensor.AddObservation(2.0f); // Indicates hit road boundary
-                }
-                else
-                {
-                    sensor.AddObservation(0.0f); // Indicates hit something else
-                }
-            }
-            else
-            {
-                sensor.AddObservation(1.0f); // Normalized max distance for missed raycasts
-                sensor.AddObservation(0.0f); // Indicates nothing was hit
-            }
-        }
-
-        LogDebug($"CollectObservations: Euler angles: Pitch={transform.rotation.eulerAngles.x}, Yaw={transform.rotation.eulerAngles.y}, Roll={transform.rotation.eulerAngles.z}");
-    }
-    */
-
-    /// <summary>
     /// Collects and adds the agent's position and rotation observations to the sensor.
     ///
     /// This method performs the following operations:
@@ -733,35 +651,6 @@ public class TrafficAgent : Agent
 
         LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="sensor"></param>
-    /*
-    private void CollectNearbyAgentSpeedObservations(VectorSensor sensor)
-    {
-        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius, LayerMask.GetMask("TrafficAgent"));
-
-        foreach (Collider collider in nearbyColliders)
-        {
-            if (collider.gameObject != gameObject)  // Exclude self
-            {
-                Rigidbody otherRb = collider.GetComponent<Rigidbody>();
-                if (otherRb != null)
-                {
-                    Vector3 relativeVelocity = otherRb.velocity - rb.velocity;
-                    float relativeSpeed = relativeVelocity.magnitude;
-                    Vector3 direction = (collider.transform.position - transform.position).normalized;
-                    float approachSpeed = Vector3.Dot(relativeVelocity, direction);
-
-                    sensor.AddObservation(relativeSpeed / maxRelativeSpeed);  // Normalized relative speed
-                    sensor.AddObservation(approachSpeed / maxRelativeSpeed);  // Normalized approach speed
-                }
-            }
-        }
-    }
-    */
 
     /// <summary>
     /// Generates heuristic actions for the agent when the Behavior Type is set to "Heuristic Only".
@@ -1001,21 +890,21 @@ public class TrafficAgent : Agent
 
         Vector3 rayStart = GetRayStartPosition(agentCollider);
 
-        float delta_angle = trafficManager.raycastAngle / (trafficManager.numberOfRays - 1);
+        float delta_angle = trafficManager.raySensor.MaxRayDegrees / (trafficManager.raySensor.RaysPerDirection - 1);
 
-        for (int i = 0; i < trafficManager.numberOfRays; i++)
+        for (int i = 0; i < trafficManager.raySensor.RaysPerDirection; i++)
         {
             float angle = delta_angle * i;
-            Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raycastAngle / 2, 0) * Vector3.forward);
+            Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raySensor.MaxRayDegrees / 2, 0) * Vector3.forward);
 
             // Ray hit at a certain distance
-            if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayLength))
+            if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.raySensor.RayLength))
             {
                 Debug.DrawRay(rayStart, direction * hit.distance, rayHitColor, 0.0f);
             }
             else // Ray did not hit
             {
-                Debug.DrawRay(rayStart, direction * trafficManager.rayLength, rayMissColor, 0.0f);
+                Debug.DrawRay(rayStart, direction * trafficManager.raySensor.RayLength, rayMissColor, 0.0f);
             }
         }
     }

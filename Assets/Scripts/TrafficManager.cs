@@ -27,14 +27,7 @@ public class TrafficManager : MonoBehaviour
     [SerializeField] private float maxVelocity = 60.0f;
 
     // Public Properties
-    [SerializeField] public int numberOfRays = 15;
-    [SerializeField] public float rayLength = 200f;
-    [SerializeField] public float raycastAngle = 90f;
     [SerializeField] public bool debugVisualization = false;
-
-    // Color settings for ray visualization
-    [HideInInspector] public Color rayHitColor = Color.red;
-    [HideInInspector] public Color rayMissColor = Color.white;
 
     [SerializeField] public float spawnAreaSize = 10.0f;
     //[HideInInspector] public float MoveSpeed { get; set; } = 5f;
@@ -44,6 +37,7 @@ public class TrafficManager : MonoBehaviour
     [HideInInspector] public bool PendingAgentCountUpdate { get; set; } = false;
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "Road";
     [SerializeField] public int MaxSteps = 2000;
+    [HideInInspector] public RayPerceptionSensorComponent3D raySensor;
 
     // Public Fields
     public IntPtr trafficSimulationPtr;
@@ -228,7 +222,6 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void InitializeFields()
     {
-        AngleStep = raycastAngle / (numberOfRays - 1);
         highLevelActions = new List<int>();
         lowLevelActions = new List<float[]>();
     }
@@ -2426,43 +2419,23 @@ public class TrafficManager : MonoBehaviour
         sensorObject.transform.localPosition = new Vector3(2.0f, 2.5f, 0.0f); // Adjust as needed
 
         // Add and configure the RayPerceptionSensorComponent3D
-        RayPerceptionSensorComponent3D raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
+        //RayPerceptionSensorComponent3D raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
         //raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
+        raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
 
         // Configure the sensor
         raySensor.SensorName = $"{agent.name}_RaySensor";
         raySensor.DetectableTags = new List<string> { "RoadBoundary", "TrafficAgent"};
         raySensor.RaysPerDirection = 15;
-        raySensor.MaxRayDegrees = 360;
+        raySensor.MaxRayDegrees = 180;
         raySensor.SphereCastRadius = 0.5f;
-        raySensor.RayLength = 50f;
+        raySensor.RayLength = 100f;
         raySensor.ObservationStacks = 1;
-
-        // Add a custom script for ray visualization
-        //RayVisualization rayVis = sensorObject.AddComponent<RayVisualization>();
-        //rayVis.raySensor = raySensor;
-        //rayVis.hitColor = rayHitColor;
-        //rayVis.missColor = rayMissColor;
+        raySensor.StartVerticalOffset = 2.5f;
 
         Debug.Log($"Finished adding RaySensor to agent: {agent.name}");
         Debug.Log($"RaySensor configuration: RaysPerDirection={raySensor.RaysPerDirection}, " +
                   $"MaxRayDegrees={raySensor.MaxRayDegrees}, SphereCastRadius={raySensor.SphereCastRadius}, " +
                   $"RayLength={raySensor.RayLength}");
     }
-
-    /*
-    void SetDebugColors(Color hitColor, Color missColor)
-    {
-        SerializedObject serializedObject = new SerializedObject(raySensor);
-        SerializedProperty hitColorProperty = serializedObject.FindProperty("rayHitColor");
-        SerializedProperty missColorProperty = serializedObject.FindProperty("rayMissColor");
-
-        if (hitColorProperty != null && missColorProperty != null)
-        {
-            hitColorProperty.colorValue = hitColor;
-            missColorProperty.colorValue = missColor;
-            serializedObject.ApplyModifiedProperties();
-        }
-    }
-    */
 }
