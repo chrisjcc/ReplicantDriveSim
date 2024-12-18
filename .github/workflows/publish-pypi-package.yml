@@ -230,8 +230,8 @@ jobs:
           # Extract the file and overwrite existing files without prompting
           unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
-          # Copy the compiled C extension Python module to the 'replicantdrivesim' directory and rename it appropriately
-          cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim_pypi.so replicantdrivesim/replicantdrivesim.so
+          # Copy the compiled C extension Python module to the 'replicantdrivesim' directory
+          cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim.so replicantdrivesim/
 
           # Remove the ZIP file
           rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
