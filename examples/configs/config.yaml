@@ -9,7 +9,7 @@ unity_env:
   no_graphics: false
 
 env_config:
-  initial_agent_count: 2
+  initial_agent_count: 5
   episode_horizon: 1000
 
 ppo_config:

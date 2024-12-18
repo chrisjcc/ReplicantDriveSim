@@ -1,0 +1,27 @@
+﻿<Properties StartupConfiguration="{3FC56804-7733-B87E-8287-3A8FE392B0DB}|">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/TrafficManager.cs">
+    <Files>
+      <File FileName="Assets/Scripts/TrafficManager.cs" Line="1298" Column="15" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="ReplicantDriveSim" expanded="True">
+            <Node name="Assets" expanded="True">
+              <Node name="Scripts" expanded="True">
+                <Node name="TrafficManager.cs" selected="True" />
+              </Node>
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="0737fdf8-94c7-42a8-bb99-51bf9e4d5eb6" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>
