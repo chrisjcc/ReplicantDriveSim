@@ -47,7 +47,7 @@ class UnityEnvResource:
         """
         self.channel_id = uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f7")
         self.engine_configuration_channel = EngineConfigurationChannel()
-        self.float_props_channel = FloatPropertiesChannel(self.channel_id)
+        self.float_properties_channel = FloatPropertiesChannel(self.channel_id)
         self.field_value_channel = CustomSideChannel()
 
         # Note: Communication Layer: ML-Agents uses a communication protocol (gRPC) to transfer data between Unity and Python.
@@ -59,12 +59,12 @@ class UnityEnvResource:
         # The decision_steps and terminal_steps objects contain the observations for agents that are still active
         # and those that have terminated, respectively.
 
-        # Initialize the Unity environment with communication channels
+        # Create the Unity environment with communication channels
         self.unity_env = UnityEnvironment(
-            file_name=file_name,
+            file_name=file_name,  # path_to_unity_executable
             worker_id=worker_id,
             base_port=base_port,
-            side_channels=[self.engine_configuration_channel, self.float_props_channel, self.field_value_channel],
+            side_channels=[self.engine_configuration_channel, self.float_properties_channel, self.field_value_channel],
             no_graphics=no_graphics,
             seed=42,
         )
@@ -77,7 +77,7 @@ class UnityEnvResource:
             key (str): The key for the float property.
             value (float): The value to set for the property.
         """
-        self.float_props_channel.set_property(key, value)
+        self.float_properties_channel.set_property(key, value)
 
     def get_field_value(self, key_field: str = "FramesPerSecond") -> Dict[str, Optional[float]]:
         """
@@ -117,7 +117,16 @@ class UnityEnvResource:
         Returns:
             Tuple: A tuple containing decision steps and terminal steps.
         """
-        return self.unity_env.get_steps(behavior_name)
+        if not self.unity_env:
+            print("Unity environment is not initialized or already closed. Cannot get steps.")
+            return None, None  # Return empty tuples as a fallback
+
+        try:
+            return self.unity_env.get_steps(behavior_name)
+        except Exception as e:
+            print(f"Error getting steps: {str(e)}")
+            self.close()
+            raise
 
     def set_actions(self, behavior_name: str, action: ActionTuple) -> None:
         """
@@ -127,7 +136,16 @@ class UnityEnvResource:
             behavior_name (str): The behavior name to set actions for.
             action (ActionTuple): The actions to apply.
         """
-        self.unity_env.set_actions(behavior_name, action)
+        if not self.unity_env:
+            print("Unity environment is not initialized or already closed.")
+            return
+
+        try:
+            self.unity_env.set_actions(behavior_name, action)
+        except Exception as e:
+             print(f"Error during set_actions: {e}")
+             self.close()
+             raise
 
     def reset(self) -> None:
         """
@@ -137,8 +155,9 @@ class UnityEnvResource:
             None
         """
         if not self.unity_env:
-            raise ValueError("Unity environment is not initialized.")
-    
+            print("Unity environment is not initialized or already closed.")
+            return
+
         try:
             self.unity_env.reset()
         except Exception as e:
@@ -157,6 +176,10 @@ class UnityEnvResource:
         Returns:
             None
         """
+        if not self.unity_env:
+            print("Unity environment is not initialized or already closed.")
+            return
+
         try:
             self.unity_env.step()
         except UnityCommunicatorStoppedException:
@@ -182,6 +205,7 @@ class UnityEnvResource:
                 print(f"Error closing Unity environment: {e}")
             finally:
                 self.unity_env = None
+                print("Unity environment closed successfully.")
         else:
             print("Unity environment is already closed or was not properly initialized.")
 
