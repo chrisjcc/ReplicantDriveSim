@@ -340,7 +340,15 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         # Get decision steps after the reset
         decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self._behavior_name))
-        self.num_agents = len(decision_steps)
+
+        if decision_steps is None:
+            print("Warning: No decision steps returned, the environment might not been closed.")
+            # Here you may want to handle the error by either reinitializing the environment or raising an exception
+            return None, {}
+
+
+        # Set the number of activate agents
+        self.num_agents = len(decision_steps.agent_id)
 
         # Update num_agents and observation_space
         self._update_spaces()
@@ -425,6 +433,11 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         # Get the new state
         decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self._behavior_name))
+
+        if decision_steps is None:
+            print("Warning: No decision steps returned, the environment might not be initialized.")
+            # Handle this case gracefully, maybe reset the environment or raise an error
+            return {}, {}, {}, {}, {}
 
         # Alternative, decision_steps.agent_id_to_index
         for agent_id in decision_steps.agent_id:
