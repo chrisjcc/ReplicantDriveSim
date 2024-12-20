@@ -63,9 +63,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             print(f"Error resetting Unity environment: {e}")
             # Handle the error appropriately, maybe re-initialize the environment
 
-        api_version_string = ray.get(self.unity_env_handle.get_api_version.remote())
-        print(f"API Version: {api_version_string}")
-
         # Access the behavior specifications
         self.behavior_specs = ray.get(self.unity_env_handle.get_behavior_specs.remote())
         print(f"Behavior specs: {list(self.behavior_specs.keys())}")
@@ -134,9 +131,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self._update_spaces()
 
         # ML-Agents API version.
-        api_version_string = ray.get(self.unity_env_handle.get_api_version.remote())
-        self.api_version = api_version_string.split(".")
-        self.api_version = [int(s) for s in self.api_version]
+        self.api_version = ray.get(self.unity_env_handle.get_api_version.remote())
+        print(f"API Version: {self.api_version}")
 
         # Get the simulation time step (i.e., frames per second)
         self.fps = int(ray.get(self.unity_env_handle.get_field_value.remote("FramesPerSecond")).get("FramesPerSecond", 25))

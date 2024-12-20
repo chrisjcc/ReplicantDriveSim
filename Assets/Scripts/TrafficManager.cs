@@ -1,16 +1,16 @@
 using System; // IntPtr
-using Unity.MLAgents.SideChannels;
+using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+
 using UnityEngine;
+
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
-using Unity.MLAgents.SideChannels;
-using System.Linq;
+using Unity.MLAgents.SideChannels; // to use FloatPropertiesChannel
 
-using CustomSideChannel;
-using UnityEditor;
+using CustomSideChannel; // to use FieldValueChannel
 
 
 // Responsible for stepping the traffic simulation and updating all agents
@@ -113,6 +113,9 @@ public class TrafficManager : MonoBehaviour
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern float Vehicle_getSteering(IntPtr vehicle);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void Vehicle_setSteering(IntPtr vehicle, float angle);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr VehiclePtrVector_get(IntPtr vector, int index);
@@ -242,8 +245,12 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void SetupFloatPropertiesChannel()
     {
+        LogDebug("TrafficManager::SetupFloatPropertiesChannel started");
+
         // Create the FloatPropertiesChannel
         Guid floatPropertiesChannelGuid = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
+
+        // Create the float properties channel
         floatPropertiesChannel = new FloatPropertiesChannel(floatPropertiesChannelGuid);
 
         // Register the channel
@@ -692,6 +699,7 @@ public class TrafficManager : MonoBehaviour
             }
         }
 
+        ValidateAgentCount();
         LogAgentInitializationResults();
 
         LogDebug("TrafficManager::InitializeAgents completed successfully.");
@@ -1358,8 +1366,27 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void StepSimulation()
     {
+        Debug.Log("TrafficManger::StepSimulation started.");
+
+        for (int i = 0; i < highLevelActions.Count; i++)
+        {
+            int highLevelAction = highLevelActions[i];
+            Debug.Log($"High-Level Action - Decision: {highLevelAction}");
+
+            float[] lowLevelAction = lowLevelActions[i];
+            if (lowLevelAction.Length == 3) // Ensure there are exactly 3 values per action
+            {
+                float steering = lowLevelAction[0];
+                float throttle = lowLevelAction[1];
+                float braking = lowLevelAction[2];
+
+                Debug.Log($"Low-Level Action - Steering: {steering}, Throttle: {throttle}, Braking: {braking}");
+            }
+        }
+
         // Step the simulation once for all agents with the gathered actions
         float[] flattenedLowLevelActions = lowLevelActions.SelectMany(a => a).ToArray();
+
         IntPtr resultPtr = Traffic_step(
             trafficSimulationPtr,
             highLevelActions.ToArray(),
@@ -1628,7 +1655,7 @@ public class TrafficManager : MonoBehaviour
         agent.transform.SetPositionAndRotation(position, rotation);
         agent.transform.hasChanged = true;
 
-        UpdateVehicleInSimulation(vehiclePtr, position);
+        UpdateVehicleInSimulation(vehiclePtr, position, rotation);
         LogDebug($"Updated agent: {agent.name} Position: {position}, Rotation: {rotation.eulerAngles}");
     }
 
@@ -1649,12 +1676,15 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     /// <param name="vehiclePtr">Pointer to the vehicle in the native simulation</param>
     /// <param name="position">New position of the vehicle in Unity coordinates</param>
-    private void UpdateVehicleInSimulation(IntPtr vehiclePtr, Vector3 position)
+    private void UpdateVehicleInSimulation(IntPtr vehiclePtr, Vector3 position, Quaternion rotation)
     {
-        // Update C++ simulation
+        // Get vehicle pointer from the C++ simulation
         Vehicle_setX(vehiclePtr, position.x);
         Vehicle_setY(vehiclePtr, position.y);
         Vehicle_setZ(vehiclePtr, position.z);
+
+        // Update the vehicle's rotation in the C++ simulation
+        Vehicle_setSteering(vehiclePtr, rotation[1]);
     }
 
     /// <summary>
@@ -1784,6 +1814,7 @@ public class TrafficManager : MonoBehaviour
         if (newAgentCount != initialAgentCount)
         {
             pendingAgentCount = newAgentCount;
+            initialAgentCount = pendingAgentCount;
             PendingAgentCountUpdate = true;
         }
 
@@ -1840,7 +1871,7 @@ public class TrafficManager : MonoBehaviour
     /// is only active in the Unity Editor, not in builds. This helps in development
     /// without affecting release performance.
     /// </summary>
-    public void RestartSimulation()
+    public void Reset()
     {
         // Reset the simulation state, this method should prepare the environment
         // for a new episode without fully cleaning up or disposing of objects
@@ -1855,7 +1886,6 @@ public class TrafficManager : MonoBehaviour
 
             // Reinitialize agents
             InitializeAgents();
-            ValidateAgentCount();
 
             Debug.Log("Traffic simulation restarted successfully");
         }
