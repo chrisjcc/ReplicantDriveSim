@@ -126,6 +126,9 @@ public class TrafficAgent : Agent
         ResetAgentActions();
         ResetAgentPositionAndRotation();
 
+        // Clear any accumulated rewards or state
+        SetReward(0f);
+
         LogDebug($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
         LogDebug($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
         LogDebug("TrafficAgent::OnEpisodeBegin completed successfully.");

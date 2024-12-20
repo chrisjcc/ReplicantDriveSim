@@ -4,6 +4,8 @@ import gymnasium as gym
 import numpy as np
 import ray
 from mlagents_envs.base_env import ActionTuple
+from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
+
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import AgentID, MultiAgentDict, PolicyID
@@ -27,24 +29,25 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             config (EnvContext): Configuration dictionary containing environment settings.
         """
         super().__init__()
-        self.initial_agent_count = config.get("env_config", {}).get("initial_agent_count", 2)
-
-        # Reset entire env every this number of step calls.
-        self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
+        self.current_agent_count = config.get("env_config", {}).get("initial_agent_count", 2)
 
         # Keep track of how many times we have called `step` so far.
         self.episode_timesteps = 0
 
         self.unity_env_handle = config["unity_env_handle"]
 
-        self.current_agent_count = self.initial_agent_count
+        # Set Unity environment configuration
+        ray.get(self.unity_env_handle.set_configuration.remote(EngineConfig(
+            width=1920,            # Configure resolution width  (default: 1920)
+            height=1080,           # Configure resolution height  (default: 1080)
+            quality_level=5,       # Adjust quality level (0 = fastest, 5 = highest quality)
+            time_scale=20.0,       # Set time scale (speed of simulation)
+            target_frame_rate=60,  # The target frame rate (default: 60)
+            capture_frame_rate=60  # The capture frame rate (default: 60)
+        )))
 
-        # Set the initial agent count in the Unity environment
-        ray.get(
-            self.unity_env_handle.set_float_property.remote(
-                "initialAgentCount", self.initial_agent_count
-            )
-        )
+        # Reset entire env every this number of step calls.
+        self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
 
         # Set the max number steps per episode
         ray.get(
@@ -54,7 +57,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         )
 
         # Start the Unity environment
-        print(f"Initializing with {self.initial_agent_count} agents")
+        print(f"Initializing with {self.current_agent_count} active agents")
 
         # Reset the Unity environment
         try:

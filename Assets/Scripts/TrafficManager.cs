@@ -257,7 +257,7 @@ public class TrafficManager : MonoBehaviour
         SideChannelManager.RegisterSideChannel(floatPropertiesChannel);
 
         // Subscribe to the OnFloatPropertiesChanged event
-        floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
+        //floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
 
         // Subscribe to the MaxSteps envet
         floatPropertiesChannel.RegisterCallback("MaxSteps", MaxEpisodeSteps);
@@ -273,8 +273,10 @@ public class TrafficManager : MonoBehaviour
         sideChannel.SendFieldValue("FramesPerSecond", 1.0f / simTimeStep);
 
         // Get the initialAgentCount parameter from the environment parameters
-        //var envParameters = Academy.Instance.EnvironmentParameters;
-        //initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 3.0f));
+        var envParameters = Academy.Instance.EnvironmentParameters;
+        initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 2.0f));
+
+        LogDebug("TrafficManager::SetupFloatPropertiesChannel completed");
     }
 
     /// <summary>
@@ -648,8 +650,6 @@ public class TrafficManager : MonoBehaviour
         {
             InitializeTrafficSimulation();
             InitializeAgents();
-            //SetDebugColors(Color.red, Color.blue);
-
         }
         catch (Exception e)
         {
