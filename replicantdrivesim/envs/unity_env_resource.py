@@ -2,15 +2,18 @@ import os
 import uuid
 from typing import Any, Dict, Optional, Tuple
 
-import os
-import uuid
-from typing import Any, Dict, Optional, Tuple
 import ray
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
-from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
-from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 from mlagents_envs.exception import UnityCommunicatorStoppedException
+from mlagents_envs.side_channel.engine_configuration_channel import (
+    EngineConfig,
+    EngineConfigurationChannel,
+)
+from mlagents_envs.side_channel.environment_parameters_channel import (
+    EnvironmentParametersChannel,
+)
+from mlagents_envs.side_channel.float_properties_channel import FloatPropertiesChannel
 
 from .utils import CustomSideChannel
 
@@ -29,26 +32,29 @@ class UnityEnvResource:
         float_props_channel (FloatPropertiesChannel): Channel for setting float properties in Unity.
         unity_env (UnityEnvironment): The Unity environment instance.
     """
-    def __init__(
-        self,
-        file_name: str,
-        worker_id: int = 0,
-        base_port: int = 5004,
-        no_graphics: bool = False,
-    ) -> None:
+
+    def __init__(self, config: dict = None) -> None:
         """
         Initializes the Unity environment with specified configuration channels.
 
         Args:
-            file_name (str): Path to the Unity executable.
-            worker_id (int): Worker ID for parallel environments.
-            base_port (int): Base port for communication with Unity.
-            no_graphics (bool): Whether to launch Unity without graphics.
+            config (dict): Unity environment configuration parameters (e.g. number of agents).
         """
         self.channel_id = uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f7")
         self.engine_configuration_channel = EngineConfigurationChannel()
+        self.env_parameters = EnvironmentParametersChannel()
         self.float_properties_channel = FloatPropertiesChannel(self.channel_id)
         self.field_value_channel = CustomSideChannel()
+
+        # Set the number of desired active agents
+        self.initial_agent_count = config.get("env_config", {}).get(
+            "initial_agent_count", 2
+        )
+
+        # Set the initialAgentCount before creating the UnityEnvironment
+        self.env_parameters.set_float_parameter(
+            "initialAgentCount", self.initial_agent_count
+        )
 
         # Note: Communication Layer: ML-Agents uses a communication protocol (gRPC) to transfer data between Unity and Python.
         # This protocol serializes the observation data into a format that can be sent over the network.
@@ -61,13 +67,42 @@ class UnityEnvResource:
 
         # Create the Unity environment with communication channels
         self.unity_env = UnityEnvironment(
-            file_name=file_name,  # path_to_unity_executable
-            worker_id=worker_id,
-            base_port=base_port,
-            side_channels=[self.engine_configuration_channel, self.float_properties_channel, self.field_value_channel],
-            no_graphics=no_graphics,
-            seed=42,
+            file_name=config[
+                "file_name"
+            ],  # Path to the Unity environment binary executable
+            worker_id=config["unity_env"][
+                "worker_id"
+            ],  # Worker ID for parallel environments
+            base_port=config["unity_env"][
+                "base_port"
+            ],  # Base port for communication with Unity
+            side_channels=[
+                self.engine_configuration_channel,
+                self.env_parameters,
+                self.float_properties_channel,
+                self.field_value_channel,
+            ],
+            no_graphics=config["unity_env"][
+                "no_graphics"
+            ],  # Whether to launch Unity without graphics
+            seed=config["unity_env"]["seed"],  # Environment random seed value
         )
+
+    def set_configuration(self, engine_config: EngineConfig) -> None:
+        """
+        Sets an engine configuration in the Unity environment.
+        """
+        self.engine_configuration_channel.set_configuration(engine_config)
+
+    def set_float_parameter(self, key: str, value: float) -> None:
+        """
+        Sets a float parameter in the Unity environment.
+
+        Args:
+            key (str): The key for the float property.
+            value (float): The value to set for the property.
+        """
+        self.env_parameters.set_float_parameter(key, value)
 
     def set_float_property(self, key: str, value: float) -> None:
         """
@@ -79,7 +114,9 @@ class UnityEnvResource:
         """
         self.float_properties_channel.set_property(key, value)
 
-    def get_field_value(self, key_field: str = "FramesPerSecond") -> Dict[str, Optional[float]]:
+    def get_field_value(
+        self, key_field: str = "FramesPerSecond"
+    ) -> Dict[str, Optional[float]]:
         """
         Retrieves a field value from the Unity environment, if available.
 
@@ -118,7 +155,9 @@ class UnityEnvResource:
             Tuple: A tuple containing decision steps and terminal steps.
         """
         if not self.unity_env:
-            print("Unity environment is not initialized or already closed. Cannot get steps.")
+            print(
+                "Unity environment is not initialized or already closed. Cannot get steps."
+            )
             return None, None  # Return empty tuples as a fallback
 
         try:
@@ -143,9 +182,9 @@ class UnityEnvResource:
         try:
             self.unity_env.set_actions(behavior_name, action)
         except Exception as e:
-             print(f"Error during set_actions: {e}")
-             self.close()
-             raise
+            print(f"Error during set_actions: {e}")
+            self.close()
+            raise
 
     def reset(self) -> None:
         """
@@ -169,25 +208,30 @@ class UnityEnvResource:
         """
         Advances the Unity environment by one step.
 
-        Raises:
-            UnityCommunicatorStoppedException: If Unity is closed unexpectedly.
-            Exception: For other errors encountered during the step process.
-
-        Returns:
-            None
+        Handles user-initiated shutdowns gracefully.
         """
-        if not self.unity_env:
-            print("Unity environment is not initialized or already closed.")
+        if self.unity_env is None:
+            print(
+                "Unity environment is not initialized. Please start the environment before stepping."
+            )
+            self.close()
             return
 
         try:
             self.unity_env.step()
         except UnityCommunicatorStoppedException:
-            print("Unity application was closed. Shutting down the environment.")
+            print("Unity application was closed by the user. Shutting down gracefully.")
             self.close()
-            return
+        except AttributeError as e:
+            print(
+                "Unity environment was unexpectedly set to None. Please check initialization."
+            )
+            self.close()
+            raise ValueError(
+                "Unity environment is None. Initialization error likely occurred."
+            ) from e
         except Exception as e:
-            print(f"Error during step: {str(e)}")
+            print(f"Unexpected error during step: {str(e)}")
             self.close()
             raise
 
@@ -207,9 +251,11 @@ class UnityEnvResource:
                 self.unity_env = None
                 print("Unity environment closed successfully.")
         else:
-            print("Unity environment is already closed or was not properly initialized.")
+            print(
+                "Unity environment is already closed or was not properly initialized."
+            )
 
-    def __enter__(self) -> 'UnityEnvResource':
+    def __enter__(self) -> "UnityEnvResource":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -225,21 +271,19 @@ class UnityEnvResource:
         return self.unity_env.API_VERSION
 
 
-def create_unity_env(
-    file_name: str, worker_id: int = 0, base_port: int = 5004, no_graphics: bool = False
-) -> UnityEnvResource:
+def create_unity_env(config: dict = None) -> UnityEnvResource:
     """
     Creates a Unity environment resource for use with RLlib.
 
     Args:
-        file_name (str): Path to the Unity environment binary.
-        worker_id (int): Worker ID for parallel environments.
-        base_port (int): Base port for communication with Unity.
-        no_graphics (bool): Whether to launch Unity without graphics.
+        config (dict): Unity environment configuration parameters (e.g. number of agents).
 
     Returns:
         Optional[UnityEnvResource]: The Unity environment resource, or None if there is an error.
     """
+    # Path to the Unity environment binary
+    file_name = config["file_name"]
+
     # Check if the file exists
     if not os.path.exists(file_name):
         print(f"\033[91mCheck\033[0m: The file '{file_name}' does not exist.")
@@ -252,9 +296,4 @@ def create_unity_env(
         print(f"\033[91mError\033[0m: '{file_name}' is not a directory.")
         return None
 
-    return UnityEnvResource.remote(
-        file_name=file_name,
-        worker_id=worker_id,
-        base_port=base_port,
-        no_graphics=no_graphics,
-    )
+    return UnityEnvResource.remote(config=config)

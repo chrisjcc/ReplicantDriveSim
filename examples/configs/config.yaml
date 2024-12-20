@@ -5,11 +5,13 @@ ray:
   num_cpus: 4
 
 unity_env:
+  worker_id: 0
   base_port: 5004
   no_graphics: false
+  seed: 42
 
 env_config:
-  initial_agent_count: 5
+  initial_agent_count: 3
   episode_horizon: 1000
 
 ppo_config:

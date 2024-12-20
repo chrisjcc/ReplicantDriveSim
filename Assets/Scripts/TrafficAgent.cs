@@ -68,7 +68,7 @@ public class TrafficAgent : Agent
             }
             else
             {
-                Debug.Log("TrafficManager found successfully.");
+                LogDebug("TrafficManager found successfully.");
             }
         }
 
@@ -99,7 +99,6 @@ public class TrafficAgent : Agent
 
         // Initialize your agent-specific variables here
         base.Initialize();
-        ResetAgentActions();
 
         MaxStep = trafficManager.MaxSteps; // Max number of steps
 
@@ -127,6 +126,9 @@ public class TrafficAgent : Agent
         ResetAgentActions();
         ResetAgentPositionAndRotation();
 
+        // Clear any accumulated rewards or state
+        SetReward(0f);
+
         LogDebug($"Created agents. agentInstances count: {trafficManager.agentInstances.Count}, agentColliders count: {trafficManager.agentColliders.Count}");
         LogDebug($"Reset agent. Position: {transform.position}, Rotation: {transform.rotation.eulerAngles}");
         LogDebug("TrafficAgent::OnEpisodeBegin completed successfully.");
@@ -148,11 +150,8 @@ public class TrafficAgent : Agent
     /// </summary>
     private void ResetAgentActions()
     {
-        float minAngleRad = -0.610865f;
-        float maxAngleRad = 0.610865f;
-        lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad);
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f);
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f);
+        LogDebug("TraffocAgemts::ResetAgentActions started.");
+        GetRandomActions();
     }
 
     /// <summary>
@@ -200,14 +199,19 @@ public class TrafficAgent : Agent
         {
             Vector3 randomPosition = GenerateRandomPosition();
             Quaternion randomRotation = GenerateRandomRotation();
-            Debug.Log($"Resetting agent {gameObject.name} - Position: {randomPosition}, Rotation: {randomRotation.eulerAngles}");
+            LogDebug($"Resetting agent {gameObject.name} - Position: {randomPosition}, Rotation: {randomRotation.eulerAngles}");
 
             UpdateAgentTransform(randomPosition, randomRotation);
             UpdateAgentCollider(randomPosition, randomRotation);
 
             try
             {
-                UpdateCppSimulation(randomPosition);
+                // Update the agent's position and rotation in the Unity scene
+                UpdateAgentTransform(randomPosition, randomRotation);
+                UpdateAgentCollider(randomPosition, randomRotation);
+
+                // Update the agent's position in the C++ traffic simulation
+                UpdateTrafficSimulation(randomPosition, randomRotation);
             }
             catch (Exception ex)
             {
@@ -418,12 +422,17 @@ public class TrafficAgent : Agent
     ///
     /// </summary>
     /// <param name="position">The new position to set for the agent in the C++ simulation.</param>
-    private void UpdateCppSimulation(Vector3 position)
+    private void UpdateTrafficSimulation(Vector3 position,  Quaternion rotation)
     {
         IntPtr vehiclePtr = TrafficManager.Traffic_get_agent_by_name(trafficManager.trafficSimulationPtr, gameObject.name);
+
+        // Update the vehicle's position in the C++ simulation
         TrafficManager.Vehicle_setX(vehiclePtr, position.x);
         TrafficManager.Vehicle_setY(vehiclePtr, position.y);
         TrafficManager.Vehicle_setZ(vehiclePtr, position.z);
+
+        // Update the vehicle's rotation in the C++ simulation
+        TrafficManager.Vehicle_setSteering(vehiclePtr, rotation[1]);
     }
 
     /// <summary>
@@ -472,10 +481,8 @@ public class TrafficAgent : Agent
             return;
 
         // The RayPerceptionSensorComponent3D will automatically add its observations
-        //CollectRaycastObservations(sensor);
         CollectPositionAndRotationObservations(sensor);
         CollectSpeedObservations(sensor);
-        //CollectNearbyAgentSpeedObservations(sensor);
 
         LogDebug("TrafficManager::CollectObservations completed successfully.");
     }
@@ -805,6 +812,9 @@ public class TrafficAgent : Agent
             DrawDebugRays();
         }
 
+        ActionBuffers storedActions = GetStoredActionBuffers();
+        LogDebug($"ActionBuffers: continous: {storedActions.ContinuousActions} discrete: {storedActions.DiscreteActions}");
+
         LogDebug("TrafficManager::FixedUpdate completed successfully.");
     }
 
@@ -969,8 +979,7 @@ public class TrafficAgent : Agent
         if (collision.gameObject.CompareTag("RoadBoundary") ||
             collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
         {
-            Debug.Log("Collision with RoadBoundary detected!");
-            // Your existing code for handling the collision
+            LogDebug("Collision with RoadBoundary detected!");
         }
 
         /*
@@ -984,13 +993,13 @@ public class TrafficAgent : Agent
             case "RoadBoundary":
                 // Penalize the agent for going off the road
                 AddReward(offRoadPenalty);
-                Debug.Log($"Hit road boundary! Penalty added: {offRoadPenalty}");
+                LogDebug($"Hit road boundary! Penalty added: {offRoadPenalty}");
                 break;
 
             case "TrafficAgent": // "Obstacle"
                 // Penalize the agent for colliding with another traffic participant
                 AddReward(collisionWithOtherAgentPenalty);
-                Debug.Log($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
+                LogDebug($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
                 break;
 
             // ... (keep other cases from the original script)
@@ -998,7 +1007,7 @@ public class TrafficAgent : Agent
             default:
                 // For any other collision, we might want to add a small negative reward
                 AddReward(-0.1f);
-                Debug.Log("Unspecified collision! Small penalty added: -0.1");
+                LogDebug("Unspecified collision! Small penalty added: -0.1");
                 break;
             */
         }
@@ -1144,14 +1153,14 @@ public class TrafficAgent : Agent
         {
             // Agent entered a checkpoint
             AddReward(1.0f);
-            Debug.Log("Agent reached checkpoint!");
+            LogDebug("Agent reached checkpoint!");
         }
         else if (other.CompareTag("Collectible"))
         {
             // Agent collected an item
             AddReward(0.5f);
             Destroy(other.gameObject);
-            Debug.Log("Item collected!");
+            LogDebug("Item collected!");
         }
         */
 
@@ -1269,9 +1278,13 @@ public class TrafficAgent : Agent
     {
         LogDebug("TrafficManager::GetRandomActions started.");
 
+        // Randomize the high-level action
+        highLevelActions = Random.Range(0, 5); // Range is [0, 5)
+
         float minAngleRad = -0.610865f; // -35 degrees in radians
         float maxAngleRad = 0.610865f;  // 35 degrees in radians
 
+         // Randomize the low-level actions
         lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
         lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
