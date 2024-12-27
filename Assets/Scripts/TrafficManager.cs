@@ -716,8 +716,8 @@ public class TrafficManager : MonoBehaviour
     /// 3. Gets the agent's rotation using GetAgentRotation()
     /// 4. Logs the agent's details for debugging purposes
     /// 5. Checks if an agent with the given ID already exists
-    ///    - If it exists, updates its position and rotation
-    ///    - If it doesn't exist, creates a new agent
+    ///    - If it exists, update its position and rotation
+    ///    - If it doesn't exist, create a new agent
     ///
     /// This method is crucial for maintaining synchronization between the traffic simulation
     /// and the Unity representation of agents. It ensures that each agent in the simulation
@@ -748,7 +748,7 @@ public class TrafficManager : MonoBehaviour
     /// into a format usable in Unity.
     ///
     /// The method performs the following actions:
-    /// 1. Checks if the float vector has at least 3 elements
+    /// 1. Check if the float vector has at least 3 elements
     /// 2. Retrieves the first three float values from the vector
     /// 3. Creates and returns a new Vector3 using these values
     ///
@@ -778,7 +778,7 @@ public class TrafficManager : MonoBehaviour
     /// into a format usable in Unity.
     ///
     /// The method performs the following actions:
-    /// 1. Checks if the float vector has at least 3 elements (for roll, pitch, and yaw)
+    /// 1. Check if the float vector has at least 3 elements (for roll, pitch, and yaw)
     /// 2. Retrieves the first three float values from the vector as Euler angles in radians
     /// 3. Converts the Euler angles from radians to degrees
     /// 4. Creates and returns a Unity Quaternion using these Euler angles
@@ -823,7 +823,7 @@ public class TrafficManager : MonoBehaviour
     /// 2. Configures the collider with appropriate settings
     /// 3. Updates the internal dictionary that tracks agent colliders
     ///
-    /// Debug logs are included at the start and end of the method execution in the Unity Editor for tracking the process.
+    /// Debug logs are included at the start and end of the method execution in the Unity Editor to track the process.
     ///
     /// This method is crucial for maintaining accurate physics representations of agents in the Unity scene,
     /// which is essential for realistic traffic simulation and collision detection.
@@ -2437,7 +2437,7 @@ public class TrafficManager : MonoBehaviour
 
     /// <summary>
     /// Adds a RayPerceptionSensorComponent3D to the specified agent GameObject.
-    /// Configures the sensor for detecting specified tags, and allows adjustment of sensor position relative to the agent.
+    /// Configures the sensor for detecting specified tags, and allows sensor position adjustment relative to the agent.
     /// </summary>
     /// <param name="agent">The GameObject representing the traffic agent to which the ray sensor will be added.</param>
     void AddRaySensorToAgent(GameObject agent)
@@ -2447,7 +2447,7 @@ public class TrafficManager : MonoBehaviour
         // If you need to adjust the sensor's position relative to the car:
         GameObject sensorObject = new GameObject("RaySensor");
         sensorObject.transform.SetParent(agent.transform);
-        sensorObject.transform.localPosition = new Vector3(2.0f, 2.5f, 0.0f); // Adjust as needed
+        sensorObject.transform.localPosition = new Vector3(0.0f, 0.0f, 0.0f); // Raycasts emit from collider box center-of-geometry
 
         // Add and configure the RayPerceptionSensorComponent3D
         //RayPerceptionSensorComponent3D raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
