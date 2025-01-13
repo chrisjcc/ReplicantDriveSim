@@ -73,7 +73,7 @@ With ReplicantDriveSim, you can simulate complex traffic environments, leverage 
 ### Traffic Simulation Documentation - Further Reading
 For more detailed information about the ReplicantDriveSim traffic simulation, including the AI components and additional developer resources, please refer to the following documentation sources:
 
-- [AI Components and Reinforcement Learning](https://chrisjcc.github.io/ReplicantDriveSim/rl/): This page covers the artificial intelligence aspects of the simulation, including reinforcement learning, imitation learning, and how these are implemented within the environment.
+- [AI Components and Reinforcement Learning](https://chrisjcc.github.io/ReplicantDriveSim/External/): This page covers the artificial intelligence aspects of the simulation, including reinforcement learning, imitation learning, and how these are implemented within the environment.
 - [GitHub Repository](https://github.com/chrisjcc/ReplicantDriveSim/): The official GitHub repository where the Unity codebase and related assets for ReplicantDriveSim are hosted. Developers can explore the full source code, contribute to the project, and access the latest updates.
 - [Read the Docs](https://replicantdrivesim.readthedocs.io/en/latest/): Comprehensive documentation covering various aspects of the simulation, including installation, setup, API references, and examples.
 
