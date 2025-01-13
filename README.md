@@ -81,7 +81,7 @@ These resources will provide deeper insights and technical details to aid in dev
 
 ### Resources and Installation
 - [PyPI Project](https://pypi.org/project/ReplicantDriveSim/): Python package for the Unity traffic simulation with a C++ backend, providing high-performance tools for autonomous driving research and testing.
-- [DockerHub Registry](https://hub.docker.com/repository/docker/chrisjcc/replicantdrivesim/general): Pre-built Docker images for seamless deployment of the ReplicantDriveSim environment across various platforms.
+- [DockerHub Registry](https://hub.docker.com/repository/docker/chrisjcc/replicantdrivesim/general): Pre-built Docker images for seamless deployment of the ReplicantDriveSim environment across various platforms (currently set to be a private repository).
 
 ### Docker Image
 For a pre-configured environment with all dependencies, use our Docker image:
