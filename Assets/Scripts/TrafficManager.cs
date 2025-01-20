@@ -22,7 +22,7 @@ public class TrafficManager : MonoBehaviour
 
     // Serialized Fields for Unity Editor (Unity Inspector variables)
     [SerializeField] private GameObject agentPrefab; // e.g., NISSAN-GTR)
-    [SerializeField] private int initialAgentCount = 2;
+    [SerializeField] private int initialAgentCount = 1;
     [SerializeField] private uint seed = 42;
     [SerializeField] private float simTimeStep = 0.04f;
     [SerializeField] private float maxVelocity = 60.0f;
@@ -30,14 +30,13 @@ public class TrafficManager : MonoBehaviour
     // Public Properties
     [SerializeField] public bool debugVisualization = false;
 
+    [SerializeField] public int MaxSteps = 2000;
     [SerializeField] public float spawnAreaSize = 10.0f;
     //[HideInInspector] public float MoveSpeed { get; set; } = 5f;
     //[HideInInspector] public float RotationSpeed { get; set; } = 100f;
     [HideInInspector] public float SpawnHeight { get; set; } = 0.1f;
     [HideInInspector] public float AngleStep { get; private set; }
-    [HideInInspector] public bool PendingAgentCountUpdate { get; set; } = false;
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "Road";
-    [SerializeField] public int MaxSteps = 2000;
     [HideInInspector] public RayPerceptionSensorComponent3D raySensor;
 
     // Public Fields
@@ -54,7 +53,6 @@ public class TrafficManager : MonoBehaviour
     private List<float[]> lowLevelActions;
     private FloatPropertiesChannel floatPropertiesChannel;
     private FieldValueChannel sideChannel;
-    private int pendingAgentCount = 0;
     private bool isDisposed = false;
     private bool hasCleanedUp = false;
 
@@ -115,7 +113,16 @@ public class TrafficManager : MonoBehaviour
     public static extern float Vehicle_getSteering(IntPtr vehicle);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern float Vehicle_getYaw(IntPtr vehicle);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int Vehicle_getId(IntPtr vehicle);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void Vehicle_setSteering(IntPtr vehicle, float angle);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void Vehicle_setYaw(IntPtr vehicle, float angle);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr VehiclePtrVector_get(IntPtr vector, int index);
@@ -256,9 +263,6 @@ public class TrafficManager : MonoBehaviour
         // Register the channel
         SideChannelManager.RegisterSideChannel(floatPropertiesChannel);
 
-        // Subscribe to the OnFloatPropertiesChanged event
-        //floatPropertiesChannel.RegisterCallback("initialAgentCount", OnInitialAgentCountChanged);
-
         // Subscribe to the MaxSteps envet
         floatPropertiesChannel.RegisterCallback("MaxSteps", MaxEpisodeSteps);
 
@@ -274,7 +278,7 @@ public class TrafficManager : MonoBehaviour
 
         // Get the initialAgentCount parameter from the environment parameters
         var envParameters = Academy.Instance.EnvironmentParameters;
-        initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 2.0f));
+        initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 1.0f));
 
         LogDebug("TrafficManager::SetupFloatPropertiesChannel completed");
     }
@@ -530,7 +534,8 @@ public class TrafficManager : MonoBehaviour
         agent.transform.position = position;
         agent.transform.rotation = rotation;
         agent.transform.hasChanged = true;
-        //UpdateColliderForExistingAgent(agent, agent.agentId); // NOT OIGINALLY INCLUDED (SHOULD IT BE??)
+
+        LogDebug($"Updated agent: {agent.name} Position: {position}, Rotation: {rotation.eulerAngles}");
     }
 
     /// <summary>
@@ -1180,7 +1185,7 @@ public class TrafficManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Executes the core simulation loop at a fixed time step.
+    /// Executes the core simulation loop at a fixed time step (main physics simulation stepping).
     /// This method is called by Unity at a fixed interval, independent of frame rate, making it ideal for physics and simulation updates.
     ///
     /// The method performs the following actions in sequence:
@@ -1556,6 +1561,7 @@ public class TrafficManager : MonoBehaviour
         for (int i = 0; i < vehicleCount; i++)
         {
             IntPtr vehiclePtr = VehiclePtrVector_get(vehiclesPtr, i);
+
             if (!TryGetAgentData(i, out string agentId, out Vector3 position, out Quaternion rotation))
             {
                 continue;
@@ -1563,12 +1569,14 @@ public class TrafficManager : MonoBehaviour
 
             if (agentInstances.TryGetValue(agentId, out TrafficAgent existingAgent))
             {
-                UpdateExistingAgent(existingAgent, position, rotation, vehiclePtr);
+                UpdateExistingAgent(existingAgent, position, rotation);
+                UpdateVehicleInSimulation(vehiclePtr, position, rotation);
             }
             else
             {
                 SpawnAgent(i);
             }
+
             updatedAgents.Add(agentId);
             UpdateColliderForExistingAgent(existingAgent.gameObject, agentId);
         }
@@ -1576,6 +1584,23 @@ public class TrafficManager : MonoBehaviour
         RemoveObsoleteAgents(updatedAgents);
 
         LogDebug("TrafficManager::UpdateAgentPositions completed successfully.");
+    }
+
+    private bool TryGetAgentDataPointers(int index, out string agentId, out IntPtr positionPtr, out IntPtr orientationPtr)
+    {
+        agentId = null;
+        positionPtr = IntPtr.Zero;
+        orientationPtr = IntPtr.Zero;
+
+        IntPtr agentIdPtr = StringFloatVectorMap_get_key(agentPositionsMap, index);
+        agentId = Marshal.PtrToStringAnsi(agentIdPtr);
+
+        if (agentId == null) return false;
+
+        positionPtr = StringFloatVectorMap_get_value(agentPositionsMap, agentIdPtr);
+        orientationPtr = StringFloatVectorMap_get_value(agentOrientationsMap, agentIdPtr);
+
+        return positionPtr != IntPtr.Zero && orientationPtr != IntPtr.Zero;
     }
 
     /// <summary>
@@ -1602,17 +1627,10 @@ public class TrafficManager : MonoBehaviour
     /// <returns>True if data was successfully retrieved, false otherwise</returns>
     private bool TryGetAgentData(int index, out string agentId, out Vector3 position, out Quaternion rotation)
     {
-        agentId = null;
-        position = Vector3.zero;
-        rotation = Quaternion.identity;
+        position = default;
+        rotation = default;
 
-        IntPtr agentIdPtr = StringFloatVectorMap_get_key(agentPositionsMap, index);
-        agentId = Marshal.PtrToStringAnsi(agentIdPtr);
-
-        IntPtr positionPtr = StringFloatVectorMap_get_value(agentPositionsMap, agentIdPtr);
-        IntPtr orientationPtr = StringFloatVectorMap_get_value(agentOrientationsMap, agentIdPtr);
-
-        if (positionPtr == IntPtr.Zero || orientationPtr == IntPtr.Zero)
+        if (!TryGetAgentDataPointers(index, out agentId, out IntPtr positionPtr, out IntPtr orientationPtr))
         {
             Debug.LogWarning($"Failed to get position or orientation for agent {agentId}");
             return false;
@@ -1621,42 +1639,10 @@ public class TrafficManager : MonoBehaviour
         position = GetVector3FromFloatVector(positionPtr);
         rotation = GetQuaternionFromFloatVector(orientationPtr);
 
-        // Assuming currentSteeringAngle is updated elsewhere
+        // Assuming currentSteeringAngle is updated elsewhere (rotationSpeed can be set later to yaw rate)
         //Quaternion targetRotation = Quaternion.Euler(0, 0.64f * Mathf.Rad2Deg, 0);
         //transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
         return true;
-    }
-
-    /// <summary>
-    /// Updates an existing agent's position and rotation in both Unity and the native simulation.
-    ///
-    /// This method:
-    /// 1. Updates the Unity GameObject's transform
-    /// 2. Marks the transform as changed
-    /// 3. Updates the corresponding vehicle in the native simulation
-    /// 4. Logs debug information about the update
-    ///
-    /// Key aspects:
-    /// - Synchronizes agent state between Unity and native simulation
-    /// - Provides detailed logging for debugging
-    ///
-    /// Usage:
-    /// - Call during the agent position update cycle for existing agents
-    ///
-    /// Note: Ensure all parameters are valid before calling to avoid errors.
-    /// </summary>
-    /// <param name="agent">The TrafficAgent to update</param>
-    /// <param name="position">New position for the agent</param>
-    /// <param name="rotation">New rotation for the agent</param>
-    /// <param name="vehiclePtr">Pointer to the corresponding vehicle in the native simulation</param>
-    private void UpdateExistingAgent(TrafficAgent agent, Vector3 position, Quaternion rotation, IntPtr vehiclePtr)
-    {
-        LogDebug($"Updating agent: {agent.name}");
-        agent.transform.SetPositionAndRotation(position, rotation);
-        agent.transform.hasChanged = true;
-
-        UpdateVehicleInSimulation(vehiclePtr, position, rotation);
-        LogDebug($"Updated agent: {agent.name} Position: {position}, Rotation: {rotation.eulerAngles}");
     }
 
     /// <summary>
@@ -1684,7 +1670,8 @@ public class TrafficManager : MonoBehaviour
         Vehicle_setZ(vehiclePtr, position.z);
 
         // Update the vehicle's rotation in the C++ simulation
-        Vehicle_setSteering(vehiclePtr, rotation[1]);
+        Vehicle_setSteering(vehiclePtr, rotation.y); // i.e. rotation[1]
+        Vehicle_setYaw(vehiclePtr, rotation.y); // i.e. rotation[1]
     }
 
     /// <summary>
@@ -1760,65 +1747,9 @@ public class TrafficManager : MonoBehaviour
     /// <param name="message">The debug message to be logged</param>
     private void LogDebug(string message)
     {
-        #if UNITY_EDITOR
+        //#if UNITY_EDITOR
         Debug.Log(message);
-        #endif
-    }
-
-    /// <summary>
-    /// Handles changes to the initial agent count in the traffic simulation.
-    /// This method is typically called in response to user input or system events that modify the desired number of agents.
-    ///
-    /// The method performs the following actions:
-    /// 1. Rounds the input float value to the nearest integer
-    /// 2. Compares the new count with the current initialAgentCount
-    /// 3. If different, updates the pendingAgentCount and sets PendingAgentCountUpdate flag
-    ///
-    /// Key aspects of this method:
-    /// - Acts as a callback for changes in the initial agent count setting
-    /// - Uses a pending update mechanism to defer actual changes to the agent count
-    /// - Includes conditional debug logging for tracking the update process (commented out by default)
-    ///
-    /// This method is crucial for:
-    /// - Handling dynamic changes to the simulation scale during runtime
-    /// - Providing a responsive interface for adjusting the number of agents
-    /// - Ensuring that agent count changes are processed in a controlled manner
-    ///
-    /// Usage:
-    /// - Typically connected to a UI element or system event that allows changing the agent count
-    /// - Part of the simulation configuration and dynamic adjustment system
-    ///
-    /// Considerations:
-    /// - The actual update to the agent count is deferred, likely to be processed in a separate update cycle
-    /// - Uses a float parameter for input, allowing for potential slider or continuous value input
-    /// - The PendingAgentCountUpdate flag signals that an update is ready to be processed
-    ///
-    /// Developers should be aware that:
-    /// - The method doesn't immediately change the agent count, but sets up a pending change
-    /// - There should be a corresponding method to process the pending agent count update
-    /// - Debug logs are commented out but can be useful for tracking changes during development
-    ///
-    /// Note: The commented-out debug logs and the use of UNITY_EDITOR directives suggest
-    /// that this method is designed with debugging and editor-specific behavior in mind.
-    /// Consider uncommenting these logs when debugging agent count issues.
-    /// </summary>
-    /// <param name="newValue">The new agent count as a float value, to be rounded to the nearest integer</param>
-    private void OnInitialAgentCountChanged(float newValue)
-    {
-        LogDebug("TrafficManager::OnInitialAgentCountChanged started.");
-
-        int newAgentCount = Mathf.RoundToInt(newValue);
-
-        LogDebug($"Received new initial agent count: {newAgentCount}");
-
-        if (newAgentCount != initialAgentCount)
-        {
-            pendingAgentCount = newAgentCount;
-            initialAgentCount = pendingAgentCount;
-            PendingAgentCountUpdate = true;
-        }
-
-        LogDebug("TrafficManager::OnInitialAgentCountChanged completely successfully.");
+        //#endif
     }
 
     private void MaxEpisodeSteps(float newValue)

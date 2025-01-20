@@ -138,9 +138,9 @@ public class TrafficAgent : Agent
     /// Resets the agent's low-level actions to random values within predefined ranges.
     ///
     /// This method initializes three action values:
-    /// 1. Steering angle (in radians): Range [-0.610865, 0.610865] (approximately ±35 degrees)
-    /// 2. Acceleration: Range [0.0, 4.5]
-    /// 3. Braking: Range [-4.0, 0.0]
+    /// 1. Steering angle (in radians): Range [-0.785398, 0.785398] (approximately ±55 degrees)
+    /// 2. Acceleration: Range [0.0, 5.0]
+    /// 3. Braking: Range [-5.0, 0.0]
     ///
     /// These randomized values help in creating diverse initial conditions for each episode,
     /// which is crucial for effective reinforcement learning training.
@@ -200,9 +200,6 @@ public class TrafficAgent : Agent
             Vector3 randomPosition = GenerateRandomPosition();
             Quaternion randomRotation = GenerateRandomRotation();
             LogDebug($"Resetting agent {gameObject.name} - Position: {randomPosition}, Rotation: {randomRotation.eulerAngles}");
-
-            UpdateAgentTransform(randomPosition, randomRotation);
-            UpdateAgentCollider(randomPosition, randomRotation);
 
             try
             {
@@ -433,6 +430,7 @@ public class TrafficAgent : Agent
 
         // Update the vehicle's rotation in the C++ simulation
         TrafficManager.Vehicle_setSteering(vehiclePtr, rotation[1]);
+        //TrafficManager.Vehicle_setYaw(vehiclePtr, rotation[1]);
     }
 
     /// <summary>
@@ -642,8 +640,8 @@ public class TrafficAgent : Agent
     {
         // Agent's own speed and orientation
         Rigidbody rb = GetComponent<Rigidbody>();
-        //rb.isKinematic = true;
-        //rb.useGravity = false;
+        rb.isKinematic = true;
+        rb.useGravity = false;
 
         if (rb != null)
         {
@@ -671,9 +669,9 @@ public class TrafficAgent : Agent
     /// - Discrete Action:
     ///   - Index 0: Random integer between 0 and 4 (inclusive)
     /// - Continuous Actions:
-    ///   - Index 0: Steering angle in radians (range: -35 to 35 degrees, converted to radians)
-    ///   - Index 1: Acceleration (range: 0.0 to 4.5)
-    ///   - Index 2: Braking (range: -4.0 to 0.0)
+    ///   - Index 0: Steering angle in radians (range: -45 to 45 degrees, converted to radians)
+    ///   - Index 1: Acceleration (range: 0.0 to 5.0)
+    ///   - Index 2: Braking (range: -5.0 to 0.0)
     ///
     /// Usage:
     /// - Automatically called by ML-Agents when Behavior Type is "Heuristic Only".
@@ -696,13 +694,13 @@ public class TrafficAgent : Agent
         var discreteActions = actionsOut.DiscreteActions;
         discreteActions[0] = UnityEngine.Random.Range(0, 5); // This will give a random integer from 0 to 4 inclusive
 
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+        float minAngleRad = -Mathf.PI / 4f; // -45 degrees in radians (-0.785398...)
+        float maxAngleRad = Mathf.PI / 4f;  // 45 degrees in radians (0.785398...)
 
         // For continuous actions, assuming index 0 is steering and 1 is acceleration and 2 is braking:
         var continuousActions = actionsOut.ContinuousActions;
 
-        // Sample a random angle between -35 and 35 degrees and convert to radians for steering
+        // Sample a random angle between -45 and 45 degrees and convert to radians for steering
         continuousActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Steering
 
         // Sample a random value for acceleration
@@ -800,7 +798,7 @@ public class TrafficAgent : Agent
     private void FixedUpdate()
     {
         /*
-         * In Unity, the Update() method is called once per frame and is primarily used for handling tasks
+         * In Unity, the Update() method, is called once per frame and is primarily used for handling tasks
          * that need to be executed in sync with the frame rate, such as processing user input,
          * updating non-physics game logic, and rendering-related updates.
          */
@@ -1262,9 +1260,9 @@ public class TrafficAgent : Agent
     /// Generates random values for the agent's low-level actions within predefined ranges.
     ///
     /// This method sets three action values in the lowLevelActions array:
-    /// 1. Index 0 - Steering angle: Range [-0.610865, 0.610865] radians (approximately ±35 degrees)
-    /// 2. Index 1 - Acceleration: Range [0.0, 4.5]
-    /// 3. Index 2 - Braking: Range [-4.0, 0.0]
+    /// 1. Index 0 - Steering angle: Range [-0.785398, 0.785398] radians (approximately ±45 degrees)
+    /// 2. Index 1 - Acceleration: Range [0.0, 5.0]
+    /// 3. Index 2 - Braking: Range [-5.0, 0.0]
     ///
     /// These randomized values can be used to:
     /// - Initialize the agent's actions at the start of an episode
@@ -1281,13 +1279,13 @@ public class TrafficAgent : Agent
         // Randomize the high-level action
         highLevelActions = Random.Range(0, 5); // Range is [0, 5)
 
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+        float minAngleRad = -Mathf.PI / 4f; // -45 degrees in radians (-0.785398...)
+        float maxAngleRad = Mathf.PI / 4f;  // 45 degrees in radians (0.785398...)
 
-         // Randomize the low-level actions
+        // Randomize the low-level actions
         lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 5.0f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-5.0f, 0.0f); // Default value for braking
 
         LogDebug("TrafficManager::GetRandomActions completed successfully.");
     }
@@ -1330,9 +1328,9 @@ public class TrafficAgent : Agent
     /// <param name="message">The debug message to be logged</param>
     private void LogDebug(string message)
     {
-        #if UNITY_EDITOR
+        //#if UNITY_EDITOR
         Debug.Log(message);
-        #endif
+        //#endif
     }
 
     /// <summary>

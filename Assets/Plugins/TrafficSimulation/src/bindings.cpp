@@ -28,6 +28,8 @@ PYBIND11_MODULE(replicantdrivesim, m) {
         .def("getWidth", &Vehicle::getWidth, "Get the width of the vehicle")
         .def("getLength", &Vehicle::getLength, "Get the length of the vehicle")
         .def("getSteering", &Vehicle::getSteering, "Get the steering angle of the vehicle")
+        .def("getYaw", &Vehicle::getYaw, "Get the yaw angle of the vehicle")
+        .def("getYawRate", &Vehicle::getYawRate, "Get the yaw rate of the vehicle")
         .def("getX", &Vehicle::getX, "Get the X coordinate of the vehicle")
         .def("getY", &Vehicle::getY, "Get the Y coordinate of the vehicle")
         .def("getZ", &Vehicle::getZ, "Get the Z coordinate of the vehicle")
