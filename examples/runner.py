@@ -7,6 +7,10 @@ from mlagents_envs.exception import UnityCommunicatorStoppedException
 
 def run_episodes(env, num_episodes):
     """Run a defined number of episodes with the environment."""
+    # Print available behavior names
+    behavior_names = list(env.behavior_specs.keys())
+    print(f"Available behavior names: {behavior_names}")
+
     try:
         for episode in range(num_episodes):
             print(f"Starting episode {episode + 1}")
