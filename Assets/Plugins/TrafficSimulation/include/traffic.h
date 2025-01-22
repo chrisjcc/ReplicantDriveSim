@@ -132,7 +132,7 @@ private:
      * @param high_level_action The high-level action to apply.
      * @param low_level_action The low-level actions to apply.
      */
-    void updatePosition(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action);
+    void applyActions(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action);
 
     /**
      * @brief Generates a random float within a specified range.

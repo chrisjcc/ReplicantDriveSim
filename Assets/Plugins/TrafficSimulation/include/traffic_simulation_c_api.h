@@ -42,26 +42,33 @@ EXPORT int Vehicle_getId(const Vehicle* vehicle);
 EXPORT int Vehicle_getLaneId(const Vehicle* vehicle);
 EXPORT float Vehicle_getWidth(const Vehicle* vehicle);
 EXPORT float Vehicle_getLength(const Vehicle* vehicle);
+
 EXPORT float Vehicle_getSteering(const Vehicle* vehicle);
 EXPORT float Vehicle_getYaw(const Vehicle* vehicle);
+
 EXPORT float Vehicle_getX(const Vehicle* vehicle);
 EXPORT float Vehicle_getY(const Vehicle* vehicle);
 EXPORT float Vehicle_getZ(const Vehicle* vehicle);
+
 EXPORT float Vehicle_getVx(const Vehicle* vehicle);
 EXPORT float Vehicle_getVy(const Vehicle* vehicle);
 EXPORT float Vehicle_getVz(const Vehicle* vehicle);
+
 EXPORT float Vehicle_getAcceleration(const Vehicle* vehicle);
 EXPORT float Vehicle_getSensorRange(const Vehicle* vehicle);
 EXPORT const char* Vehicle_getPositionString(const Vehicle* vehicle);
 
 EXPORT void Vehicle_setSteering(Vehicle* vehicle, float angle);
 EXPORT void Vehicle_setYaw(Vehicle* vehicle, float angle);
+
 EXPORT void Vehicle_setX(Vehicle* vehicle, float x);
 EXPORT void Vehicle_setY(Vehicle* vehicle, float y);
 EXPORT void Vehicle_setZ(Vehicle* vehicle, float z);
+
 EXPORT void Vehicle_setVx(Vehicle* vehicle, float vx);
 EXPORT void Vehicle_setVy(Vehicle* vehicle, float vy);
 EXPORT void Vehicle_setVz(Vehicle* vehicle, float vz);
+
 EXPORT void Vehicle_setAcceleration(Vehicle* vehicle, float acceleration);
 EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance);
 
