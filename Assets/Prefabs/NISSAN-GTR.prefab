@@ -48,6 +48,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -4163138524807180329, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4163138524807180329, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4163138524807180329, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -822578017894059060, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -822578017894059060, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -822578017894059060, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
       propertyPath: m_Name
       value: NISSAN-GTR
@@ -55,6 +79,18 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
       propertyPath: m_TagString
       value: TrafficAgent
+      objectReference: {fileID: 0}
+    - target: {fileID: 5590324888869176691, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5590324888869176691, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5590324888869176691, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -169,7 +205,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 5, y: 3, z: 12}
-  m_Center: {x: 2, y: 2, z: -2}
+  m_Center: {x: 0, y: 1.25, z: 0}
 --- !u!54 &2474822421161976964
 Rigidbody:
   m_ObjectHideFlags: 0

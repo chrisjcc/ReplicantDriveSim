@@ -28,6 +28,8 @@ PYBIND11_MODULE(replicantdrivesim, m) {
         .def("getWidth", &Vehicle::getWidth, "Get the width of the vehicle")
         .def("getLength", &Vehicle::getLength, "Get the length of the vehicle")
         .def("getSteering", &Vehicle::getSteering, "Get the steering angle of the vehicle")
+        .def("getYaw", &Vehicle::getYaw, "Get the yaw angle of the vehicle")
+        .def("getYawRate", &Vehicle::getYawRate, "Get the yaw rate of the vehicle")
         .def("getX", &Vehicle::getX, "Get the X coordinate of the vehicle")
         .def("getY", &Vehicle::getY, "Get the Y coordinate of the vehicle")
         .def("getZ", &Vehicle::getZ, "Get the Z coordinate of the vehicle")
@@ -41,6 +43,7 @@ PYBIND11_MODULE(replicantdrivesim, m) {
     // Bind the Traffic class
     py::class_<Traffic>(m, "Traffic")
         .def(py::init<const int&, const unsigned&>(), "Constructor with the number of agents and seed value")
+        .def("sample_and_initialize_agents", &Traffic::sampleAndInitializeAgents, "Use to initialize vehicle state, e.g. position, speed, orientation.")
         .def("step", &Traffic::step, "Advance the simulation by one time step")
         .def("get_agents", &Traffic::get_agents, py::return_value_policy::reference, "Get all agents in the traffic simulation")
         .def("get_agent_by_name", &Traffic::get_agent_by_name, py::return_value_policy::reference, "Get an agent by name")

@@ -5,8 +5,6 @@
 #include <cmath>
 #include <random>
 
-//const int SCREEN_WIDTH = 3000;
-const int LANE_WIDTH = 5;
 
 // Custom clamp function for C++11
 template <typename T>
@@ -19,7 +17,7 @@ T clamp(T value, T min_val, T max_val) {
  * @brief Constructor for Traffic.
  * @param num_agents Number of agents (vehicles) in the simulation.
  */
-Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_agents), seed(seed) {
+Traffic::Traffic(const int& num_agents, const unsigned& seed) : max_speed_(60.0f), num_agents(num_agents), seed(seed) {
     std::cout << "Traffic simulation initialized with seed: " << seed << std::endl;
 
     // Initialize vehicle and perception related data
@@ -28,37 +26,11 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
     agents.resize(num_agents);
     previous_positions.resize(num_agents);
     vehicle_models.resize(num_agents);
-    vehicle_states.resize(num_agents);
 
     // Initialize agents with random positions and attributes
-    for (int i = 0; i < num_agents; ++i) {
-        agents[i].setId(i);
-        agents[i].setName("agent_" + std::to_string(i));
-        agents[i].setWidth(2.0f);
-        agents[i].setLength(5.0f);
-        agents[i].setSensorRange(200.0f);
+    sampleAndInitializeAgents();
 
-        float delta = (LANE_WIDTH - agents[i].getWidth());
-
-        agents[i].setX(randFloat(-0.5f * delta, 0.5f * delta));
-        agents[i].setY(0.0f);
-        agents[i].setZ(randFloat(0.0f, 4.0f * agents[i].getLength()));
-        agents[i].setVx(0.0f);  // Initial lateral speed
-        agents[i].setVy(0.0f);  // Initial verticle speed
-        agents[i].setVz(randNormal(50.0f, 2.0f)); // Initial longitudinal speed
-        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -0.610865f, 0.610865f)); // +/- 35 degrees (in rad)
-
-        // Initialize previous positions with current positions
-        previous_positions[i] = agents[i];
-
-        // Initialize bicycle model state
-        vehicle_states[i].psi = agents[i].getSteering();
-        vehicle_states[i].z = agents[i].getZ();  // forward direction
-        vehicle_states[i].x = agents[i].getX();  // lateral direction
-        vehicle_states[i].v_z = agents[i].getVz();  // forward direction
-        vehicle_states[i].v_x = agents[i].getVx();  // lateral direction
-        vehicle_states[i].yaw_rate = 0.0;
-    }
+    max_speed_ = agents[0].getVehicleMaxSpeed();
 }
 
 /**
@@ -70,6 +42,36 @@ Traffic::~Traffic() {
 }
 
 /**
+ * @brief Samples and initializes agents with random positions and attributes.
+ */
+void Traffic::sampleAndInitializeAgents() {
+    for (int i = 0; i < num_agents; ++i) {
+        agents[i].setId(i);
+        agents[i].setName("agent_" + std::to_string(i));
+        agents[i].setWidth(2.0f);
+        agents[i].setLength(5.0f);
+        agents[i].setSensorRange(200.0f);
+
+        float delta = agents[i].getWidth();
+
+        agents[i].setX(randFloat(-5.0f * delta, 5.0f * delta));
+        agents[i].setY(0.4f);
+        agents[i].setZ(randFloat(500.0f, 100.0f * agents[i].getLength()));
+
+        agents[i].setVx(0.0f);  // Initial lateral speed
+        agents[i].setVy(0.0f);  // Initial vertical speed
+        agents[i].setVz(randNormal(25.0f, 2.0f)); // Initial longitudinal speed
+
+        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f),
+            -static_cast<float>(M_PI) / 4.0f,
+             static_cast<float>(M_PI) / 4.0f)); // +/- 35 degrees (in rad)
+
+        // Initialize previous positions with current positions
+        previous_positions[i] = agents[i];
+    }
+}
+
+/**
  * @brief Performs a simulation step.
  * Updates agent positions based on high-level and low-level actions,
  * @param high_level_actions High-level actions for each agent.
@@ -78,7 +80,7 @@ Traffic::~Traffic() {
 void Traffic::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
     // Update positions of all agents
     for (auto& agent : agents) {
-        updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
+        applyActions(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
     }
 }
 
@@ -155,7 +157,7 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_orientati
         // Euler angles (roll, pitch, yaw)
         float roll = 0.0;    // Replace with actual roll if available
         float pitch = 0.0;   // Replace with actual pitch if available
-        float yaw = agents[i].getSteering(); // Assuming steering represents yaw
+        float yaw = agents[i].getYaw(); // Not assuming yaw represents steering
         orientations["agent_" + std::to_string(i)] = {roll, pitch, yaw};
     }
 
@@ -168,19 +170,20 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_orientati
  * @param high_level_action The high-level action to apply.
  * @param low_level_action The low-level actions to apply.
  */
-void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action) {
+void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action) {
     int vehicle_id = vehicle.getId();
 
     // Store previous position
     previous_positions[vehicle_id] = vehicle;
 
     // Get current bicycle model state
-    BicycleModel::VehicleState& current_state = vehicle_states[vehicle_id];
+    Vehicle& next_state = agents[vehicle_id];
 
     // Process steering and acceleration inputs
-    float steering = clamp(low_level_action[0], -0.610865f, 0.610865f);
-    float acceleration = clamp(low_level_action[1], 0.0f, 4.5f);
-    float braking = clamp(low_level_action[2], -8.0f, 0.0f);
+    float steering = low_level_action[0];
+    float acceleration = low_level_action[1];
+    float braking = low_level_action[2];
+
     float net_acceleration = 0.0f;
 
     // Process high-level actions
@@ -195,23 +198,28 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
             net_acceleration = 0.0f;
     }
 
+    // Prevent further acceleration if the vehicle's absolute speed along the Z-axis exceeds the maximum speed.
+    if (std::abs(vehicle.getZ()) > vehicle.getVehicleMaxSpeed()) {
+        net_acceleration = 0.0f;
+    }
+
     // Update vehicle state using enhanced dynamic bicycle model
-    current_state = vehicle_models[vehicle_id].updateDynamicState(
-        current_state,
+    next_state = vehicle_models[vehicle_id].updateDynamicState(
+        vehicle, // Current state
         steering,
         net_acceleration,
         time_step
     );
 
     // Update vehicle properties based on bicycle model state
-    vehicle.setX(current_state.x);  // lateral position
-    vehicle.setZ(current_state.z);  // forward position
-    vehicle.setSteering(current_state.psi);
-    vehicle.setVx(current_state.v_x);
-    vehicle.setVz(current_state.v_z);
+    vehicle.setX(next_state.getX());  // lateral position
+    vehicle.setZ(next_state.getZ());  // forward position
 
-    // Update bicycle model state for wraparound
-    vehicle_states[vehicle_id].z = vehicle.getZ();
+    vehicle.setYaw(next_state.getYaw());
+    vehicle.setSteering(steering);
+
+    vehicle.setVx(next_state.getVx()); // Longitudional speed
+    vehicle.setVz(next_state.getVz()); // lateral speed
 }
 
 /**
@@ -236,17 +244,17 @@ void Traffic::setTimeStep(float new_time_step) {
 * @brief Getter for the maximum velocity.
 * @return Current maximum velocity value.
 */
-float Traffic::getMaxVelocity() const {
-    return max_velocity;
+float Traffic::getMaxVehicleSpeed() const {
+    return max_speed_;
 }
 
 /**
  * @brief Setter for the maximum velocity.
  * @param new_max_velocity New maximum velocity value. Must be positive.
 */
-void Traffic::setMaxVelocity(float new_max_velocity) {
-    if (new_max_velocity > 0) { // Ensure velocity is positive
-        max_velocity = new_max_velocity;
+void Traffic::setMaxVehicleSpeed(float max_speed) {
+    if (max_speed > 0) { // Ensure velocity is positive
+        max_speed_ = max_speed;
     }
 }
 

@@ -1,7 +1,8 @@
 import os
-import sys
-import yaml
 import platform
+import sys
+
+import yaml
 
 # Add the package root directory to sys.path
 package_root = os.path.abspath(os.path.dirname(__file__))
@@ -10,7 +11,8 @@ if package_root not in sys.path:
 
 # Dynamically get the version
 try:
-    from importlib.metadata import version, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError, version
+
     try:
         __version__ = version("ReplicantDriveSim")
     except PackageNotFoundError:
@@ -19,7 +21,8 @@ try:
 except ImportError:
     # Fallback for Python < 3.8
     try:
-        from importlib_metadata import version, PackageNotFoundError
+        from importlib_metadata import PackageNotFoundError, version
+
         try:
             __version__ = version("ReplicantDriveSim")
         except PackageNotFoundError:
@@ -37,6 +40,7 @@ except ImportError as e:
 
 from .envs.environment import CustomUnityMultiAgentEnv
 from .envs.unity_env_resource import create_unity_env
+
 
 def get_unity_executable_path():
     # Get the package's directory and locate the Unity executable
@@ -75,19 +79,17 @@ def make(env_name, config: dict):
         # Automatically get the Unity executable path
         unity_executable_path = get_unity_executable_path()
 
-        unity_env_handle = create_unity_env(
-            file_name=unity_executable_path,
-            worker_id=0,
-            base_port=config["unity_env"]["base_port"],
-            no_graphics=config["unity_env"]["no_graphics"],
-        )
+        config.update({"file_name": unity_executable_path})
+
+        unity_env_handle = create_unity_env(config=config)
 
         # Update configuration to include unity environment handler
-        config.update({"unity_env_handle":  unity_env_handle})
+        config.update({"unity_env_handle": unity_env_handle})
 
         return CustomUnityMultiAgentEnv(config=config)
     else:
         raise ValueError(f"Unknown environment: {env_name}")
+
 
 # Explicitly add 'make' to __all__
 __all__ = [
