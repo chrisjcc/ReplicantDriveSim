@@ -80,7 +80,7 @@ void Traffic::sampleAndInitializeAgents() {
 void Traffic::step(const std::vector<int>& high_level_actions, const std::vector<std::vector<float>>& low_level_actions) {
     // Update positions of all agents
     for (auto& agent : agents) {
-        updatePosition(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
+        applyActions(agent, high_level_actions[agent.getId()], low_level_actions[agent.getId()]);
     }
 }
 
@@ -170,7 +170,7 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_orientati
  * @param high_level_action The high-level action to apply.
  * @param low_level_action The low-level actions to apply.
  */
-void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action) {
+void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::vector<float>& low_level_action) {
     int vehicle_id = vehicle.getId();
 
     // Store previous position
