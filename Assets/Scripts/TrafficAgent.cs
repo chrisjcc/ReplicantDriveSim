@@ -16,6 +16,7 @@ public class TrafficAgent : Agent
 {
     // Traffic Manager
     [HideInInspector] private TrafficManager trafficManager;
+    [SerializeField] private int seed = 42;
 
     // Agent Actions
     [HideInInspector] public int highLevelActions;
@@ -55,6 +56,8 @@ public class TrafficAgent : Agent
     private void Awake()
     {
         LogDebug("TrafficAgent::Awake Start started.");
+
+        Random.InitState(seed);
 
         // Try to find the TrafficManager in the scene
         if (trafficManager == null)
@@ -138,9 +141,9 @@ public class TrafficAgent : Agent
     /// Resets the agent's low-level actions to random values within predefined ranges.
     ///
     /// This method initializes three action values:
-    /// 1. Steering angle (in radians): Range [-0.610865, 0.610865] (approximately ±35 degrees)
-    /// 2. Acceleration: Range [0.0, 4.5]
-    /// 3. Braking: Range [-4.0, 0.0]
+    /// 1. Steering angle (in radians): Range [-0.785398, 0.785398] (approximately ±55 degrees)
+    /// 2. Acceleration: Range [0.0, 5.0]
+    /// 3. Braking: Range [-5.0, 0.0]
     ///
     /// These randomized values help in creating diverse initial conditions for each episode,
     /// which is crucial for effective reinforcement learning training.
@@ -162,11 +165,6 @@ public class TrafficAgent : Agent
     /// 2. Updating the agent's transform in the Unity scene.
     /// 3. Updating the agent's collider position and rotation.
     /// 4. Synchronizing the agent's position with the C++ traffic simulation.
-    ///
-    /// Key Components:
-    /// - Random Position: Within a square defined by trafficManager.spawnAreaSize.
-    /// - Random Rotation: Around the Y-axis (0-360 degrees).
-    /// - Spawn Height: Determined by trafficManager.SpawnHeight.
     ///
     /// Synchronization:
     /// - Updates Unity GameObject transform.
@@ -197,21 +195,33 @@ public class TrafficAgent : Agent
 
         if (trafficManager != null)
         {
-            Vector3 randomPosition = GenerateRandomPosition();
-            Quaternion randomRotation = GenerateRandomRotation();
-            LogDebug($"Resetting agent {gameObject.name} - Position: {randomPosition}, Rotation: {randomRotation.eulerAngles}");
+            // Sample and initialize agents state, e.g. position, speed, orientation
+            TrafficManager.Traffic_sampleAndInitializeAgents(trafficManager.trafficSimulationPtr);
 
-            UpdateAgentTransform(randomPosition, randomRotation);
-            UpdateAgentCollider(randomPosition, randomRotation);
+            // Obtain pointer to traffic vehicle state
+            IntPtr vehiclePtr = TrafficManager.Traffic_get_agent_by_name(trafficManager.trafficSimulationPtr, gameObject.name);
+
+            // Update the vehicle's position in the C++ simulation
+            Vector3 position = new Vector3(
+                TrafficManager.Vehicle_getX(vehiclePtr),
+                TrafficManager.Vehicle_getY(vehiclePtr),
+                TrafficManager.Vehicle_getZ(vehiclePtr)
+            );
+
+            // Update the vehicle's rotation in the C++ simulation
+            float yaw = Mathf.Rad2Deg * TrafficManager.Vehicle_getYaw(vehiclePtr);
+            Quaternion rotation = Quaternion.Euler(0, yaw, 0);
+
+            LogDebug($"Resetting agent {gameObject.name} - Position: {position}, Rotation: {rotation}");
 
             try
             {
                 // Update the agent's position and rotation in the Unity scene
-                UpdateAgentTransform(randomPosition, randomRotation);
-                UpdateAgentCollider(randomPosition, randomRotation);
+                UpdateAgentTransform(position, rotation);
+                UpdateAgentCollider(position, rotation);
 
                 // Update the agent's position in the C++ traffic simulation
-                UpdateTrafficSimulation(randomPosition, randomRotation);
+                UpdateTrafficSimulation(position, rotation);
             }
             catch (Exception ex)
             {
@@ -224,76 +234,6 @@ public class TrafficAgent : Agent
         }
 
         LogDebug("TrafficManager::ResetAgentPositionAndRotation completed successfully.");
-    }
-
-    /// <summary>
-    /// Generates a random 3D position for spawning or repositioning an agent within the defined spawn area.
-    ///
-    /// This method creates a Vector3 with:
-    /// - X: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
-    /// - Y: Fixed value defined by trafficManager.SpawnHeight
-    /// - Z: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
-    ///
-    /// Key Components:
-    /// - spawnAreaSize: Defines the square area in which agents can be positioned (from TrafficManager).
-    /// - SpawnHeight: Fixed Y-coordinate for spawning, ensuring consistent elevation (from TrafficManager).
-    ///
-    /// Usage:
-    /// Call this method when a new random position is needed, such as during agent initialization
-    /// or when resetting an agent's position.
-    ///
-    /// Dependencies:
-    /// - Requires a properly initialized TrafficManager with defined spawnAreaSize and SpawnHeight.
-    /// - Uses UnityEngine.Random for generating random values.
-    ///
-    /// Note:
-    /// - Ensures agents are spawned within a square area centered at (0, SpawnHeight, 0).
-    /// - The Y position is fixed, assuming a flat spawning plane.
-    /// - Consider adding checks for valid TrafficManager initialization before calling this method.
-    /// - For varied terrain, you might need to modify this to account for ground height.
-    ///
-    /// </summary>
-    /// <returns>A Vector3 representing a random position within the defined spawn area.</returns>
-    private Vector3 GenerateRandomPosition()
-    {
-        return new Vector3(
-            UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2),
-            trafficManager.SpawnHeight,
-            UnityEngine.Random.Range(-trafficManager.spawnAreaSize / 2, trafficManager.spawnAreaSize / 2)
-        );
-    }
-
-    /// <summary>
-    /// Generates a random 3D position for spawning or repositioning an agent within the defined spawn area.
-    ///
-    /// This method creates a Vector3 with:
-    /// - X: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
-    /// - Y: Fixed value defined by trafficManager.SpawnHeight
-    /// - Z: Random value within [-spawnAreaSize/2, spawnAreaSize/2]
-    ///
-    /// Key Components:
-    /// - spawnAreaSize: Defines the square area in which agents can be positioned (from TrafficManager).
-    /// - SpawnHeight: Fixed Y-coordinate for spawning, ensuring consistent elevation (from TrafficManager).
-    ///
-    /// Usage:
-    /// Call this method when a new random position is needed, such as during agent initialization
-    /// or when resetting an agent's position.
-    ///
-    /// Dependencies:
-    /// - Requires a properly initialized TrafficManager with defined spawnAreaSize and SpawnHeight.
-    /// - Uses UnityEngine.Random for generating random values.
-    ///
-    /// Note:
-    /// - Ensures agents are spawned within a square area centered at (0, SpawnHeight, 0).
-    /// - The Y position is fixed, assuming a flat spawning plane.
-    /// - Consider adding checks for valid TrafficManager initialization before calling this method.
-    /// - For varied terrain, you might need to modify this to account for ground height.
-    ///
-    /// </summary>
-    /// <returns>A Vector3 representing a random position within the defined spawn area.</returns>
-    private Quaternion GenerateRandomRotation()
-    {
-        return Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
     }
 
     /// <summary>
@@ -432,7 +372,9 @@ public class TrafficAgent : Agent
         TrafficManager.Vehicle_setZ(vehiclePtr, position.z);
 
         // Update the vehicle's rotation in the C++ simulation
-        TrafficManager.Vehicle_setSteering(vehiclePtr, rotation[1]);
+        // Note: we arbitrarily set the yaw and steering angle to be the same for initialization purpose
+        TrafficManager.Vehicle_setSteering(vehiclePtr, rotation.y);
+        TrafficManager.Vehicle_setYaw(vehiclePtr, rotation.y);
     }
 
     /// <summary>
@@ -642,8 +584,8 @@ public class TrafficAgent : Agent
     {
         // Agent's own speed and orientation
         Rigidbody rb = GetComponent<Rigidbody>();
-        //rb.isKinematic = true;
-        //rb.useGravity = false;
+        rb.isKinematic = true;
+        rb.useGravity = false;
 
         if (rb != null)
         {
@@ -671,9 +613,9 @@ public class TrafficAgent : Agent
     /// - Discrete Action:
     ///   - Index 0: Random integer between 0 and 4 (inclusive)
     /// - Continuous Actions:
-    ///   - Index 0: Steering angle in radians (range: -35 to 35 degrees, converted to radians)
-    ///   - Index 1: Acceleration (range: 0.0 to 4.5)
-    ///   - Index 2: Braking (range: -4.0 to 0.0)
+    ///   - Index 0: Steering angle in radians (range: -45 to 45 degrees, converted to radians)
+    ///   - Index 1: Acceleration (range: 0.0 to 5.0)
+    ///   - Index 2: Braking (range: -5.0 to 0.0)
     ///
     /// Usage:
     /// - Automatically called by ML-Agents when Behavior Type is "Heuristic Only".
@@ -696,13 +638,13 @@ public class TrafficAgent : Agent
         var discreteActions = actionsOut.DiscreteActions;
         discreteActions[0] = UnityEngine.Random.Range(0, 5); // This will give a random integer from 0 to 4 inclusive
 
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+        float minAngleRad = -Mathf.PI / 4f; // -45 degrees in radians (-0.785398...)
+        float maxAngleRad = Mathf.PI / 4f;  // 45 degrees in radians (0.785398...)
 
         // For continuous actions, assuming index 0 is steering and 1 is acceleration and 2 is braking:
         var continuousActions = actionsOut.ContinuousActions;
 
-        // Sample a random angle between -35 and 35 degrees and convert to radians for steering
+        // Sample a random angle between -45 and 45 degrees and convert to radians for steering
         continuousActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Steering
 
         // Sample a random value for acceleration
@@ -800,7 +742,7 @@ public class TrafficAgent : Agent
     private void FixedUpdate()
     {
         /*
-         * In Unity, the Update() method is called once per frame and is primarily used for handling tasks
+         * In Unity, the Update() method, is called once per frame and is primarily used for handling tasks
          * that need to be executed in sync with the frame rate, such as processing user input,
          * updating non-physics game logic, and rendering-related updates.
          */
@@ -1262,9 +1204,9 @@ public class TrafficAgent : Agent
     /// Generates random values for the agent's low-level actions within predefined ranges.
     ///
     /// This method sets three action values in the lowLevelActions array:
-    /// 1. Index 0 - Steering angle: Range [-0.610865, 0.610865] radians (approximately ±35 degrees)
-    /// 2. Index 1 - Acceleration: Range [0.0, 4.5]
-    /// 3. Index 2 - Braking: Range [-4.0, 0.0]
+    /// 1. Index 0 - Steering angle: Range [-0.785398, 0.785398] radians (approximately ±45 degrees)
+    /// 2. Index 1 - Acceleration: Range [0.0, 5.0]
+    /// 3. Index 2 - Braking: Range [-5.0, 0.0]
     ///
     /// These randomized values can be used to:
     /// - Initialize the agent's actions at the start of an episode
@@ -1281,13 +1223,13 @@ public class TrafficAgent : Agent
         // Randomize the high-level action
         highLevelActions = Random.Range(0, 5); // Range is [0, 5)
 
-        float minAngleRad = -0.610865f; // -35 degrees in radians
-        float maxAngleRad = 0.610865f;  // 35 degrees in radians
+        float minAngleRad = -Mathf.PI / 4f; // -45 degrees in radians (-0.785398...)
+        float maxAngleRad = Mathf.PI / 4f;  // 45 degrees in radians (0.785398...)
 
-         // Randomize the low-level actions
+        // Randomize the low-level actions
         lowLevelActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Default value for steering
-        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Default value for acceleration
-        lowLevelActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Default value for braking
+        lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 5.0f); // Default value for acceleration
+        lowLevelActions[2] = UnityEngine.Random.Range(-5.0f, 0.0f); // Default value for braking
 
         LogDebug("TrafficManager::GetRandomActions completed successfully.");
     }
@@ -1330,9 +1272,9 @@ public class TrafficAgent : Agent
     /// <param name="message">The debug message to be logged</param>
     private void LogDebug(string message)
     {
-        #if UNITY_EDITOR
+        //#if UNITY_EDITOR
         Debug.Log(message);
-        #endif
+        //#endif
     }
 
     /// <summary>

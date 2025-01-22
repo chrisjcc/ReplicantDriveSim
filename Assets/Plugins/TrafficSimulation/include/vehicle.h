@@ -199,17 +199,80 @@ public:
      */
     std::string getPositionString() const;
 
+    /**
+     * @brief Set the yaw angle of the vehicle.
+     * @return None.
+    **/
+
+    /**
+     * @brief Sets the yaw angle of the vehicle.
+     * @param yaw Yaw angle of the vehicle in radians.
+     */
+    void setYaw(float yaw);
+
+    /**
+     * @brief Gets the yaw angle of the vehicle.
+     * @return Yaw angle of the vehicle in radians.
+     */
+    float getYaw() const;
+
+    /**
+     * @brief Gets the yaw rate of the vehicle.
+     * @return Yaw rate of the vehicle in radians per second.
+     */
+    float getYawRate() const;
+
+    /**
+     * @brief Sets the yaw rate of the vehicle.
+     * @param yaw_rate Yaw rate of the vehicle in radians per second.
+     */
+    void setYawRate(float yaw_rate);
+
+    /**
+     * @brief Gets the sideslip angle (beta) of the vehicle.
+     * @return Sideslip angle in radians.
+     */
+    float getBeta() const;
+
+    /**
+     * @brief Sets the sideslip angle (beta) of the vehicle.
+     * @param beta Sideslip angle in radians.
+     */
+    void setBeta(float beta);
+
+     /**
+      * @brief Set the maximum vehicle speed.
+      * @param max_speed Vehicle's maximum speed in m/s.
+      */
+     void setMaxVehicleSpeed(float max_speed);
+
+    /**
+     * @brief Get the maximum vehicle speed.
+     * @return vehicle's maximum speed in m/s.
+     */
+     float getVehicleMaxSpeed() const;
+
+
 private:
-    std::string name_; ///< Name of the vehicle.
+    // Vehicle properities
     int id_; ///< ID of the vehicle.
-    int lane_id_; ///< ID of the lane the vehicle is in.
+    std::string name_; ///< Name of the vehicle.
     float width_; ///< Width of the vehicle.
     float length_; ///< Length of the vehicle.
-    float steering_; ///< Steering angle of the vehicle.
-    float x_, y_, z_; ///< Position of the vehicle.
-    float vx_, vy_, vz_; ///< Velocity of the vehicle.
-    float acceleration_; ///< Acceleration of the vehicle.
     float sensor_range_; ///< Sensor range of the vehicle.
+
+    // Dynamic state
+    float x_;              ///<  Global X position (m) of the vehicle.
+    float y_;              ///<  Global Y position (m) of the vehicle.
+    float z_;              ///<  Global Z position (m) of the vehicle.
+    float yaw_;            ///<  Yaw angle (rad)
+    float yaw_rate_;       ///<  Yaw rate (rad/s)
+    float beta_;           ///<  Sideslip angle (rad)
+    float steering_;       ///<  Steering angle of the vehicle.
+    float acceleration_;   ///<  Acceleration of the vehicle.
+    int lane_id_;          ///<  ID of the lane the vehicle is in.
+    float vx_, vy_, vz_;   ///<  Velocity of the vehicle.
+    float max_speed_;      ///<  The maximum physical speed of the vehicle
 };
 
 #endif // VEHICLE_H

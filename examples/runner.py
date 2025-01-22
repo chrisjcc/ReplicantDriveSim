@@ -20,6 +20,7 @@ def run_episodes(env, num_episodes):
                 # Modify the actions for all agents
                 for agent in actions:
                     discrete_action, continuous_actions = actions[agent]
+
                     # Breakdown of continuous actions
                     # continuous_actions[0] = 0.0  # Set steering to zero
                     # continuous_actions[1] = 0.1  # Some other modification
@@ -51,7 +52,7 @@ def main():
     parser.add_argument(
         "--num-episodes",
         type=int, 
-        default=10, 
+        default=5,
         help="Number of episodes to run (default: 10)"
     )
     parser.add_argument(

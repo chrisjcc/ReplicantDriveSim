@@ -119,8 +119,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                     self.behavior_spec.action_spec.discrete_branches[0]
                 ),
                 gym.spaces.Box(
-                    low=np.array([-0.610865, 0.0, -8.0]),
-                    high=np.array([0.610865, 4.5, 0.0]),
+                    # Source: https://highway-env.farama.org/_modules/highway_env/envs/common/action/#ContinuousAction
+                    low=np.array([-np.pi/4, 0.0, -5.0]),  # -45 degrees
+                    high=np.array([np.pi/4, 5.0, 0.0]),   # +45 degrees
+
                     shape=(self.behavior_spec.action_spec.continuous_size,),
                     dtype=np.float32,
                 ),
@@ -387,8 +389,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         ray.get(self.unity_env_handle.set_actions.remote(self._behavior_name, action_tuple))
 
         # Step the Unity environment
-        for _ in range(self.fps):
-            ray.get(self.unity_env_handle.step.remote())
+        ray.get(self.unity_env_handle.step.remote())
 
         obs_dict, rewards_dict, terminateds_dict, truncateds_dict, infos_dict = (
             self._get_step_results()
