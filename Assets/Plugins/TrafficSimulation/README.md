@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Traffic Architecture"
-permalink: /External/
+permalink: /
 ---
 
 # Build and Install the Traffic Simulation Library
