@@ -5,7 +5,6 @@
 #include <cmath>
 #include <random>
 
-const int LANE_WIDTH = 5;
 
 // Custom clamp function for C++11
 template <typename T>
@@ -18,7 +17,7 @@ T clamp(T value, T min_val, T max_val) {
  * @brief Constructor for Traffic.
  * @param num_agents Number of agents (vehicles) in the simulation.
  */
-Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_agents), seed(seed) {
+Traffic::Traffic(const int& num_agents, const unsigned& seed) : max_speed_(60.0f), num_agents(num_agents), seed(seed) {
     std::cout << "Traffic simulation initialized with seed: " << seed << std::endl;
 
     // Initialize vehicle and perception related data
@@ -29,29 +28,9 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
     vehicle_models.resize(num_agents);
 
     // Initialize agents with random positions and attributes
-    for (int i = 0; i < num_agents; ++i) {
-        agents[i].setId(i);
-        agents[i].setName("agent_" + std::to_string(i));
-        agents[i].setWidth(2.0f);
-        agents[i].setLength(5.0f);
-        agents[i].setSensorRange(200.0f);
+    sampleAndInitializeAgents();
 
-        float delta = (LANE_WIDTH - agents[i].getWidth());
-
-        agents[i].setX(randFloat(-0.5f * delta, 0.5f * delta));
-        agents[i].setY(0.0f);
-        agents[i].setZ(randFloat(0.0f, 5.0f * agents[i].getLength()));
-
-        agents[i].setVx(0.0f);  // Initial lateral speed
-        agents[i].setVy(0.0f);  // Initial verticle speed
-        agents[i].setVz(randNormal(50.0f, 2.0f)); // Initial longitudinal speed
-
-        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -static_cast<float>(M_PI)/4.0f, static_cast<float>(M_PI) / 4.0f)); // +/- 35 degrees (in rad)
-
-        // Initialize previous positions with current positions
-        previous_positions[i] = agents[i];
-
-    }
+    max_speed_ = agents[0].getVehicleMaxSpeed();
 }
 
 /**
@@ -60,6 +39,36 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : num_agents(num_a
  */
 Traffic::~Traffic() {
     // No need to delete perceptionModule explicitly; std::unique_ptr handles it
+}
+
+/**
+ * @brief Samples and initializes agents with random positions and attributes.
+ */
+void Traffic::sampleAndInitializeAgents() {
+    for (int i = 0; i < num_agents; ++i) {
+        agents[i].setId(i);
+        agents[i].setName("agent_" + std::to_string(i));
+        agents[i].setWidth(2.0f);
+        agents[i].setLength(5.0f);
+        agents[i].setSensorRange(200.0f);
+
+        float delta = agents[i].getWidth();
+
+        agents[i].setX(randFloat(-5.0f * delta, 5.0f * delta));
+        agents[i].setY(0.4f);
+        agents[i].setZ(randFloat(500.0f, 100.0f * agents[i].getLength()));
+
+        agents[i].setVx(0.0f);  // Initial lateral speed
+        agents[i].setVy(0.0f);  // Initial vertical speed
+        agents[i].setVz(randNormal(50.0f, 2.0f)); // Initial longitudinal speed
+
+        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f),
+            -static_cast<float>(M_PI) / 4.0f,
+             static_cast<float>(M_PI) / 4.0f)); // +/- 35 degrees (in rad)
+
+        // Initialize previous positions with current positions
+        previous_positions[i] = agents[i];
+    }
 }
 
 /**
@@ -189,6 +198,11 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
             net_acceleration = 0.0f;
     }
 
+    // Prevent further acceleration if the vehicle's absolute speed along the Z-axis exceeds the maximum speed.
+    if (std::abs(vehicle.getZ()) > vehicle.getVehicleMaxSpeed()) {
+        net_acceleration = 0.0f;
+    }
+
     // Update vehicle state using enhanced dynamic bicycle model
     next_state = vehicle_models[vehicle_id].updateDynamicState(
         vehicle, // Current state
@@ -204,8 +218,8 @@ void Traffic::updatePosition(Vehicle& vehicle, int high_level_action, const std:
     vehicle.setYaw(next_state.getYaw());
     vehicle.setSteering(steering);
 
-    vehicle.setVx(next_state.getVx());
-    vehicle.setVz(next_state.getVz());
+    vehicle.setVx(next_state.getVx()); // Longitudional speed
+    vehicle.setVz(next_state.getVz()); // lateral speed
 }
 
 /**
@@ -230,17 +244,17 @@ void Traffic::setTimeStep(float new_time_step) {
 * @brief Getter for the maximum velocity.
 * @return Current maximum velocity value.
 */
-float Traffic::getMaxVelocity() const {
-    return max_velocity;
+float Traffic::getMaxVehicleSpeed() const {
+    return max_speed_;
 }
 
 /**
  * @brief Setter for the maximum velocity.
  * @param new_max_velocity New maximum velocity value. Must be positive.
 */
-void Traffic::setMaxVelocity(float new_max_velocity) {
-    if (new_max_velocity > 0) { // Ensure velocity is positive
-        max_velocity = new_max_velocity;
+void Traffic::setMaxVehicleSpeed(float max_speed) {
+    if (max_speed > 0) { // Ensure velocity is positive
+        max_speed_ = max_speed;
     }
 }
 

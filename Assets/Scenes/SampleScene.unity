@@ -223,18 +223,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentPrefab: {fileID: 4109849008543767089, guid: d82982a893aaf4a29b195b5d5b95b7fb, type: 3}
-  initialAgentCount: 2
+  simTimeStep: 0.02
+  initialAgentCount: 1
+  maxSpeed: 5
   seed: 42
-  simTimeStep: 0.04
-  maxVelocity: 60
-  numberOfRays: 15
-  rayLength: 200
-  raycastAngle: 90
   debugVisualization: 0
-  rayHitColor: {r: 1, g: 0, b: 0, a: 1}
-  rayMissColor: {r: 1, g: 1, b: 1, a: 1}
-  spawnAreaSize: 2
   MaxSteps: 2000
+  spawnAreaSize: 2
+  raySensor: {fileID: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

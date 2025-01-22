@@ -240,6 +240,19 @@ public:
      */
     void setBeta(float beta);
 
+     /**
+      * @brief Set the maximum vehicle speed.
+      * @param max_speed Vehicle's maximum speed in m/s.
+      */
+     void setMaxVehicleSpeed(float max_speed);
+
+    /**
+     * @brief Get the maximum vehicle speed.
+     * @return vehicle's maximum speed in m/s.
+     */
+     float getVehicleMaxSpeed() const;
+
+
 private:
     // Vehicle properities
     int id_; ///< ID of the vehicle.
@@ -259,6 +272,7 @@ private:
     float acceleration_;   ///<  Acceleration of the vehicle.
     int lane_id_;          ///<  ID of the lane the vehicle is in.
     float vx_, vy_, vz_;   ///<  Velocity of the vehicle.
+    float max_speed_;      ///<  The maximum physical speed of the vehicle
 };
 
 #endif // VEHICLE_H

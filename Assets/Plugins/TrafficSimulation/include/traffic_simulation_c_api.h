@@ -68,6 +68,9 @@ EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance);
 // Traffic functions
 EXPORT Traffic* Traffic_create(int num_agents, unsigned seed);
 EXPORT void Traffic_destroy(Traffic* traffic);
+
+EXPORT void Traffic_sampleAndInitializeAgents(Traffic* traffic);
+
 EXPORT const char* Traffic_step(Traffic* traffic,
     int* high_level_actions,
     int high_level_actions_count,
@@ -100,8 +103,8 @@ EXPORT void VehiclePtrVector_destroy(VehiclePtrVector* vector);
 // Traffic configuration functions
 EXPORT float Traffic_getTimeStep(Traffic* traffic);
 EXPORT void Traffic_setTimeStep(Traffic* traffic, float new_time_step);
-EXPORT float Traffic_getMaxVelocity(Traffic* traffic);
-EXPORT void Traffic_setMaxVelocity(Traffic* traffic, float new_max_velocity);
+EXPORT float Traffic_getMaxVehicleSpeed(Traffic* traffic);
+EXPORT void Traffic_setMaxVehicleSpeed(Traffic* traffic, float max_speed);
 
 
 // Utility function

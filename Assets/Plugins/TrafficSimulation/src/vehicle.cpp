@@ -4,13 +4,13 @@
 Vehicle::Vehicle()
     : id_(0), name_(""), width_(0.0f), length_(0.0f), sensor_range_(0.0f),
       x_(0.0f), y_(0.0f), z_(0.0f), yaw_(0.0f), yaw_rate_(0.0f), beta_(0.0f),
-      steering_(0.0f), acceleration_(0.0f), lane_id_(0), vx_(0.0f), vy_(0.0f), vz_(0.0f) {}
+      steering_(0.0f), acceleration_(0.0f), lane_id_(0), vx_(0.0f), vy_(0.0f), vz_(0.0f), max_speed_(5) {}
 
 // Parameterized constructor
 Vehicle::Vehicle(const std::string& name, int id, int lane_id, float width, float length)
     : id_(id), name_(name), width_(width), length_(length), sensor_range_(0.0f),
       x_(0.0f), y_(0.0f), z_(0.0f), yaw_(0.0f), yaw_rate_(0.0f), beta_(0.0f),
-      steering_(0.0f), acceleration_(0.0f), lane_id_(lane_id), vx_(0.0f), vy_(0.0f), vz_(0.0f) {}
+      steering_(0.0f), acceleration_(0.0f), lane_id_(lane_id), vx_(0.0f), vy_(0.0f), vz_(0.0f), max_speed_(5) {}
 
 // Getter and Setter for name
 std::string Vehicle::getName() const {
@@ -163,6 +163,14 @@ float Vehicle::getBeta() const {
 
 void Vehicle::setBeta(float beta) {
     beta_ = beta;
+}
+
+float Vehicle::getVehicleMaxSpeed() const {
+    return max_speed_;
+}
+
+void Vehicle::setMaxVehicleSpeed(float max_speed) {
+     max_speed_ = max_speed;
 }
 
 // Method to get a formatted string of the vehicle's position (for debugging)

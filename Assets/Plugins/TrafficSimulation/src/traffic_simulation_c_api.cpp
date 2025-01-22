@@ -97,8 +97,8 @@ EXPORT void Vehicle_setYaw(Vehicle* vehicle, float angle) {
     vehicle->setYaw(angle);
 }
 
-EXPORT void Vehicle_setYawRate(Vehicle* vehicle, float angle) {
-    vehicle->setYawRate(angle);
+EXPORT void Vehicle_setYawRate(Vehicle* vehicle, float rate) {
+    vehicle->setYawRate(rate);
 }
 
 EXPORT void Vehicle_setX(Vehicle* vehicle, float x) {
@@ -140,6 +140,10 @@ EXPORT Traffic* Traffic_create(int num_agents, unsigned seed) {
 
 EXPORT void Traffic_destroy(Traffic* traffic) {
     delete traffic;
+}
+
+EXPORT void Traffic_sampleAndInitializeAgents(Traffic* traffic) {
+    traffic->sampleAndInitializeAgents();
 }
 
 EXPORT const char* Traffic_step(Traffic* traffic,
@@ -297,8 +301,8 @@ EXPORT void Traffic_setTimeStep(Traffic* traffic, float new_time_step) {
  * @param traffic Pointer to the Traffic object.
  * @return The current maximum velocity.
  */
-EXPORT float Traffic_getMaxVelocity(Traffic* traffic) {
-    return traffic->getMaxVelocity();
+EXPORT float Traffic_getMaxVehicleSpeed(Traffic* traffic) {
+    return traffic->getMaxVehicleSpeed();
 }
 
 /**
@@ -306,6 +310,6 @@ EXPORT float Traffic_getMaxVelocity(Traffic* traffic) {
  * @param traffic Pointer to the Traffic object.
  * @param new_max_velocity The new maximum velocity value to set.
  */
-EXPORT void Traffic_setMaxVelocity(Traffic* traffic, float new_max_velocity) {
-    traffic->setMaxVelocity(new_max_velocity);
+EXPORT void Traffic_setMaxVehicleSpeed(Traffic* traffic, float max_speed) {
+    traffic->setMaxVehicleSpeed(max_speed);
 }

@@ -22,20 +22,22 @@ public class TrafficManager : MonoBehaviour
 
     // Serialized Fields for Unity Editor (Unity Inspector variables)
     [SerializeField] private GameObject agentPrefab; // e.g., NISSAN-GTR)
-    [SerializeField] private int initialAgentCount = 1;
-    [SerializeField] private uint seed = 42;
+
     [SerializeField] private float simTimeStep = 0.04f;
-    [SerializeField] private float maxVelocity = 60.0f;
+    [SerializeField] private int initialAgentCount = 1;
+
+    [SerializeField] public float maxSpeed = 1.0f; //60.0f;
+    [SerializeField] private uint seed = 42;
 
     // Public Properties
     [SerializeField] public bool debugVisualization = false;
 
     [SerializeField] public int MaxSteps = 2000;
-    [SerializeField] public float spawnAreaSize = 10.0f;
+
     //[HideInInspector] public float MoveSpeed { get; set; } = 5f;
     //[HideInInspector] public float RotationSpeed { get; set; } = 100f;
-    [HideInInspector] public float SpawnHeight { get; set; } = 0.1f;
     [HideInInspector] public float AngleStep { get; private set; }
+
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "Road";
     [HideInInspector] public RayPerceptionSensorComponent3D raySensor;
 
@@ -62,6 +64,9 @@ public class TrafficManager : MonoBehaviour
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     private static extern void Traffic_destroy(IntPtr traffic);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr Traffic_sampleAndInitializeAgents(IntPtr traffic);
 
     // Note: Below SizeParamIndex is set 4, since it's the 4th parameter,
     // int low_level_actions_count, is the one that contains the size of the low_level_actions array.
@@ -161,10 +166,10 @@ public class TrafficManager : MonoBehaviour
     private static extern void Traffic_setTimeStep(IntPtr traffic, float simTimeStep);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    private static extern float Traffic_getMaxVelocity(IntPtr traffic);
+    private static extern float Traffic_getMaxVehicleSpeed(IntPtr traffic);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void Traffic_setMaxVelocity(IntPtr traffic, float maxVelocity);
+    private static extern void Traffic_setMaxVehicleSpeed(IntPtr traffic, float maxSpeed);
 
     /// <summary>
     /// Initializes the TrafficManager component when the script instance is being loaded.
@@ -225,9 +230,8 @@ public class TrafficManager : MonoBehaviour
     /// <summary>
     /// Initializes various fields used by the TrafficManager.
     /// This method performs the following tasks:
-    /// 1. Calculates the AngleStep based on raycastAngle and numberOfRays
-    /// 2. Initializes the highLevelActions list
-    /// 3. Initializes the lowLevelActions list
+    /// 1. Initializes the highLevelActions list
+    /// 2. Initializes the lowLevelActions list
     ///
     /// This method should be called during the setup phase, typically in the Awake() method.
     /// </summary>
@@ -304,41 +308,13 @@ public class TrafficManager : MonoBehaviour
         LogDebug("Attempting to create traffic simulation.");
 
         // Assuming you have a reference to the Traffic_create and Traffic_destroy functions from the C API
-        trafficSimulationPtr = Traffic_create(initialAgentCount, seed);
-        if (trafficSimulationPtr == IntPtr.Zero)
-        {
-            throw new InvalidOperationException("Failed to create traffic simulation.");
-        }
+        trafficSimulationPtr = CreateSimulation();
 
         // Set initial values from Unity Editor to the C++ simulation
         Traffic_setTimeStep(trafficSimulationPtr, simTimeStep);
-        Traffic_setMaxVelocity(trafficSimulationPtr, maxVelocity);
+        Traffic_setMaxVehicleSpeed(trafficSimulationPtr, maxSpeed);
 
-        UpdateAgentMaps();
-    }
-
-    /// <summary>
-    /// Updates the local maps of agent states by fetching the latest data from the traffic simulation.
-    /// This method retrieves the following information for all agents:
-    /// 1. Current positions
-    /// 2. Current velocities
-    /// 3. Current orientations
-    /// 4. Previous positions
-    ///
-    /// The method uses C API functions to fetch this data from the traffic simulation pointer.
-    /// These maps are crucial for maintaining an up-to-date representation of the traffic state
-    /// in the Unity environment.
-    ///
-    /// This method should be called whenever the traffic simulation state changes,
-    /// typically after each simulation step or when initializing the traffic simulation.
-    /// </summary>
-    private void UpdateAgentMaps()
-    {
-        // Get the initial state of agent
-        agentPositionsMap = Traffic_get_agent_positions(trafficSimulationPtr);
-        agentVelocitiesMap = Traffic_get_agent_velocities(trafficSimulationPtr);
-        agentOrientationsMap = Traffic_get_agent_orientations(trafficSimulationPtr);
-        agentPreviousPositionsMap = Traffic_get_previous_positions(trafficSimulationPtr);
+        GetSimulationData();
     }
 
     /// <summary>
@@ -438,6 +414,7 @@ public class TrafficManager : MonoBehaviour
         try
         {
             IntPtr positionPtr = StringFloatVectorMap_get_value(agentPositionsMap, agentIdPtr);
+
             if (positionPtr == IntPtr.Zero)
             {
                 throw new InvalidOperationException($"Failed to get position for agent {agentId}");
@@ -474,6 +451,7 @@ public class TrafficManager : MonoBehaviour
         try
         {
             IntPtr orientationPtr = StringFloatVectorMap_get_value(agentOrientationsMap, agentIdPtr);
+
             if (orientationPtr == IntPtr.Zero)
             {
                 throw new InvalidOperationException($"Failed to get orientation for agent {agentId}");
@@ -504,8 +482,8 @@ public class TrafficManager : MonoBehaviour
     /// <param name="rotation">The current rotation of the agent as a Quaternion</param>
     private void LogAgentDetails(string agentId, Vector3 position, Quaternion rotation)
     {
-        LogDebug($"Agent {agentId}: Position = {position}, Rotation = {rotation.eulerAngles}");
-        LogDebug($"Euler angles: Pitch={rotation.eulerAngles.x}, Yaw={rotation.eulerAngles.y}, Roll={rotation.eulerAngles.z}");
+        LogDebug($"Agent {agentId}: Position = {position}, Rotation = {rotation}");
+        LogDebug($"Angles: Pitch={rotation.x}, Yaw={rotation.y}, Roll={rotation.z}");
     }
 
     /// <summary>
@@ -535,7 +513,7 @@ public class TrafficManager : MonoBehaviour
         agent.transform.rotation = rotation;
         agent.transform.hasChanged = true;
 
-        LogDebug($"Updated agent: {agent.name} Position: {position}, Rotation: {rotation.eulerAngles}");
+        LogDebug($"Updated agent: {agent.name} Position: {position}, Rotation: {rotation}");
     }
 
     /// <summary>
@@ -567,7 +545,7 @@ public class TrafficManager : MonoBehaviour
         SetAgentLayer(agentObject);
 
         // Add RayPerceptionSensor to the traffic agent
-        AddRaySensorToAgent(agentObject); // NEW
+        AddRaySensorToAgent(agentObject);
 
         TrafficAgent agent = GetOrAddTrafficAgentComponent(agentObject);
 
@@ -1497,9 +1475,7 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        UpdateAgentPositions();
-
-        Debug.Log($"Time Step: {simTimeStep}, Max Velocity: {maxVelocity}"); // NEW
+        Debug.Log($"Time Step: {simTimeStep}, Max Velocity: {maxSpeed}");
     }
 
     /// <summary>
@@ -1549,7 +1525,7 @@ public class TrafficManager : MonoBehaviour
         LogDebug("TrafficManager::UpdateAgentPositions started.");
 
         // Get the initial state of agent
-        ReinitializeSimulationData(); // Rename method to generalize usage
+        GetSimulationData();
 
         HashSet<string> updatedAgents = new HashSet<string>();
 
@@ -1670,8 +1646,8 @@ public class TrafficManager : MonoBehaviour
         Vehicle_setZ(vehiclePtr, position.z);
 
         // Update the vehicle's rotation in the C++ simulation
-        Vehicle_setSteering(vehiclePtr, rotation.y); // i.e. rotation[1]
-        Vehicle_setYaw(vehiclePtr, rotation.y); // i.e. rotation[1]
+        Vehicle_setSteering(vehiclePtr, rotation.y);
+        Vehicle_setYaw(vehiclePtr, lowLevelActions[0][0]);
     }
 
     /// <summary>
@@ -1812,8 +1788,8 @@ public class TrafficManager : MonoBehaviour
         {
             // Clean up existing simulation
             CleanUpSimulation();
-            RecreateSimulation();
-            ReinitializeSimulationData();
+            CreateSimulation();
+            GetSimulationData();
 
             // Reinitialize agents
             InitializeAgents();
@@ -1829,7 +1805,7 @@ public class TrafficManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Recreates the traffic simulation with the current initial agent count and seed.
+    /// Creates the traffic simulation with the current initial agent count and seed.
     /// This method is responsible for instantiating a new native traffic simulation object.
     ///
     /// The method performs the following actions:
@@ -1865,14 +1841,17 @@ public class TrafficManager : MonoBehaviour
     /// proper memory management and error checking to prevent memory leaks and crashes.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when the native function fails to create a new simulation</exception>
-    private void RecreateSimulation()
+    private IntPtr CreateSimulation()
     {
         // Recreate the simulation with the new agent count
         trafficSimulationPtr = Traffic_create(initialAgentCount, seed);
+
         if (trafficSimulationPtr == IntPtr.Zero)
         {
             throw new InvalidOperationException("Failed to create new traffic simulation.");
         }
+
+        return trafficSimulationPtr;
     }
 
     /// <summary>
@@ -1914,7 +1893,7 @@ public class TrafficManager : MonoBehaviour
     /// the underlying C++ simulation library. Any changes to the native interface should be
     /// reflected here to maintain synchronization.
     /// </summary>
-    private void ReinitializeSimulationData()
+    private void GetSimulationData()
     {
         // Reinitialize agent positions, velocities, etc.
         agentPositionsMap = Traffic_get_agent_positions(trafficSimulationPtr);

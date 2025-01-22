@@ -43,6 +43,7 @@ PYBIND11_MODULE(replicantdrivesim, m) {
     // Bind the Traffic class
     py::class_<Traffic>(m, "Traffic")
         .def(py::init<const int&, const unsigned&>(), "Constructor with the number of agents and seed value")
+        .def("sample_and_initialize_agents", &Traffic::sampleAndInitializeAgents, "Use to initialize vehicle state, e.g. position, speed, orientation.")
         .def("step", &Traffic::step, "Advance the simulation by one time step")
         .def("get_agents", &Traffic::get_agents, py::return_value_policy::reference, "Get all agents in the traffic simulation")
         .def("get_agent_by_name", &Traffic::get_agent_by_name, py::return_value_policy::reference, "Get an agent by name")
