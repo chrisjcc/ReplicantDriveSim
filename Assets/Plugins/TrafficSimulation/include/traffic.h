@@ -21,13 +21,10 @@ public:
     float time_step = 0.04f; // e.g., 1.0f second or 1/25 for 25 FPS
 
     // Maximum velocity (m/s)
-    float max_velocity = 60.0f;
+    float max_speed_;
 
     // Bicycle model to handle more realistic vehicle motion
     std::vector<BicycleModel> vehicle_models;
-
-    // To track vehicle state
-    std::vector<BicycleModel::VehicleState> vehicle_states;
 
     /**
      * @brief Constructs a Traffic object with the specified number of agents.
@@ -39,6 +36,12 @@ public:
      * @brief Destructor to clean up resources, including perceptionModule.
      */
     ~Traffic();
+
+
+    /**
+     * @brief Samples and initializes agents with random positions and attributes.
+     */
+    void sampleAndInitializeAgents();
 
     /**
      * @brief Advances the simulation by one time step, updating agent positions and handling actions.
@@ -97,7 +100,7 @@ public:
      * @brief Getter for the maximum velocity.
      * @return Current maximum velocity value.
      */
-    float getMaxVelocity() const;
+    float getMaxVehicleSpeed() const;
 
     // Setters
 
@@ -111,7 +114,7 @@ public:
      * @brief Setter for the maximum velocity.
      * @param new_max_velocity New maximum velocity value. Must be positive.
      */
-    void setMaxVelocity(float new_max_velocity);
+    void setMaxVehicleSpeed(float max_speed);
 
 
 private:

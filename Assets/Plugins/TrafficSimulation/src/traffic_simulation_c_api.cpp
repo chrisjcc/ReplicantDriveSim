@@ -45,6 +45,14 @@ EXPORT float Vehicle_getSteering(const Vehicle* vehicle) {
     return vehicle->getSteering();
 }
 
+EXPORT float Vehicle_getYaw(const Vehicle* vehicle) {
+    return vehicle->getYaw();
+}
+
+EXPORT float Vehicle_getYawRate(const Vehicle* vehicle) {
+    return vehicle->getYawRate();
+}
+
 EXPORT float Vehicle_getX(const Vehicle* vehicle) {
     return vehicle->getX();
 }
@@ -84,27 +92,43 @@ EXPORT const char* Vehicle_getPositionString(const Vehicle* vehicle) {
 EXPORT void Vehicle_setSteering(Vehicle* vehicle, float angle) {
     vehicle->setSteering(angle);
 }
+
+EXPORT void Vehicle_setYaw(Vehicle* vehicle, float angle) {
+    vehicle->setYaw(angle);
+}
+
+EXPORT void Vehicle_setYawRate(Vehicle* vehicle, float rate) {
+    vehicle->setYawRate(rate);
+}
+
 EXPORT void Vehicle_setX(Vehicle* vehicle, float x) {
     vehicle->setX(x);
 }
+
 EXPORT void Vehicle_setY(Vehicle* vehicle, float y) {
     vehicle->setY(y);
 }
+
 EXPORT void Vehicle_setZ(Vehicle* vehicle, float z) {
     vehicle->setZ(z);
 }
+
 EXPORT void Vehicle_setVx(Vehicle* vehicle, float vx) {
     vehicle->setVx(vx);
 }
+
 EXPORT void Vehicle_setVy(Vehicle* vehicle, float vy) {
     vehicle->setVy(vy);
 }
+
 EXPORT void Vehicle_setVz(Vehicle* vehicle, float vz) {
    vehicle->setVz(vz);
 }
+
 EXPORT void Vehicle_setAcceleration(Vehicle* vehicle, float acceleration) {
     vehicle->setAcceleration(acceleration);
 }
+
 EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance) {
     vehicle->setSteering(distance);
 }
@@ -116,6 +140,10 @@ EXPORT Traffic* Traffic_create(int num_agents, unsigned seed) {
 
 EXPORT void Traffic_destroy(Traffic* traffic) {
     delete traffic;
+}
+
+EXPORT void Traffic_sampleAndInitializeAgents(Traffic* traffic) {
+    traffic->sampleAndInitializeAgents();
 }
 
 EXPORT const char* Traffic_step(Traffic* traffic,
@@ -273,8 +301,8 @@ EXPORT void Traffic_setTimeStep(Traffic* traffic, float new_time_step) {
  * @param traffic Pointer to the Traffic object.
  * @return The current maximum velocity.
  */
-EXPORT float Traffic_getMaxVelocity(Traffic* traffic) {
-    return traffic->getMaxVelocity();
+EXPORT float Traffic_getMaxVehicleSpeed(Traffic* traffic) {
+    return traffic->getMaxVehicleSpeed();
 }
 
 /**
@@ -282,6 +310,6 @@ EXPORT float Traffic_getMaxVelocity(Traffic* traffic) {
  * @param traffic Pointer to the Traffic object.
  * @param new_max_velocity The new maximum velocity value to set.
  */
-EXPORT void Traffic_setMaxVelocity(Traffic* traffic, float new_max_velocity) {
-    traffic->setMaxVelocity(new_max_velocity);
+EXPORT void Traffic_setMaxVehicleSpeed(Traffic* traffic, float max_speed) {
+    traffic->setMaxVehicleSpeed(max_speed);
 }

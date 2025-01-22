@@ -2,15 +2,15 @@
 
 // Default constructor
 Vehicle::Vehicle()
-    : name_(""), id_(0), lane_id_(0), width_(0.0f), length_(0.0f),
-      steering_(0.0f), x_(0.0f), y_(0.0f), z_(0.0f), vx_(0.0f), vy_(0.0f), vz_(0.0f),
-      acceleration_(0.0f), sensor_range_(0.0f) {}
+    : id_(0), name_(""), width_(0.0f), length_(0.0f), sensor_range_(0.0f),
+      x_(0.0f), y_(0.0f), z_(0.0f), yaw_(0.0f), yaw_rate_(0.0f), beta_(0.0f),
+      steering_(0.0f), acceleration_(0.0f), lane_id_(0), vx_(0.0f), vy_(0.0f), vz_(0.0f), max_speed_(5) {}
 
 // Parameterized constructor
 Vehicle::Vehicle(const std::string& name, int id, int lane_id, float width, float length)
-    : name_(name), id_(id), lane_id_(lane_id), width_(width), length_(length),
-      steering_(0.0f), x_(0.0f), y_(0.0f), z_(0.0f), vx_(0.0f), vy_(0.0f), vz_(0.0f),
-      acceleration_(0.0f), sensor_range_(0.0f) {}
+    : id_(id), name_(name), width_(width), length_(length), sensor_range_(0.0f),
+      x_(0.0f), y_(0.0f), z_(0.0f), yaw_(0.0f), yaw_rate_(0.0f), beta_(0.0f),
+      steering_(0.0f), acceleration_(0.0f), lane_id_(lane_id), vx_(0.0f), vy_(0.0f), vz_(0.0f), max_speed_(5) {}
 
 // Getter and Setter for name
 std::string Vehicle::getName() const {
@@ -136,6 +136,41 @@ float Vehicle::getSensorRange() const {
 
 void Vehicle::setSensorRange(float sensor_range) {
     sensor_range_ = sensor_range;
+}
+
+// Getter and Setter for yaw
+float Vehicle::getYaw() const {
+    return yaw_;
+}
+
+void Vehicle::setYaw(float yaw) {
+    yaw_ = yaw;
+}
+
+// Getter and Setter for yaw rate
+float Vehicle::getYawRate() const {
+    return yaw_rate_;
+}
+
+void Vehicle::setYawRate(float yaw_rate) {
+    yaw_rate_ = yaw_rate;
+}
+
+// Getter and Setter for beta slip angle
+float Vehicle::getBeta() const {
+    return beta_;
+}
+
+void Vehicle::setBeta(float beta) {
+    beta_ = beta;
+}
+
+float Vehicle::getVehicleMaxSpeed() const {
+    return max_speed_;
+}
+
+void Vehicle::setMaxVehicleSpeed(float max_speed) {
+     max_speed_ = max_speed;
 }
 
 // Method to get a formatted string of the vehicle's position (for debugging)

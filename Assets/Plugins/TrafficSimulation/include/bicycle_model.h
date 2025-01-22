@@ -2,6 +2,7 @@
 #define BICYCLE_MODEL_H
 
 #include <cmath>
+#include "vehicle.h" // Include the Vehicle class
 
 /**
  * @class BicycleModel
@@ -43,7 +44,13 @@
  * - Normalizes yaw angles for circular coordinate consistency.
  */
 
-
+/**
+ * @class BicycleModel
+ * @brief A simplified kinematic bicycle model for vehicle kinematics and control.
+ *
+ * This class implements a kinematic and dynamic bicycle model, commonly used in
+ * path planning and vehicle control.
+ */
 class BicycleModel {
 private:
     // Vehicle parameters
@@ -83,43 +90,24 @@ public:
           Cf(front_stiffness), Cr(rear_stiffness) {}
 
     /**
-     * @struct VehicleState
-     * @brief Represents the state of the vehicle, including position, velocity, and orientation.
-     *
-     * This structure contains the dynamic variables that describe the state
-     * of the vehicle at any given time.
-     */
-    struct VehicleState {
-        double x;        ///< Global X position (m)
-        double z;        ///< Global Z position (m)
-        double psi;      ///< Yaw angle (rad)
-        double v_x;      ///< Lateral velocity (m/s)
-        double v_z;      ///< Longitudinal velocity (m/s)
-        double yaw_rate; ///< Yaw rate (rad/s)
-        double beta;     ///< Sideslip angle (rad)
-    };
-
-    /**
      * @brief Calculates the next vehicle state using kinematic equations.
-     * 
+     *
      * This method uses a dynamic bicycle model to compute the next state of the
      * vehicle based on current state, steering angle, and velocity.
-     * 
+     *
      * @param steering_angle The front wheel steering angle (rad)
      * @param velocity The vehicle's longitudinal velocity (m/s)
-     * @param current_state The current state of the vehicle
+     * @param vehicle The current vehicle object (state will be modified)
      * @param dt The time step for integration (s)
-     * @return The next state of the vehicle after time step dt
      */
-    VehicleState calculateKinematics(double steering_angle, double velocity,
-                                     const VehicleState& current_state, double dt);
+    void calculateKinematics(double steering_angle, double velocity, Vehicle& vehicle, double dt);
 
     /**
      * @brief Computes the steady-state yaw rate under steady-state conditions.
      * 
      * This method calculates the steady-state yaw rate for the vehicle under
      * a given steering angle and velocity, assuming steady-state conditions.
-     * 
+     *
      * @param steering_angle The front wheel steering angle (rad)
      * @param velocity The vehicle's longitudinal velocity (m/s)
      * @return The steady-state yaw rate (rad/s)
@@ -132,16 +120,12 @@ public:
      * This method computes the next state of the vehicle based on the current state,
      * steering angle, acceleration, and time step using dynamic equations of the bicycle model.
      *
-     * @param current_state The current state of the vehicle
+     * @param vehicle The vehicle object (state will be modified)
      * @param steering_angle The front wheel steering angle (rad)
-     * @param acceleration Longitudinal acceleration (m/s^2)
+     * @param velocity The vehicle's longitudinal velocity (m/s)
      * @param dt The time step for integration (s)
-     * @return The updated state of the vehicle after time step dt
      */
-    VehicleState updateKinematicState(const VehicleState& current_state,
-                                      double steering_angle,
-                                      double velocity,
-                                      double dt) const;
+    Vehicle updateKinematicState(const Vehicle& vehicle, double steering_angle, double velocity, double dt) const;
 
     /**
      * @brief Computes lateral tire force using a linear approximation for small slip angles.
@@ -169,11 +153,7 @@ public:
      * @param dt The time step for integration (s)
      * @return The updated state of the vehicle after time step dt
      */
-    VehicleState updateDynamicState(const VehicleState& current_state,
-                                    double steering_angle,
-                                    double acceleration,
-                                    double dt) const;
-
+    Vehicle updateDynamicState(const Vehicle& vehicle, double steering_angle, double acceleration, double dt) const;
 
     /**
      * @brief Updates the dynamic state of the vehicle with coupled longitudinal and lateral dynamics.
@@ -198,7 +178,7 @@ public:
      * @param dt The time step for integration in seconds.
      * @return The updated state of the vehicle after the time step dt.
      */
-    VehicleState updateCoupledState(const VehicleState& current_state,
+    Vehicle updateCoupledState(const Vehicle& vehicle,
                                     double steering_angle_rad,
                                     double throttle, // Throttle or brake input
                                     double dt) const;
@@ -214,18 +194,19 @@ public:
      * The formula incorporates key parameters (stiffness factor, shape factor, peak factor, and curvature factor)
      * to describe the tire characteristics and provide realistic force outputs for simulations.
      *
-     * @param cornering_stiffness The cornering stiffness of the tire (e.g., Cf or Cr).
+     * @param cornering_stiffness The cornering stiffness of the tire  (N/rad), e.g., Cf or Cr.
      * @param normal_force The normal force acting on the tire (N). This affects the peak force.
-     * @param slip_angle The slip angle of the tire in radians. A positive slip angle indicates lateral sliding.
+     * @param slip_angle The slip angle of the tire in radians (rad). A positive slip angle indicates lateral sliding.
      * @param longitudinal_accel The longitudinal acceleration of the vehicle (m/s^2). This is currently unused but
      *                           could be extended for combined slip dynamics.
      * @return The computed tire force (N), respecting nonlinear tire behavior.
      */
-    double computeNonlinearTireForce(double cornering_stiffness,    // Cornering stiffness (e.g., Cf or Cr)
-                                     double normal_force,           // Normal force acting on the tire
+
+    double computeNonlinearTireForce(double cornering_stiffness,    // Cornering stiffness (e.g., Cf or C
+                                     double normal_force,           // Normal force acting on the t
                                      double slip_angle,             // Slip angle (radians)
                                      double longitudinal_accel      // Longitudinal acceleration (optional, unused here)
-                                    ) const;
+    ) const;
 
     /**
      * @brief Normalizes an angle to the range [-π, π].
