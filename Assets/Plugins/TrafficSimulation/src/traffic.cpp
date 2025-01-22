@@ -60,7 +60,7 @@ void Traffic::sampleAndInitializeAgents() {
 
         agents[i].setVx(0.0f);  // Initial lateral speed
         agents[i].setVy(0.0f);  // Initial vertical speed
-        agents[i].setVz(randNormal(50.0f, 2.0f)); // Initial longitudinal speed
+        agents[i].setVz(randNormal(25.0f, 2.0f)); // Initial longitudinal speed
 
         agents[i].setSteering(clamp(randNormal(0.0f, 1.0f),
             -static_cast<float>(M_PI) / 4.0f,
