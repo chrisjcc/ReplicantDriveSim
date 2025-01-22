@@ -589,7 +589,7 @@ public class TrafficAgent : Agent
 
         if (rb != null)
         {
-            float speed = rb.linearVelocity.magnitude / 50.0f; // Normalize speed (assuming max speed is 50)
+            float speed = rb.velocity.magnitude / 50.0f; // Normalize speed (assuming max speed is 50)
             sensor.AddObservation(speed);
         }
         else
@@ -598,7 +598,7 @@ public class TrafficAgent : Agent
             Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
         }
 
-        LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.linearVelocity}");
+        LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
     }
 
     /// <summary>
@@ -629,6 +629,8 @@ public class TrafficAgent : Agent
     ///
     /// </summary>
     /// <param name="actionsOut">Buffer to store the generated actions. Contains both discrete and continuous action arrays.</param>
+    ///
+    /*
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         // Debug logs to check method calls
@@ -660,7 +662,7 @@ public class TrafficAgent : Agent
 
         LogDebug("TrafficManager::Heuristic completed successfully.");
     }
-
+    */
     /// <summary>
     /// Processes and applies actions received from the machine learning model to the agent.
     ///

@@ -26,7 +26,7 @@ public class TrafficManager : MonoBehaviour
     [SerializeField] private float simTimeStep = 0.04f;
     [SerializeField] private int initialAgentCount = 1;
 
-    [SerializeField] public float maxSpeed = 1.0f; //60.0f;
+    [SerializeField] public float maxSpeed = 60.0f;
     [SerializeField] private uint seed = 42;
 
     // Public Properties
