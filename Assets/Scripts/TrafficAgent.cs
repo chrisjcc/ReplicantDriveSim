@@ -14,9 +14,11 @@ using Random = UnityEngine.Random;
 // Responsible for ML-Agents specific behaviors (collecting observations, receiving actions, etc.)
 public class TrafficAgent : Agent
 {
+    // Random seed fixing
+    [SerializeField] private int seed = 42;
+
     // Traffic Manager
     [HideInInspector] private TrafficManager trafficManager;
-    [SerializeField] private int seed = 42;
 
     // Agent Actions
     [HideInInspector] public int highLevelActions;
@@ -25,23 +27,32 @@ public class TrafficAgent : Agent
     // Color settings for ray visualization
     [HideInInspector] private Color rayHitColor = Color.red;
     [HideInInspector] private Color rayMissColor = Color.green; // Default white
-
     [SerializeField] private bool debugVisualization = false;
 
     // Channel Identifier
     [HideInInspector] private Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
 
     // Penalty Settings
-    [SerializeField] private float offRoadPenalty = -0.5f;
-    [SerializeField] private float collisionWithOtherAgentPenalty = -1.0f;
+    [SerializeField] public float offRoadPenalty = -0.5f;
+    [SerializeField] private float onRoadReward = 0.01f;
+    [SerializeField] public float collisionWithOtherAgentPenalty = -1.0f;
+    [SerializeField] public float medianCrossingPenalty = -1.0f;
     [SerializeField] private float penaltyInterval = 0.5f; // Interval in seconds between penalties
     [HideInInspector] private float lastPenaltyTime = 0f; // Time when the last penalty was applied
 
     // Collider
     [HideInInspector] private Collider agentCollider;
 
-    // Grounding
-    //[HideInInspector] private bool isGrounded;
+    //[HideInInspector] private Vector3 previousPosition;
+
+    // Road Layer (for road surfaces)
+    int roadLayer;
+
+    // Road Boundary Layer (for boundaries/edges)
+    int roadBoundaryLayer;
+
+    // Median boundary Layer
+    int medianBoundaryLayer;
 
     /// <summary>
     /// Initializes the TrafficAgent when the script instance is being loaded.
@@ -78,8 +89,26 @@ public class TrafficAgent : Agent
         // Initialize lowLevelActions array with appropriate size (e.g., 3 for steering, acceleration, and braking)
         lowLevelActions = new float[3];
 
+        // Road Layer (for road surfaces)
+        roadLayer = LayerMask.NameToLayer("Road");
+
+        // Road Boundary Layer (for boundaries/edges)
+        roadBoundaryLayer = LayerMask.NameToLayer("RoadBoundary");
+
+        // Median boundary Layer
+        medianBoundaryLayer = LayerMask.NameToLayer("MedianBoundary");
+
         LogDebug("TrafficAgent::Awake completed successfully.");
     }
+
+    /*
+    private void Start()
+    {
+        // Initialize previousPosition with the agent's initial position
+        //previousPosition = transform.position;
+
+    }
+    */
 
     /// <summary>
     /// Initializes the TrafficAgent within the ML-Agents framework.
@@ -191,7 +220,7 @@ public class TrafficAgent : Agent
     /// </summary>
     public void ResetAgentPositionAndRotation()
     {
-        LogDebug("TrafficManager::ResetAgentPositionAndRotation started.");
+        LogDebug("TrafficAgent::ResetAgentPositionAndRotation started.");
 
         if (trafficManager != null)
         {
@@ -233,7 +262,7 @@ public class TrafficAgent : Agent
             Debug.LogError($"TrafficManager is null for agent {gameObject.name}");
         }
 
-        LogDebug("TrafficManager::ResetAgentPositionAndRotation completed successfully.");
+        LogDebug("TrafficAgent::ResetAgentPositionAndRotation completed successfully.");
     }
 
     /// <summary>
@@ -411,7 +440,7 @@ public class TrafficAgent : Agent
     /// <param name="sensor">The VectorSensor used to collect and send observations to the neural network</param>
     public override void CollectObservations(VectorSensor sensor)
     {
-        LogDebug("TrafficManager::CollectObservations started.");
+        LogDebug("TrafficAgent::CollectObservations started.");
 
         LogDebug($"CollectObservations called. trafficManager null? {trafficManager == null}");
         LogDebug($"trafficManager.agentColliders null? {trafficManager.agentColliders == null}");
@@ -426,7 +455,7 @@ public class TrafficAgent : Agent
         CollectPositionAndRotationObservations(sensor);
         CollectSpeedObservations(sensor);
 
-        LogDebug("TrafficManager::CollectObservations completed successfully.");
+        LogDebug("TrafficAgent::CollectObservations completed successfully.");
     }
 
     /// <summary>
@@ -582,23 +611,42 @@ public class TrafficAgent : Agent
     /// <param name="sensor">The VectorSensor to which observations are added.</param>
     private void CollectSpeedObservations(VectorSensor sensor)
     {
+        // Debug logs to check method calls
+        LogDebug("TrafficAgent::CollectSpeedObservations started.");
+
         // Agent's own speed and orientation
         Rigidbody rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true;
+        rb.isKinematic = false; // true;
         rb.useGravity = false;
+        float speed = 0.0f;
+
+        // Calculate velocity manually
+        /*
+        Vector3 currentPosition = transform.position;
+        float deltaTime = Mathf.Max(Time.deltaTime, 0.0001f); // Prevent divide by zero
+        Vector3 velocity = (currentPosition - previousPosition) / deltaTime;
+        */
 
         if (rb != null)
         {
-            float speed = rb.linearVelocity.magnitude / 50.0f; // Normalize speed (assuming max speed is 50)
-            sensor.AddObservation(speed);
+            speed = rb.velocity.magnitude; // Normalize speed if needed (max speed = 50)
+
+            // Check for invalid speed values (NaN or Infinity)
+            if (!float.IsNaN(speed) && !float.IsInfinity(speed))
+            {
+                sensor.AddObservation(speed);
+            }
         }
         else
         {
-            sensor.AddObservation(0.0f); // No Rigidbody attached or zero velocity
+            sensor.AddObservation(speed); // No Rigidbody attached or zero velocity
             Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
         }
 
-        LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.linearVelocity}");
+        // Update previousPosition for the next frame
+        //previousPosition = currentPosition;
+
+        LogDebug($"Observations: Position = {transform.position}, Velocity = {speed}");
     }
 
     /// <summary>
@@ -632,7 +680,7 @@ public class TrafficAgent : Agent
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         // Debug logs to check method calls
-        LogDebug("TrafficManager::Heuristic started.");
+        LogDebug("TrafficAgent::Heuristic started.");
 
         // Get discrete actions array from ActionBuffers
         var discreteActions = actionsOut.DiscreteActions;
@@ -658,7 +706,7 @@ public class TrafficAgent : Agent
                 " Continuous Actions: " + string.Join(", ", continuousActions)
         );
 
-        LogDebug("TrafficManager::Heuristic completed successfully.");
+        LogDebug("TrafficAgent::Heuristic completed successfully.");
     }
 
     /// <summary>
@@ -692,7 +740,7 @@ public class TrafficAgent : Agent
     /// <param name="actionBuffers">Contains the discrete and continuous actions decided by the ML model.</param>
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-        LogDebug("TrafficManager::OnActionReceived started.");
+        LogDebug("TrafficAgent::OnActionReceived started.");
 
         LogDebug($"Discrete actions: {string.Join(", ", actionBuffers.DiscreteActions)}");
         LogDebug($"Continuous actions: {string.Join(", ", actionBuffers.ContinuousActions)}");
@@ -713,7 +761,7 @@ public class TrafficAgent : Agent
         // rb.MovePosition(transform.position + transform.forward * lowLevelActions[1] * Time.fixedDeltaTime);
         // transform.Rotate(Vector3.up, lowLevelActions[0] * Time.fixedDeltaTime);
 
-        LogDebug("TrafficManager::OnActionReceived completed successfully.");
+        LogDebug("TrafficAgent::OnActionReceived completed successfully.");
     }
 
     /// <summary>
@@ -746,7 +794,7 @@ public class TrafficAgent : Agent
          * that need to be executed in sync with the frame rate, such as processing user input,
          * updating non-physics game logic, and rendering-related updates.
          */
-        LogDebug("TrafficManager::FixedUpdate started.");
+        LogDebug("TrafficAgent::FixedUpdate started.");
 
         // Only draw debug rays if visualization is enabled
         if (debugVisualization || (trafficManager != null && trafficManager.debugVisualization))
@@ -757,7 +805,7 @@ public class TrafficAgent : Agent
         ActionBuffers storedActions = GetStoredActionBuffers();
         LogDebug($"ActionBuffers: continous: {storedActions.ContinuousActions} discrete: {storedActions.DiscreteActions}");
 
-        LogDebug("TrafficManager::FixedUpdate completed successfully.");
+        LogDebug("TrafficAgent::FixedUpdate completed successfully.");
     }
 
     /// <summary>
@@ -782,7 +830,7 @@ public class TrafficAgent : Agent
     /// </summary>
     void Update()
     {
-        LogDebug("TrafficManager::Update started.");
+        LogDebug("TrafficAgent::Update started.");
         LogDebug($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
 
         /*
@@ -793,7 +841,7 @@ public class TrafficAgent : Agent
         }
         */
 
-        LogDebug("TrafficManager::Update completed successfully.");
+        LogDebug("TrafficAgent::Update completed successfully.");
     }
 
     /// <summary>
@@ -915,46 +963,49 @@ public class TrafficAgent : Agent
     /// <param name="collision">Contains information about the collision, including references to the colliding objects.</param>
     private void OnCollisionEnter(Collision collision)
     {
-        LogDebug("TrafficManager::OnCollisionEnter started.");
-        LogDebug($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
+        LogDebug("TrafficAgent::OnCollisionEnter started.");
 
-        if (collision.gameObject.CompareTag("RoadBoundary") ||
-            collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
+        if (collision.gameObject == null || string.IsNullOrEmpty(collision.gameObject.tag))
         {
-            LogDebug("Collision with RoadBoundary detected!");
+            LogDebug("Collision object is null or has no tag.");
+            return;
         }
+
+        LogDebug($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
 
         /*
         Note: Perhaps the best advice is to start simple and only add complexity as needed.
         In general, you should reward results rather than actions you think will lead to the desired results.
         */
 
-        // Check the tag of the object we collided with
+        // Handle collision based on object tag
         switch (collision.gameObject.tag)
         {
-            case "RoadBoundary":
-                // Penalize the agent for going off the road
-                AddReward(offRoadPenalty);
-                LogDebug($"Hit road boundary! Penalty added: {offRoadPenalty}");
-                break;
-
             case "TrafficAgent": // "Obstacle"
                 // Penalize the agent for colliding with another traffic participant
                 AddReward(collisionWithOtherAgentPenalty);
                 LogDebug($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
                 break;
 
-            // ... (keep other cases from the original script)
-            /*
-            default:
-                // For any other collision, we might want to add a small negative reward
-                AddReward(-0.1f);
-                LogDebug("Unspecified collision! Small penalty added: -0.1");
+            case "RoadBoundary":
+                // Penalize the agent for going off the road
+                AddReward(offRoadPenalty);
+                LogDebug($"Hit road boundary! Penalty added: {offRoadPenalty}");
                 break;
-            */
+
+            case "MedianBoundary":
+                AddReward(medianCrossingPenalty);
+                LogDebug($"Crossed the median! Penalty added: {medianCrossingPenalty}");
+                break;
+
+                default:
+                    // For any other collision, we might want to add a small negative reward
+                    AddReward(-0.01f); // Negligible penalty for unspecified collisions
+                    LogDebug("Unspecified collision! Small penalty added: -0.1");
+                    break;
         }
 
-        LogDebug("TrafficManager::OnCollisionEnter completed successfully.");
+        LogDebug("TrafficAgent::OnCollisionEnter completed successfully.");
     }
 
     /// <summary>
@@ -989,35 +1040,35 @@ public class TrafficAgent : Agent
     {
         LogDebug("TrafficAgent::OnCollisionStay started.");
 
-        // Check if we're colliding with the road
-        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
-        if (collision.gameObject.layer == roadMask)
+        // Check if the agent is colliding with the road boundary or median boundary
+        if (collision.gameObject.layer == roadLayer)
         {
-            // Small positive reward for staying on the road
-            AddReward(0.01f);
-
-            LogDebug("Agent rewarded for staying on the road");
+            // Reward for staying on the road (road surface)
+            AddReward(onRoadReward);
+            LogDebug("Agent rewarded for staying on the road.");
+        }
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("MedianBoundary"))
+        {
+            // Penalize for staying on the median boundary
+            AddReward(medianCrossingPenalty);
+            LogDebug("Agent penalized for staying on the median boundary.");
         }
         else
         {
-            // Penalize the agent for being off the road
+            // Penalize for being off the road or any other unspecified collision
             AddReward(-0.1f);
-
-            LogDebug("Agent penalized for being off the road");
+            LogDebug("Agent penalized for being off-road or unspecified collision.");
         }
 
-        LogDebug("TrafficManager::OnCollisionStay completed successfully.");
+        LogDebug("TrafficAgent::OnCollisionStay completed successfully.");
     }
 
     /// <summary>
     /// Handles the event when the agent's Collider stops colliding with another Collider.
     ///
     /// This method specifically checks for the end of collisions with objects on the "Road" layer:
-    /// - When the agent stops colliding with a road object, it sets isGrounded to false.
     /// - This can be used to detect when the agent has left the designated driving surface.
     ///
-    /// Key components:
-    /// - isGrounded: A boolean flag indicating whether the agent is on the road surface.
     ///
     /// Usage:
     /// This method is automatically called by Unity's physics system when a collision ends.
@@ -1025,8 +1076,6 @@ public class TrafficAgent : Agent
     ///
     /// Note:
     /// - Ensure that road objects are assigned to the "Road" layer in the Unity editor.
-    /// - The isGrounded variable should be defined elsewhere in the class and used appropriately
-    ///   in other methods to affect the agent's behavior or scoring.
     /// - This method uses Unity's built-in layer system for efficient collision detection.
     /// </summary>
     /// <param name="collision">Contains information about the collision that has ended,
@@ -1034,16 +1083,34 @@ public class TrafficAgent : Agent
     public void OnCollisionExit(Collision collision)
     {
         LogDebug("TrafficAgent::OnCollisionExit started.");
-        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
 
-        // Check if we've left the road
-        if (collision.gameObject.layer == roadMask)
+        // Check if the agent has left the road
+        if (collision.gameObject.layer == roadLayer)
         {
-            //isGrounded = false;
-            LogDebug("Agent left the road");
+            // Reward for exiting the boundary and returning to the road
+            AddReward(0.1f);
+            LogDebug("Agent left the road and returned to it. Reward added.");
+        }
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
+        {
+            // Reward for exiting the road boundary (right/left boundary)
+            AddReward(0.1f);
+            LogDebug("Agent left the road boundary. Reward added.");
+        }
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("MedianBoundary"))
+        {
+            // Reward for exiting the median boundary
+            AddReward(0.1f);
+            LogDebug("Agent left the median boundary. Reward added.");
+        }
+        else
+        {
+            // Penalize for any other unspecified collision
+            AddReward(-0.1f);
+            LogDebug("Agent penalized for being off-road or unspecified collision.");
         }
 
-        LogDebug("TrafficManager::OnCollisionExit completed successfully.");
+        LogDebug("TrafficAgent::OnCollisionExit completed successfully.");
     }
 
     /// <summary>
@@ -1070,7 +1137,7 @@ public class TrafficAgent : Agent
     /// <param name="other">The Collider that the agent has entered. This Collider must be set as a trigger.</param>
     private void OnTriggerEnter(Collider other)
     {
-        LogDebug("TrafficManager::OnTriggerEnter started.");
+        LogDebug("TrafficAgent::OnTriggerEnter started.");
 
         LogDebug($"Trigger entered with {other.gameObject.name}, tag: {other.gameObject.tag}, layer: {LayerMask.LayerToName(other.gameObject.layer)}");
 
@@ -1106,7 +1173,7 @@ public class TrafficAgent : Agent
         }
         */
 
-        LogDebug("TrafficManager::OnTriggerEnter completed successfully.");
+        LogDebug("TrafficAgent::OnTriggerEnter completed successfully.");
     }
 
     /// <summary>
@@ -1135,7 +1202,7 @@ public class TrafficAgent : Agent
     /// <param name="other">The Collider that the agent is continuously interacting with. This Collider must be set as a trigger.</param>
     private void OnTriggerStay(Collider other)
     {
-        LogDebug("TrafficManager::OnTriggerStay started.");
+        LogDebug("TrafficAgent::OnTriggerStay started.");
 
         /*
          * This method is called every fixed frame-rate frame while a collider remains inside the trigger zone.
@@ -1158,7 +1225,7 @@ public class TrafficAgent : Agent
             }
         }
 
-        LogDebug("TrafficManager::OnTriggerStay completed successfully.");
+        LogDebug("TrafficAgent::OnTriggerStay completed successfully.");
     }
 
     /// <summary>
@@ -1179,7 +1246,7 @@ public class TrafficAgent : Agent
     /// <param name="other">The Collider that the agent has stopped touching. This Collider must be set as a trigger.</param>
     private void OnTriggerExit(Collider other)
     {
-        LogDebug("TrafficManager::OnTriggerExit started.");
+        LogDebug("TrafficAgent::OnTriggerExit started.");
 
         /*
          * This method is called when a collider exits the trigger zone.
@@ -1197,7 +1264,7 @@ public class TrafficAgent : Agent
             LogDebug("Exited road boundary area");
         }
 
-        LogDebug("TrafficManager::OnTriggerExit completed successfully.");
+        LogDebug("TrafficAgent::OnTriggerExit completed successfully.");
     }
 
     /// <summary>
@@ -1218,7 +1285,7 @@ public class TrafficAgent : Agent
     /// </summary>
     void GetRandomActions()
     {
-        LogDebug("TrafficManager::GetRandomActions started.");
+        LogDebug("TrafficAgent::GetRandomActions started.");
 
         // Randomize the high-level action
         highLevelActions = Random.Range(0, 5); // Range is [0, 5)
@@ -1231,7 +1298,7 @@ public class TrafficAgent : Agent
         lowLevelActions[1] = UnityEngine.Random.Range(0.0f, 5.0f); // Default value for acceleration
         lowLevelActions[2] = UnityEngine.Random.Range(-5.0f, 0.0f); // Default value for braking
 
-        LogDebug("TrafficManager::GetRandomActions completed successfully.");
+        LogDebug("TrafficAgent::GetRandomActions completed successfully.");
     }
 
     /// <summary>
