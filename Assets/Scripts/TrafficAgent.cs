@@ -629,7 +629,7 @@ public class TrafficAgent : Agent
 
         if (rb != null)
         {
-            speed = rb.velocity.magnitude; // Normalize speed if needed (max speed = 50)
+            speed = rb.linearVelocity.magnitude; // Normalize speed if needed (max speed = 50)
 
             // Check for invalid speed values (NaN or Infinity)
             if (!float.IsNaN(speed) && !float.IsInfinity(speed))
