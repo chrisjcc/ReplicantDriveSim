@@ -14,9 +14,11 @@ using Random = UnityEngine.Random;
 // Responsible for ML-Agents specific behaviors (collecting observations, receiving actions, etc.)
 public class TrafficAgent : Agent
 {
+    // Random seed fixing
+    [SerializeField] private int seed = 42;
+
     // Traffic Manager
     [HideInInspector] private TrafficManager trafficManager;
-    [SerializeField] private int seed = 42;
 
     // Agent Actions
     [HideInInspector] public int highLevelActions;
@@ -25,17 +27,16 @@ public class TrafficAgent : Agent
     // Color settings for ray visualization
     [HideInInspector] private Color rayHitColor = Color.red;
     [HideInInspector] private Color rayMissColor = Color.green; // Default white
-
     [SerializeField] private bool debugVisualization = false;
 
     // Channel Identifier
     [HideInInspector] private Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
 
     // Penalty Settings
-    [SerializeField] private float offRoadPenalty = -0.5f;
-    //[SerializeField] private float onRoadReward = 0.01f;
-    [SerializeField] private float collisionWithOtherAgentPenalty = -1.0f;
-    [SerializeField] private float medianCrossingPenalty = -1.0f;
+    [SerializeField] public float offRoadPenalty = -0.5f;
+    [SerializeField] private float onRoadReward = 0.01f;
+    [SerializeField] public float collisionWithOtherAgentPenalty = -1.0f;
+    [SerializeField] public float medianCrossingPenalty = -1.0f;
     [SerializeField] private float penaltyInterval = 0.5f; // Interval in seconds between penalties
     [HideInInspector] private float lastPenaltyTime = 0f; // Time when the last penalty was applied
 
@@ -44,8 +45,14 @@ public class TrafficAgent : Agent
 
     //[HideInInspector] private Vector3 previousPosition;
 
-    private int roadLayerMask;
+    // Road Layer (for road surfaces)
+    int roadLayer;
 
+    // Road Boundary Layer (for boundaries/edges)
+    int roadBoundaryLayer;
+
+    // Median boundary Layer
+    int medianBoundaryLayer;
 
     /// <summary>
     /// Initializes the TrafficAgent when the script instance is being loaded.
@@ -82,7 +89,14 @@ public class TrafficAgent : Agent
         // Initialize lowLevelActions array with appropriate size (e.g., 3 for steering, acceleration, and braking)
         lowLevelActions = new float[3];
 
-        roadLayerMask = LayerMask.GetMask("Road");
+        // Road Layer (for road surfaces)
+        roadLayer = LayerMask.NameToLayer("Road");
+
+        // Road Boundary Layer (for boundaries/edges)
+        roadBoundaryLayer = LayerMask.NameToLayer("RoadBoundary");
+
+        // Median boundary Layer
+        medianBoundaryLayer = LayerMask.NameToLayer("MedianBoundary");
 
         LogDebug("TrafficAgent::Awake completed successfully.");
     }
@@ -93,7 +107,6 @@ public class TrafficAgent : Agent
         // Initialize previousPosition with the agent's initial position
         //previousPosition = transform.position;
 
-        //roadLayerMask = LayerMask.GetMask("Road");
     }
     */
 
@@ -960,12 +973,6 @@ public class TrafficAgent : Agent
 
         LogDebug($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
 
-        if (collision.gameObject.CompareTag("RoadBoundary") ||
-            collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
-        {
-            LogDebug("Collision with RoadBoundary detected!");
-        }
-
         /*
         Note: Perhaps the best advice is to start simple and only add complexity as needed.
         In general, you should reward results rather than actions you think will lead to the desired results.
@@ -974,16 +981,16 @@ public class TrafficAgent : Agent
         // Handle collision based on object tag
         switch (collision.gameObject.tag)
         {
-            case "RoadBoundary":
-                // Penalize the agent for going off the road
-                AddReward(offRoadPenalty);
-                LogDebug($"Hit road boundary! Penalty added: {offRoadPenalty}");
-                break;
-
             case "TrafficAgent": // "Obstacle"
                 // Penalize the agent for colliding with another traffic participant
                 AddReward(collisionWithOtherAgentPenalty);
                 LogDebug($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
+                break;
+
+            case "RoadBoundary":
+                // Penalize the agent for going off the road
+                AddReward(offRoadPenalty);
+                LogDebug($"Hit road boundary! Penalty added: {offRoadPenalty}");
                 break;
 
             case "MedianBoundary":
@@ -1033,22 +1040,24 @@ public class TrafficAgent : Agent
     {
         LogDebug("TrafficAgent::OnCollisionStay started.");
 
-        // Check if we're colliding with the road
-        //LayerMask roadLayerMask = LayerMask.NameToLayer("Road");
-
-        if (collision.gameObject.layer == roadLayerMask)
+        // Check if the agent is colliding with the road boundary or median boundary
+        if (collision.gameObject.layer == roadLayer)
         {
-            // Small positive reward for staying on the road
-            AddReward(0.01f);
-
-            LogDebug("Agent rewarded for staying on the road");
+            // Reward for staying on the road (road surface)
+            AddReward(onRoadReward);
+            LogDebug("Agent rewarded for staying on the road.");
+        }
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("MedianBoundary"))
+        {
+            // Penalize for staying on the median boundary
+            AddReward(medianCrossingPenalty);
+            LogDebug("Agent penalized for staying on the median boundary.");
         }
         else
         {
-            // Penalize the agent for being off the road
+            // Penalize for being off the road or any other unspecified collision
             AddReward(-0.1f);
-
-            LogDebug("Agent penalized for being off the road");
+            LogDebug("Agent penalized for being off-road or unspecified collision.");
         }
 
         LogDebug("TrafficAgent::OnCollisionStay completed successfully.");
@@ -1074,13 +1083,31 @@ public class TrafficAgent : Agent
     public void OnCollisionExit(Collision collision)
     {
         LogDebug("TrafficAgent::OnCollisionExit started.");
-        //LayerMask roadLayerMask = LayerMask.NameToLayer("Road");
 
-        // Check if we've left the road
-        if (collision.gameObject.layer == roadLayerMask)
+        // Check if the agent has left the road
+        if (collision.gameObject.layer == roadLayer)
         {
+            // Reward for exiting the boundary and returning to the road
             AddReward(0.1f);
-            LogDebug("Agent left the road");
+            LogDebug("Agent left the road and returned to it. Reward added.");
+        }
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
+        {
+            // Reward for exiting the road boundary (right/left boundary)
+            AddReward(0.1f);
+            LogDebug("Agent left the road boundary. Reward added.");
+        }
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("MedianBoundary"))
+        {
+            // Reward for exiting the median boundary
+            AddReward(0.1f);
+            LogDebug("Agent left the median boundary. Reward added.");
+        }
+        else
+        {
+            // Penalize for any other unspecified collision
+            AddReward(-0.1f);
+            LogDebug("Agent penalized for being off-road or unspecified collision.");
         }
 
         LogDebug("TrafficAgent::OnCollisionExit completed successfully.");
