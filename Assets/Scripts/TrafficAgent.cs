@@ -34,14 +34,15 @@ public class TrafficAgent : Agent
     // Penalty Settings
     [SerializeField] private float offRoadPenalty = -0.5f;
     [SerializeField] private float collisionWithOtherAgentPenalty = -1.0f;
+    [SerializeField] private float medianCrossingPenalty = -1.0f;
     [SerializeField] private float penaltyInterval = 0.5f; // Interval in seconds between penalties
     [HideInInspector] private float lastPenaltyTime = 0f; // Time when the last penalty was applied
 
     // Collider
     [HideInInspector] private Collider agentCollider;
 
-    // Grounding
-    //[HideInInspector] private bool isGrounded;
+    [HideInInspector] private Vector3 previousPosition;
+
 
     /// <summary>
     /// Initializes the TrafficAgent when the script instance is being loaded.
@@ -79,6 +80,12 @@ public class TrafficAgent : Agent
         lowLevelActions = new float[3];
 
         LogDebug("TrafficAgent::Awake completed successfully.");
+    }
+
+    private void Start()
+    {
+        // Initialize previousPosition with the agent's initial position
+        previousPosition = transform.position;
     }
 
     /// <summary>
@@ -587,10 +594,19 @@ public class TrafficAgent : Agent
         rb.isKinematic = true;
         rb.useGravity = false;
 
+        // Calculate velocity manually
+        Vector3 currentPosition = transform.position;
+        Vector3 velocity = (currentPosition - previousPosition) / Time.deltaTime;
+
         if (rb != null)
         {
-            float speed = rb.velocity.magnitude / 50.0f; // Normalize speed (assuming max speed is 50)
-            sensor.AddObservation(speed);
+            float speed = velocity.magnitude; // dvide by 50.0f to Normalize speed (assuming max speed is 50)
+
+            // Check for invalid speed values (NaN or Infinity)
+            if (!float.IsNaN(speed) || !float.IsInfinity(speed))
+            {
+                sensor.AddObservation(speed);
+            }
         }
         else
         {
@@ -598,7 +614,10 @@ public class TrafficAgent : Agent
             Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
         }
 
-        LogDebug($"Observations: Position = {transform.position}, Velocity = {rb.velocity}");
+        // Update previousPosition for the next frame
+        previousPosition = currentPosition;
+
+        LogDebug($"Observations: Position = {transform.position}, Velocity = {velocity}");
     }
 
     /// <summary>
@@ -929,7 +948,7 @@ public class TrafficAgent : Agent
         In general, you should reward results rather than actions you think will lead to the desired results.
         */
 
-        // Check the tag of the object we collided with
+        // Handle collision based on object tag
         switch (collision.gameObject.tag)
         {
             case "RoadBoundary":
@@ -944,14 +963,16 @@ public class TrafficAgent : Agent
                 LogDebug($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
                 break;
 
-            // ... (keep other cases from the original script)
-            /*
-            default:
-                // For any other collision, we might want to add a small negative reward
-                AddReward(-0.1f);
-                LogDebug("Unspecified collision! Small penalty added: -0.1");
+            case "MedianBoundary":
+                AddReward(medianCrossingPenalty);
+                LogDebug($"Crossed the median! Penalty added: {medianCrossingPenalty}");
                 break;
-            */
+
+                default:
+                    // For any other collision, we might want to add a small negative reward
+                    AddReward(-0.01f); // Negligible penalty for unspecified collisions
+                    LogDebug("Unspecified collision! Small penalty added: -0.1");
+                    break;
         }
 
         LogDebug("TrafficManager::OnCollisionEnter completed successfully.");
@@ -990,7 +1011,7 @@ public class TrafficAgent : Agent
         LogDebug("TrafficAgent::OnCollisionStay started.");
 
         // Check if we're colliding with the road
-        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
+        LayerMask roadMask = LayerMask.NameToLayer("Road");
         if (collision.gameObject.layer == roadMask)
         {
             // Small positive reward for staying on the road
@@ -1013,11 +1034,8 @@ public class TrafficAgent : Agent
     /// Handles the event when the agent's Collider stops colliding with another Collider.
     ///
     /// This method specifically checks for the end of collisions with objects on the "Road" layer:
-    /// - When the agent stops colliding with a road object, it sets isGrounded to false.
     /// - This can be used to detect when the agent has left the designated driving surface.
     ///
-    /// Key components:
-    /// - isGrounded: A boolean flag indicating whether the agent is on the road surface.
     ///
     /// Usage:
     /// This method is automatically called by Unity's physics system when a collision ends.
@@ -1025,8 +1043,6 @@ public class TrafficAgent : Agent
     ///
     /// Note:
     /// - Ensure that road objects are assigned to the "Road" layer in the Unity editor.
-    /// - The isGrounded variable should be defined elsewhere in the class and used appropriately
-    ///   in other methods to affect the agent's behavior or scoring.
     /// - This method uses Unity's built-in layer system for efficient collision detection.
     /// </summary>
     /// <param name="collision">Contains information about the collision that has ended,
@@ -1034,12 +1050,11 @@ public class TrafficAgent : Agent
     public void OnCollisionExit(Collision collision)
     {
         LogDebug("TrafficAgent::OnCollisionExit started.");
-        LayerMask roadMask = LayerMask.GetMask("Road"); // NEW
+        LayerMask roadMask = LayerMask.NameToLayer("Road");
 
         // Check if we've left the road
         if (collision.gameObject.layer == roadMask)
         {
-            //isGrounded = false;
             LogDebug("Agent left the road");
         }
 

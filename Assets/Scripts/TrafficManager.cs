@@ -38,7 +38,7 @@ public class TrafficManager : MonoBehaviour
     //[HideInInspector] public float RotationSpeed { get; set; } = 100f;
     [HideInInspector] public float AngleStep { get; private set; }
 
-    [HideInInspector] public string TrafficAgentLayerName { get; set; } = "Road";
+    [HideInInspector] public string TrafficAgentLayerName { get; set; } = "TrafficAgent";
     [HideInInspector] public RayPerceptionSensorComponent3D raySensor;
 
     // Public Fields
@@ -282,7 +282,7 @@ public class TrafficManager : MonoBehaviour
 
         // Get the initialAgentCount parameter from the environment parameters
         var envParameters = Academy.Instance.EnvironmentParameters;
-        initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", 1.0f));
+        initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", initialAgentCount));
 
         LogDebug("TrafficManager::SetupFloatPropertiesChannel completed");
     }
