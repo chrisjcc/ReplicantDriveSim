@@ -24,7 +24,7 @@ public class TrafficManager : MonoBehaviour
     [SerializeField] private GameObject agentPrefab; // e.g., NISSAN-GTR)
 
     [SerializeField] private float simTimeStep = 0.04f;
-    [SerializeField] private int initialAgentCount = 1;
+    [SerializeField] private int initialAgentCount = 3;
 
     [SerializeField] public float maxSpeed = 1.0f; //60.0f;
     [SerializeField] private uint seed = 42;
