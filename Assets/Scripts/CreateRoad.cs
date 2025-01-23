@@ -90,6 +90,7 @@ public class CreateDualRoad : MonoBehaviour
         {
             roadCollider = road.AddComponent<MeshCollider>();
         }
+        roadCollider.convex = false;  // For static terrain
         roadCollider.isTrigger = false;
         roadCollider.material = roadPhysicsMaterial;
 
@@ -121,6 +122,7 @@ public class CreateDualRoad : MonoBehaviour
         boundary.transform.localScale = new Vector3(width, boundaryHeight, roadLength);
 
         boundary.transform.position = new Vector3(xPosition, boundaryHeight / 2f, roadLength / 2f);
+        boundary.tag = "RoadBoundary";
 
         Renderer boundaryRenderer = boundary.GetComponent<Renderer>();
         boundaryRenderer.enabled = false; // Make the boundary invisible
@@ -131,7 +133,7 @@ public class CreateDualRoad : MonoBehaviour
             boundaryCollider = boundary.AddComponent<BoxCollider>();
         }
 
-        boundary.tag = "RoadBoundary";
+        boundaryCollider.isTrigger = false;
 
         // Mark the boundary as static for performance
         boundary.isStatic = true;
