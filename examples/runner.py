@@ -66,7 +66,7 @@ def run_episodes(env, num_episodes):
                 # Compute actions for all agents using compute_actions_from_input_dict
                 #action_dict, _, _ = policy.compute_actions_from_input_dict(input_dict)
 
-                #actions = env.action_space_sample()
+                actions = env.action_space_sample()
 
                 # Modify the actions for all agents
                 for agent in actions:
