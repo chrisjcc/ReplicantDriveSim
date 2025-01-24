@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Traffic Architecture"
-permalink: /
+permalink: Plugins/TrafficSimulation/
 ---
 
 # Build and Install the Traffic Simulation Library

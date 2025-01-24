@@ -14,6 +14,7 @@ readme_index:
   with_frontmatter: true
 include:
   - External
+  - Assets
 defaults:
   - scope:
       path: "External"
