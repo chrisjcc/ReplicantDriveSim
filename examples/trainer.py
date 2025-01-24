@@ -80,7 +80,7 @@ def main():
     """
     try:
         # Set YAML files paths
-        config_path = os.path.join("replicantdrivesim", "configs", "config.yaml")
+        config_path = os.path.join("examples", "configs", "config.yaml")
         config_schema_path = os.path.join("replicantdrivesim", "configs", "config_schema.yaml")
 
         # Validate YAML file
