@@ -85,6 +85,7 @@ class UnityEnvResource:
             no_graphics=config["unity_env"][
                 "no_graphics"
             ],  # Whether to launch Unity without graphics
+            log_folder=config["unity_env"]["log_folder"], # Directory to write the Unity Player log file into
             seed=config["unity_env"]["seed"],  # Environment random seed value
         )
 

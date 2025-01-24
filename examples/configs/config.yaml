@@ -7,11 +7,12 @@ ray:
 unity_env:
   worker_id: 0
   base_port: 5004
-  no_graphics: false
+  no_graphics: False
   seed: 42
+  log_folder: None
 
 env_config:
-  initial_agent_count: 3
+  initial_agent_count: 1
   episode_horizon: 1000
 
 ppo_config:
