@@ -49,7 +49,20 @@ jobs:
             const releaseNotes = `## What's Changed\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\n**Full Changelog**: ${changelogUrl}`;
             core.setOutput('releaseNotes', releaseNotes);
 
+      - name: Check if Release Exists
+        id: check_release
+        run: |
+          existing_release=$(gh release view ${{ github.ref }} --json tagName --jq '.tagName' || echo '')
+          if [ -z "$existing_release" ]; then
+            echo "Release does not exist. Proceeding with creation."
+            echo "create_release=true" >> $GITHUB_ENV
+          else
+            echo "Release with tag ${{ github.ref }} already exists. Skipping release creation."
+            echo "create_release=false" >> $GITHUB_ENV
+          fi
+
       - name: Create Release with GitHub CLI
+        if: env.create_release == 'true'      
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
