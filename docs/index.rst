@@ -17,8 +17,8 @@ Quick Links
 
 * `Traffic Simulation Documentation <https://chrisjcc.github.io/ReplicantDriveSim/>`_
 * `Doxygen Documentation <https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/>`_
-* `AI Page <https://chrisjcc.github.io/ReplicantDriveSim/rl/>`_
 * `GitHub Page <https://github.com/chrisjcc/ReplicantDriveSim/>`_
+* `AI Page <https://github.com/chrisjcc/ReplicantDriveSim/tree/main/Assets/Plugins/TrafficSimulation>`_
 
 Project Setup
 -------------
