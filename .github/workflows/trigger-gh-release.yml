@@ -52,21 +52,26 @@ jobs:
       - name: Check if Release Exists
         id: check_release
         run: |
-          existing_release=$(gh release view ${{ github.ref }} --json tagName --jq '.tagName' || echo '')
+          # Extract the tag name without the refs/tags/ prefix
+          tag_name="${GITHUB_REF#refs/tags/}"
+          
+          # Check if a release already exists for this tag
+          existing_release=$(gh release view "$tag_name" --json tagName --jq '.tagName' || echo '')
           if [ -z "$existing_release" ]; then
             echo "Release does not exist. Proceeding with creation."
             echo "create_release=true" >> $GITHUB_ENV
           else
-            echo "Release with tag ${{ github.ref }} already exists. Skipping release creation."
+            echo "Release with tag $tag_name already exists. Skipping release creation."
             echo "create_release=false" >> $GITHUB_ENV
           fi
 
       - name: Create Release with GitHub CLI
-        if: env.create_release == 'true'      
+        if: env.create_release == 'true'       
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ github.ref }} --title "Release ${{ github.ref }}" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
+          tag_name="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag_name" --title "Release $tag_name" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
 
       - name: Get the latest repository tag
         id: get_latest_tag
