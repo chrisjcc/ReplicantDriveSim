@@ -7,11 +7,11 @@ ray:
 unity_env:
   worker_id: 0
   base_port: 5004
-  no_graphics: false
+  no_graphics: True
   seed: 42
 
 env_config:
-  initial_agent_count: 3
+  initial_agent_count: 1
   episode_horizon: 1000
 
 ppo_config:
@@ -21,7 +21,12 @@ ppo_config:
 multi_agent:
   policies:
     shared_policy:
-      # Observation and action spaces will be set programmatically
+      observation_space:
+        type: "Box"
+        shape: [5]  # Replace with actual size
+      action_space:
+        type: "Tuple"
+        shape: [2]  # Tuple of two spaces
 
 rollouts:
   num_rollout_workers: 2
