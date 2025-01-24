@@ -49,45 +49,43 @@ jobs:
             const releaseNotes = `## What's Changed\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\n**Full Changelog**: ${changelogUrl}`;
             core.setOutput('releaseNotes', releaseNotes);
 
-      - name: Check if Release Exists
-        id: check_release
-        run: |
-          # Extract the tag name without the refs/tags/ prefix
-          tag_name="${GITHUB_REF#refs/tags/}"
-          
-          # Debugging output
-          echo "GITHUB_REF is: $GITHUB_REF"
-          echo "Parsed tag name is: $tag_name"
-          
-          # Check if a release already exists for this tag
-          existing_release=$(gh release view "$tag_name" --json tagName --jq '.tagName' || echo '')
-          echo "Existing release: $existing_release"
-          
-          if [ -z "$existing_release" ]; then
-            echo "Release does not exist. Proceeding with creation."
-            echo "::set-output name=create_release::true"
-          else
-            echo "Release with tag $tag_name already exists. Skipping release creation."
-            echo "::set-output name=create_release::false"
-          fi
-
-      - name: Debug - Check create_release flag
-        run: |
-          echo "create_release flag: ${{ steps.check_release.outputs.create_release }}"
-
-      - name: Create Release with GitHub CLI
-        if: steps.check_release.outputs.create_release == 'true'
+      - name: Check and Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Debugging output to confirm flag is set correctly
-          echo "Creating release for tag: ${{ github.ref }}"
-          
-          # Ensure tag name is parsed properly
+          # Extract tag name
           tag_name="${GITHUB_REF#refs/tags/}"
-          echo "Final tag name for release creation: $tag_name"
+          echo "Processing tag: $tag_name"
+
+          # Check if the release exists
+          release_check=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tag_name")
+        
+          if [ "$release_check" -eq "404" ]; then
+            echo "Release does not exist. Creating new release."
           
-          gh release create "$tag_name" --title "Release $tag_name" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
+            # Generate release notes (adjust this part as needed)
+            release_notes="Auto-generated release notes for $tag_name"
+          
+            # Create release
+            curl -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases" \
+              -d '{
+                "tag_name": "'"$tag_name"'",
+                "name": "Release '"$tag_name"'",
+                "body": "'"$release_notes"'"
+              }'
+            echo "Release created successfully."
+          elif [ "$release_check" -eq "200" ]; then
+            echo "Release already exists. Skipping creation."
+          else
+            echo "Unexpected status code: $release_check"
+            exit 1
+          fi
 
       - name: Get the latest repository tag
         id: get_latest_tag
