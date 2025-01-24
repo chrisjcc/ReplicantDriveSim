@@ -54,9 +54,15 @@ jobs:
         run: |
           # Extract the tag name without the refs/tags/ prefix
           tag_name="${GITHUB_REF#refs/tags/}"
-          
+
+          # Debugging output
+          echo "GITHUB_REF is: $GITHUB_REF"
+          echo "Parsed tag name is: $tag_name"
+
           # Check if a release already exists for this tag
           existing_release=$(gh release view "$tag_name" --json tagName --jq '.tagName' || echo '')
+          echo "Existing release: $existing_release"
+          
           if [ -z "$existing_release" ]; then
             echo "Release does not exist. Proceeding with creation."
             echo "create_release=true" >> $GITHUB_ENV
@@ -64,13 +70,23 @@ jobs:
             echo "Release with tag $tag_name already exists. Skipping release creation."
             echo "create_release=false" >> $GITHUB_ENV
           fi
+          
+      - name: Debug - Check create_release flag
+        run: |
+          echo "create_release flag: ${{ env.create_release }}"
 
       - name: Create Release with GitHub CLI
         if: env.create_release == 'true'       
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Debugging output to confirm flag is set correctly
+          echo "Creating release for tag: ${{ github.ref }}"
+
+          # Ensure the tag name is parsed properly
           tag_name="${GITHUB_REF#refs/tags/}"
+          echo "Final tag name for release creation: $tag_name"
+
           gh release create "$tag_name" --title "Release $tag_name" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
 
       - name: Get the latest repository tag
