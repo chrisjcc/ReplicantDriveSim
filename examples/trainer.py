@@ -103,6 +103,12 @@ def main():
                     "RAY_AIR_RICH_LAYOUT": version,
                 }
             },
+            log_to_driver=False,
+            logging_level="INFO",
+            #_temp_dir="/path/to/new/tempdir", # Redirect Ray's temporary directory to use a different directory with more available space
+            #_system_config={
+                "object_spilling_config": json.dumps(None)  # Explicitly convert `None` to a valid JSON string
+            }, # Disable Object Spilling if disk space is a bottleneck, and you have sufficient memory, disable object spilling
         )
 
         # Register the environment with RLlib
