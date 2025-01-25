@@ -11,6 +11,7 @@ unity_env:
   base_port: int(min=1024, max=65535)
   no_graphics: bool()
   seed: int()
+  log_folder: str()
 
 env_config:
   initial_agent_count: int(min=1)
@@ -27,8 +28,10 @@ multi_agent:
         type: str()  # e.g., "Box", "Discrete"
         shape: list()  # Dimensions of observation space
       action_space:
-        type: str()  # e.g., "Box", "Discrete"
-        shape: list()  # Dimensions of action space
+        type: str()  # e.g., "Box", "Discrete", "Hybrid"
+        shape:
+          discrete: list()  # Dimensions of discrete action space (if type is "Hybrid")
+          continuous: list()  # Dimensions of continuous action space (if type is "Hybrid")
 
 rollouts:
   num_rollout_workers: int(min=0)

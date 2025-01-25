@@ -7,8 +7,11 @@ ray:
   num_cpus: int(min=1)
 
 unity_env:
+  worker_id: int()
   base_port: int(min=1024, max=65535)
   no_graphics: bool()
+  seed: int()
+  log_folder: str()
 
 env_config:
   initial_agent_count: int(min=1)
@@ -20,7 +23,15 @@ ppo_config:
 
 multi_agent:
   policies:
-    shared_policy: any()  # Allow any value, as it will be set programmatically
+    shared_policy:
+      observation_space:
+        type: str()  # e.g., "Box", "Discrete"
+        shape: list()  # Dimensions of observation space
+      action_space:
+        type: str()  # e.g., "Box", "Discrete", "Hybrid"
+        shape:
+          discrete: list()  # Dimensions of discrete action space (if type is "Hybrid")
+          continuous: list()  # Dimensions of continuous action space (if type is "Hybrid")
 
 rollouts:
   num_rollout_workers: int(min=0)
