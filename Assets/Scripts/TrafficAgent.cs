@@ -64,11 +64,12 @@ public class TrafficAgent : Agent
     /// Throws an exception if TrafficManager is not found in the scene.
     ///
     /// </summary>
-    private void Awake()
+    protected override void Awake()
     {
         LogDebug("TrafficAgent::Awake Start started.");
 
         Random.InitState(seed);
+        base.Awake(); // Optionally call base class method
 
         // Try to find the TrafficManager in the scene
         if (trafficManager == null)

@@ -5,11 +5,14 @@ ray:
   num_cpus: 4
 
 unity_env:
+  worker_id: 0
   base_port: 5004
-  no_graphics: false
+  no_graphics: False
+  seed: 42
+  log_folder: ./Logs
 
 env_config:
-  initial_agent_count: 2
+  initial_agent_count: 1
   episode_horizon: 1000
 
 ppo_config:
@@ -19,7 +22,14 @@ ppo_config:
 multi_agent:
   policies:
     shared_policy:
-      # Observation and action spaces will be set programmatically
+      observation_space:
+        type: "Box"  # Continuous observation space
+        shape: [5]  # 5 continuous values in the observation space
+      action_space:
+        type: "Tuple"  # Custom type to indicate a combination of discrete and continuous spaces
+        shape:
+          discrete: [5]  # 5 discrete actions
+          continuous: [3]  # 3 continuous actions
 
 rollouts:
   num_rollout_workers: 2
@@ -44,4 +54,4 @@ environment:
   disable_env_checking: true
 
 stop:
-  training_iteration: 1
+  training_iteration: 10000

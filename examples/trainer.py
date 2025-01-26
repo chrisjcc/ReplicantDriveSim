@@ -1,21 +1,18 @@
+import json
+import logging
 import os
 
-import logging
 import gymnasium as gym
 import mlflow
 import numpy as np
 import ray
 import yamale
 import yaml
-
-import replicantdrivesim
-
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.exception import UnityCommunicatorStoppedException
 from mlflow.models.signature import ModelSignature
 from mlflow.types.schema import Schema, TensorSpec
-
 from ray import train, tune
 from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
@@ -27,6 +24,7 @@ from ray.train import RunConfig
 from ray.tune import Tuner
 from ray.tune.registry import register_env
 
+import replicantdrivesim
 
 # Suppress DeprecationWarnings from output
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
@@ -37,7 +35,7 @@ os.environ["RAY_AIR_NEW_OUTPUT"] = version
 os.environ["RAY_AIR_RICH_LAYOUT"] = version
 
 # Set the logging level to DISABLED (which is equivalent to CRITICAL in the logging module)
-logging.getLogger('gymnasium').setLevel(logging.CRITICAL)
+logging.getLogger("gymnasium").setLevel(logging.CRITICAL)
 
 
 def validate_yaml_schema(data_path, schema_path):
@@ -56,12 +54,17 @@ def validate_yaml_schema(data_path, schema_path):
 def env_creator(env_config):
     return replicantdrivesim.CustomUnityMultiAgentEnv(env_config)
 
+
 def policy_mapping_fn(agent_id, episode, worker, **kwargs):
     return "shared_policy"
 
 
-def register_model(policy, model_name, run_name, experiment_id, run_id, model_signature):
-    with mlflow.start_run(run_name=run_name, experiment_id=experiment_id, run_id=run_id) as run:
+def register_model(
+    policy, model_name, run_name, experiment_id, run_id, model_signature
+):
+    with mlflow.start_run(
+        run_name=run_name, experiment_id=experiment_id, run_id=run_id
+    ) as run:
         mlflow.pytorch.log_model(
             pytorch_model=policy.model,
             artifact_path="ppo_model",
@@ -80,8 +83,10 @@ def main():
     """
     try:
         # Set YAML files paths
-        config_path = os.path.join("replicantdrivesim", "configs", "config.yaml")
-        config_schema_path = os.path.join("replicantdrivesim", "configs", "config_schema.yaml")
+        config_path = os.path.join("examples", "configs", "config.yaml")
+        config_schema_path = os.path.join(
+            "replicantdrivesim", "configs", "config_schema.yaml"
+        )
 
         # Validate YAML file
         validate_yaml_schema(config_path, config_schema_path)
@@ -103,6 +108,12 @@ def main():
                     "RAY_AIR_RICH_LAYOUT": version,
                 }
             },
+            log_to_driver=False,
+            logging_level="INFO",
+            _temp_dir="/tmp/ray_tmp",  # Redirect Ray's temporary directory to use a different directory with more available space
+            _system_config={
+                "object_spilling_config":  ""
+            },  # Disable Object Spilling if disk space is a bottleneck, and you have sufficient memory, disable object spilling
         )
 
         # Register the environment with RLlib
@@ -204,64 +215,113 @@ def main():
 
         results = tuner.fit()
 
-
         # Print the results dictionary of the training to inspect the structure
         print(f"Training results: {results}")
 
         # Check if results is not empty
         if results:
-            experiment = mlflow.get_experiment_by_name(config_data["mlflow"]["experiment_name"])
+            experiment = mlflow.get_experiment_by_name(
+                config_data["mlflow"]["experiment_name"]
+            )
             experiment_id = experiment.experiment_id
             runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
             run_id = runs.iloc[0].run_id
 
-            input_schema = Schema([
-                TensorSpec(np.dtype(np.float32), (-1, env.size_of_single_agent_obs), agent_id)
-                for agent_id in env._agent_ids
-            ])
+            input_schema = Schema(
+                [
+                    TensorSpec(
+                        np.dtype(np.float32),
+                        (-1, env.size_of_single_agent_obs),
+                        agent_id,
+                    )
+                    for agent_id in env._agent_ids
+                ]
+            )
             model_signature = ModelSignature(inputs=input_schema)
 
             try:
                 # Model 1: Based on the best result (scope set to `last`)
-                best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope='last')
+                best_result = results.get_best_result(
+                    metric="episode_reward_mean", mode="max", scope="last"
+                )
 
                 if best_result and best_result.checkpoint:
-                    policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
-                    register_model(policy, "PPO_Highway_Model_BestResult_scope_last", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
+                    policy = Policy.from_checkpoint(best_result.checkpoint)[
+                        "shared_policy"
+                    ]
+                    register_model(
+                        policy,
+                        "PPO_Highway_Model_BestResult_scope_last",
+                        "PPO_CustomUnityMultiAgentEnv_BestResult",
+                        experiment_id,
+                        run_id,
+                        model_signature,
+                    )
 
                     print(f"Best config: {best_result.config}")
                     print(f"Best metrics: {best_result.metrics}")
                     print(f"Best result last checkpoint path: {best_result.checkpoint}")
 
                 # Model 2: Based on the best result (scope set to `avg`)
-                best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope='avg')
+                best_result = results.get_best_result(
+                    metric="episode_reward_mean", mode="max", scope="avg"
+                )
 
                 if best_result and best_result.checkpoint:
-                    policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
-                    register_model(policy, "PPO_Highway_Model_BestResult_scope_avg", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
+                    policy = Policy.from_checkpoint(best_result.checkpoint)[
+                        "shared_policy"
+                    ]
+                    register_model(
+                        policy,
+                        "PPO_Highway_Model_BestResult_scope_avg",
+                        "PPO_CustomUnityMultiAgentEnv_BestResult",
+                        experiment_id,
+                        run_id,
+                        model_signature,
+                    )
 
                     print(f"Best config: {best_result.config}")
                     print(f"Best metrics: {best_result.metrics}")
                     print(f"Best result avg checkpoint path: {best_result.checkpoint}")
 
                 # Model 3: Based on the best result (scope set to `all`)
-                best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope='last')
+                best_result = results.get_best_result(
+                    metric="episode_reward_mean", mode="max", scope="last"
+                )
 
                 if best_result and best_result.checkpoint:
-                    policy = Policy.from_checkpoint(best_result.checkpoint)["shared_policy"]
-                    register_model(policy, "PPO_Highway_Model_BestResult_scope_all", "PPO_CustomUnityMultiAgentEnv_BestResult", experiment_id, run_id, model_signature)
+                    policy = Policy.from_checkpoint(best_result.checkpoint)[
+                        "shared_policy"
+                    ]
+                    register_model(
+                        policy,
+                        "PPO_Highway_Model_BestResult_scope_all",
+                        "PPO_CustomUnityMultiAgentEnv_BestResult",
+                        experiment_id,
+                        run_id,
+                        model_signature,
+                    )
 
                     print(f"Best config: {best_result.config}")
                     print(f"Best metrics: {best_result.metrics}")
                     print(f"Best result all checkpoint path: {best_result.checkpoint}")
 
                 # Model 4: Based on the last checkpoint of all trials
-                all_checkpoints = [result.checkpoint for result in results if result.checkpoint]
+                all_checkpoints = [
+                    result.checkpoint for result in results if result.checkpoint
+                ]
 
                 if all_checkpoints:
                     last_checkpoint = all_checkpoints[-1]
                     policy = Policy.from_checkpoint(last_checkpoint)["shared_policy"]
-                    register_model(policy, "PPO_Highway_Model_LastCheckpoint", "PPO_CustomUnityMultiAgentEnv_LastCheckpoint", experiment_id, run_id, model_signature)
+                    register_model(
+                        policy,
+                        "PPO_Highway_Model_LastCheckpoint",
+                        "PPO_CustomUnityMultiAgentEnv_LastCheckpoint",
+                        experiment_id,
+                        run_id,
+                        model_signature,
+                    )
 
                     print(f"Last checkpoint path: {last_checkpoint}")
 
@@ -276,7 +336,7 @@ def main():
         print(f"An unexpected error occurred during training: {e}")
     finally:
         # Cleanup
-        if 'env' in locals():
+        if "env" in locals():
             try:
                 env.close()
             except Exception as e:

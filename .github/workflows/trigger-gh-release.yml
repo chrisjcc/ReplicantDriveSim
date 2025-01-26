@@ -49,11 +49,43 @@ jobs:
             const releaseNotes = `## What's Changed\n${commitMessages}\n\n## Contributors\n${contributorsSection}\n\n**Full Changelog**: ${changelogUrl}`;
             core.setOutput('releaseNotes', releaseNotes);
 
-      - name: Create Release with GitHub CLI
+      - name: Check and Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ github.ref }} --title "Release ${{ github.ref }}" --notes "${{ steps.generate_notes.outputs.releaseNotes }}"
+          # Extract tag name
+          tag_name="${GITHUB_REF#refs/tags/}"
+          echo "Processing tag: $tag_name"
+
+          # Check if the release exists
+          release_check=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tag_name")
+        
+          if [ "$release_check" -eq "404" ]; then
+            echo "Release does not exist. Creating new release."
+          
+            # Generate release notes (adjust this part as needed)
+            release_notes="Auto-generated release notes for $tag_name"
+          
+            # Create release
+            curl -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases" \
+              -d '{
+                "tag_name": "'"$tag_name"'",
+                "name": "Release '"$tag_name"'",
+                "body": "'"$release_notes"'"
+              }'
+            echo "Release created successfully."
+          elif [ "$release_check" -eq "200" ]; then
+            echo "Release already exists. Skipping creation."
+          else
+            echo "Unexpected status code: $release_check"
+            exit 1
+          fi
 
       - name: Get the latest repository tag
         id: get_latest_tag

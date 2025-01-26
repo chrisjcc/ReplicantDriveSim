@@ -1,14 +1,22 @@
 import os
 import yaml
-import ray
 import argparse
+
 from collections import OrderedDict
-from mlagents_envs.exception import UnityCommunicatorStoppedException
 
 import torch
 
+import ray
 from ray.rllib.policy.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
+
+<<<<<<< Updated upstream
+=======
+from ray.rllib.policy.policy import Policy
+from ray.rllib.policy.sample_batch import SampleBatch
+
+>>>>>>> Stashed changes
+from mlagents_envs.exception import UnityCommunicatorStoppedException
 
 import replicantdrivesim
 
@@ -18,7 +26,6 @@ def run_episodes(env, num_episodes):
     # Print available behavior names
     behavior_names = list(env.behavior_specs.keys())
     print(f"Available behavior names: {behavior_names}")
-
 
     # Load the trained DQN policy
     base_directory = "/Users/christiancontrerascampana/ray_results"
@@ -83,7 +90,7 @@ def run_episodes(env, num_episodes):
                 # Step the environment
                 observations, rewards, terminateds, truncateds, infos = env.step(actions)
 
-                for agent in env.agents:
+                for agent in rewards:
                     total_reward = rewards[agent]
                     print(f"Rewards for {agent}: {total_reward}")
                     print(f"Reward components for {agent}: {infos[agent]}")

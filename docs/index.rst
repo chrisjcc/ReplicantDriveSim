@@ -3,9 +3,9 @@
 Welcome to ReplicantDriveSim's documentation!
 =============================================
 
-.. image:: https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/publish-gh-pages.yml/badge.svg?branch=main
+.. image:: https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/deploy-gh-pages.yml/badge.svg?branch=main
    :alt: Workflow Status
-   :target: https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/publish-gh-pages.yml
+   :target: https://github.com/chrisjcc/ReplicantDriveSim/actions/workflows/deploy-gh-pages.yml
 
 ReplicantDriveSim is an advanced traffic simulation project designed for autonomous driving research. It leverages reinforcement learning, imitation learning, and computer vision to create realistic traffic scenarios and synthetic driving data. The simulation environment is built using Pygame for visualization and Miniforge for Python package management, ensuring a seamless development and deployment experience.
 
@@ -17,8 +17,8 @@ Quick Links
 
 * `Traffic Simulation Documentation <https://chrisjcc.github.io/ReplicantDriveSim/>`_
 * `Doxygen Documentation <https://chrisjcc.github.io/ReplicantDriveSim/External/docs/html/>`_
-* `AI Page <https://chrisjcc.github.io/ReplicantDriveSim/rl/>`_
 * `GitHub Page <https://github.com/chrisjcc/ReplicantDriveSim/>`_
+* `AI Page <https://github.com/chrisjcc/ReplicantDriveSim/tree/main/Assets/Plugins/TrafficSimulation>`_
 
 Project Setup
 -------------
