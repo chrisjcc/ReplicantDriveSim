@@ -350,6 +350,9 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             # Here you may want to handle the error by either reinitializing the environment or raising an exception
             return None, {}
 
+        # Set the number of activate agents
+        #self.num_agents = len(decision_steps.agent_id)
+
         # Update num_agents and observation_space
         self._update_spaces()
 
@@ -413,15 +416,16 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
     def _get_step_results(self):
         """Collects those agents' obs/rewards that have to act in next `step`.
-
         Returns:
             Tuple:
                 obs: Multi-agent observation dict.
                     Only those observations for which to get new actions are
                     returned.
                 rewards: Rewards dict matching `obs`.
-                dones: Done dict with only an __all__ multi-agent entry in it.
+                terminateds: Terminated dict with only an __all__ multi-agent entry in it.
                     __all__=True, if episode is done for all agents.
+                truncateds: Truncated dict.
+                infos: Info dict for additional information.
         """
         # Process observations, rewards, and done flags
         obs_dict = {}
@@ -430,25 +434,24 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         truncateds_dict = {}
         infos_dict = {}
 
-        # Get the new state
+        # Get the new state for our single behavior
         decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self._behavior_name))
 
+        # Check if decision steps is None
         if decision_steps is None:
             print("Warning: No decision steps returned, the environment might not be initialized.")
-            # Handle this case gracefully, maybe reset the environment or raise an error
             return {}, {}, {}, {}, {}
 
-        # Alternative, decision_steps.agent_id_to_index
+        # Process agents in decision steps (active agents)
         for agent_id in decision_steps.agent_id:
             agent_key = f"agent_{agent_id}"
             obs_dict[agent_key] = decision_steps[agent_id].obs[0].astype(np.float32)
             rewards_dict[agent_key] = decision_steps[agent_id].reward
             terminateds_dict[agent_key] = False
-            truncateds_dict[agent_key] = (
-                False  # Assume not truncated if in decision_steps
-            )
+            truncateds_dict[agent_key] = False  # Assume not truncated if in decision_steps
             infos_dict[agent_key] = {}
 
+        # Process agents in terminal steps (terminated agents)
         for agent_id in terminal_steps.agent_id:
             agent_key = f"agent_{agent_id}"
             obs_dict[agent_key] = terminal_steps[agent_id].obs[0].astype(np.float32)
@@ -457,7 +460,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             truncateds_dict[agent_key] = terminal_steps[agent_id].interrupted
             infos_dict[agent_key] = {}
 
-        # All Agents Done Check: Only use dones if all agents are done, then we should do a reset.
+        # All Agents Done Check: Only use dones if all agents are done
         terminateds_dict["__all__"] = len(terminal_steps) == self.num_active_agents
         truncateds_dict["__all__"] = all(truncateds_dict.values())
 

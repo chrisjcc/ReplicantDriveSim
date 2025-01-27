@@ -33,12 +33,12 @@ public class TrafficAgent : Agent
     [HideInInspector] private Guid channelId = new Guid("621f0a70-4f87-11ea-a6bf-784f4387d1f7");
 
     // Penalty Settings
-    [SerializeField] public float offRoadPenalty = -0.5f;
-    [SerializeField] private float onRoadReward = 0.01f;
-    [SerializeField] public float collisionWithOtherAgentPenalty = -1.0f;
-    [SerializeField] public float medianCrossingPenalty = -1.0f;
-    [SerializeField] private float penaltyInterval = 0.5f; // Interval in seconds between penalties
-    [HideInInspector] private float lastPenaltyTime = 0f; // Time when the last penalty was applied
+    [HideInInspector] public float offRoadPenalty;
+    [HideInInspector] public float onRoadReward;
+    [HideInInspector] public float collisionWithOtherAgentPenalty;
+    [HideInInspector] public float medianCrossingPenalty;
+    [HideInInspector] public float penaltyInterval;
+    [HideInInspector] public float lastPenaltyTime;
 
     // Collider
     [HideInInspector] private Collider agentCollider;
@@ -98,6 +98,8 @@ public class TrafficAgent : Agent
 
         // Median boundary Layer
         medianBoundaryLayer = LayerMask.NameToLayer("MedianBoundary");
+
+        SetRewardConfig();
 
         LogDebug("TrafficAgent::Awake completed successfully.");
     }
@@ -845,6 +847,17 @@ public class TrafficAgent : Agent
         LogDebug("TrafficAgent::Update completed successfully.");
     }
 
+    public void SetRewardConfig()
+    {
+        this.offRoadPenalty = trafficManager.offRoadPenalty;
+        this.onRoadReward = trafficManager.onRoadReward;
+        this.collisionWithOtherAgentPenalty = trafficManager.collisionWithOtherAgentPenalty;
+        this.medianCrossingPenalty = trafficManager.medianCrossingPenalty;
+
+        this.penaltyInterval = trafficManager.penaltyInterval; // Interval in seconds between penalties
+        this.lastPenaltyTime = trafficManager.medianCrossingPenalty; // Time when the last penalty was applied
+    }
+
     /// <summary>
     /// Visualizes raycasts in the Unity scene view for debugging and development purposes.
     ///
@@ -1089,19 +1102,19 @@ public class TrafficAgent : Agent
         if (collision.gameObject.layer == roadLayer)
         {
             // Reward for exiting the boundary and returning to the road
-            AddReward(0.1f);
+            AddReward(onRoadReward);
             LogDebug("Agent left the road and returned to it. Reward added.");
         }
         else if (collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
         {
             // Reward for exiting the road boundary (right/left boundary)
-            AddReward(0.1f);
+            AddReward(onRoadReward);
             LogDebug("Agent left the road boundary. Reward added.");
         }
         else if (collision.gameObject.layer == LayerMask.NameToLayer("MedianBoundary"))
         {
             // Reward for exiting the median boundary
-            AddReward(0.1f);
+            AddReward(onRoadReward);
             LogDebug("Agent left the median boundary. Reward added.");
         }
         else
