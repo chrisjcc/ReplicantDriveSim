@@ -34,8 +34,15 @@ version = "0"  # Default "1"
 os.environ["RAY_AIR_NEW_OUTPUT"] = version
 os.environ["RAY_AIR_RICH_LAYOUT"] = version
 
-# Set the logging level to DISABLED (which is equivalent to CRITICAL in the logging module)
-logging.getLogger("gymnasium").setLevel(logging.CRITICAL)
+# Set all loggers to CRITICAL or disable them to effectively silence logging output
+gym_logger = logging.getLogger("gymnasium")
+gym_logger.setLevel(logging.CRITICAL)
+
+ray_logger = logging.getLogger("ray")
+ray_logger.setLevel(logging.CRITICAL)
+
+ray_rllib_logger = logging.getLogger("ray.rllib")
+ray_rllib_logger.setLevel(logging.CRITICAL)
 
 
 def validate_yaml_schema(data_path, schema_path):
