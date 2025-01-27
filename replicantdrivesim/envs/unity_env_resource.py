@@ -46,15 +46,23 @@ class UnityEnvResource:
         self.float_properties_channel = FloatPropertiesChannel(self.channel_id)
         self.field_value_channel = CustomSideChannel()
 
-        # Set the number of desired active agents
-        self.initial_agent_count = config.get("env_config", {}).get(
-            "initial_agent_count", 2
-        )
 
-        # Set the initialAgentCount before creating the UnityEnvironment
+        # Extract environment configuration
+        self.env_config = config.get("env_config", {})
+
+        # Set the number of desired active agents
+        self.initial_agent_count = self.env_config.get("initial_agent_count", 2)
+
+        # Send initial agent count to Unity
         self.env_parameters.set_float_parameter(
             "initialAgentCount", self.initial_agent_count
         )
+
+
+        self.rewards = self.env_config.get("rewards", {})
+
+        # Parse and send reward configurations
+        self._set_reward_parameters()
 
         # Note: Communication Layer: ML-Agents uses a communication protocol (gRPC) to transfer data between Unity and Python.
         # This protocol serializes the observation data into a format that can be sent over the network.
@@ -70,23 +78,23 @@ class UnityEnvResource:
             file_name=config[
                 "file_name"
             ],  # Path to the Unity environment binary executable
-            worker_id=config["unity_env"][
-                "worker_id"
-            ],  # Worker ID for parallel environments
-            base_port=config["unity_env"][
-                "base_port"
-            ],  # Base port for communication with Unity
+            worker_id=self.env_config.get(
+                "worker_id", 0
+            ),  # Worker ID for parallel environments
+            base_port=self.env_config.get(
+                "base_port", 5004
+            ),  # Base port for communication with Unity
             side_channels=[
                 self.engine_configuration_channel,
                 self.env_parameters,
                 self.float_properties_channel,
                 self.field_value_channel,
             ],
-            no_graphics=config["unity_env"][
-                "no_graphics"
-            ],  # Whether to launch Unity without graphics
-            log_folder=config["unity_env"]["log_folder"], # Directory to write the Unity Player log file into
-            seed=config["unity_env"]["seed"],  # Environment random seed value
+            no_graphics=self.env_config.get(
+                "no_graphics", False
+            ),  # Whether to launch Unity without graphics
+            log_folder=self.env_config.get("log_folder", "./Logs"), # Directory to write the Unity Player log file into
+            seed=self.env_config.get("seed", 42),  # Environment random seed value
         )
 
     def set_configuration(self, engine_config: EngineConfig) -> None:
@@ -235,6 +243,21 @@ class UnityEnvResource:
             print(f"Unexpected error during step: {str(e)}")
             self.close()
             raise
+
+    def _set_reward_parameters(self):
+        # Default values for rewards
+        default_rewards = {
+            "offRoadPenalty": -0.5,
+            "onRoadReward": 0.01,
+            "collisionWithOtherAgentPenalty": -1.0,
+            "medianCrossingPenalty": -1.0,
+        }
+
+        # Merge defaults with YAML configuration
+        for key, default_value in default_rewards.items():
+            reward_value = self.rewards.get(key, default_value)
+            self.env_parameters.set_float_parameter(key, reward_value)
+            print(f"Set {key} to {reward_value}")
 
     def close(self) -> None:
         """

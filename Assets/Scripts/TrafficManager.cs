@@ -41,6 +41,14 @@ public class TrafficManager : MonoBehaviour
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "TrafficAgent";
     [HideInInspector] public RayPerceptionSensorComponent3D raySensor;
 
+    // Reward Settings
+    [SerializeField] public float offRoadPenalty = -0.5f;
+    [SerializeField] public float onRoadReward = 0.01f;
+    [SerializeField] public float collisionWithOtherAgentPenalty = -1.0f;
+    [SerializeField] public float medianCrossingPenalty = -1.0f;
+    [SerializeField] public float penaltyInterval = 0.5f; // Interval in seconds between penalties
+    [SerializeField] public float lastPenaltyTime = 0f; // Time when the last penalty was applied
+
     // Public Fields
     public IntPtr trafficSimulationPtr;
     public Dictionary<string, TrafficAgent> agentInstances = new Dictionary<string, TrafficAgent>();
@@ -280,9 +288,17 @@ public class TrafficManager : MonoBehaviour
         // Sending a field value (e.g., current FPS)
         sideChannel.SendFieldValue("FramesPerSecond", 1.0f / simTimeStep);
 
-        // Get the initialAgentCount parameter from the environment parameters
+        // Get the environment parameters from the Academy
         var envParameters = Academy.Instance.EnvironmentParameters;
+
+        // Get the initialAgentCount parameter from the environment parameters
         initialAgentCount = Mathf.RoundToInt(envParameters.GetWithDefault("initialAgentCount", initialAgentCount));
+
+        // Retrieve reward-related parameters from the environment configuration
+        offRoadPenalty = envParameters.GetWithDefault("offRoadPenalty", offRoadPenalty);
+        onRoadReward = envParameters.GetWithDefault("onRoadReward", onRoadReward);
+        collisionWithOtherAgentPenalty = envParameters.GetWithDefault("collisionWithOtherAgentPenalty", collisionWithOtherAgentPenalty);
+        medianCrossingPenalty = envParameters.GetWithDefault("medianCrossingPenalty", medianCrossingPenalty);
 
         LogDebug("TrafficManager::SetupFloatPropertiesChannel completed");
     }

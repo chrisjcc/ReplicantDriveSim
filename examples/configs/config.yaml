@@ -15,6 +15,13 @@ env_config:
   initial_agent_count: 1
   episode_horizon: 1000
 
+  # Reward configuration
+  rewards:
+    off_road_penalty: -0.5
+    on_road_reward: 0.01
+    collision_with_other_agent_penalty: -1.0
+    median_crossing_penalty: -1.0
+
 ppo_config:
   framework: "torch"
   num_gpus: 0
