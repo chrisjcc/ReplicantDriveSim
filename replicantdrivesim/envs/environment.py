@@ -350,10 +350,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             # Here you may want to handle the error by either reinitializing the environment or raising an exception
             return None, {}
 
-
-        # Set the number of activate agents
-        self.num_agents = len(decision_steps.agent_id)
-
         # Update num_agents and observation_space
         self._update_spaces()
 

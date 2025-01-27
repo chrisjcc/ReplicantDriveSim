@@ -1,0 +1,27 @@
+﻿<Properties StartupConfiguration="{3FC56804-7733-B87E-8287-3A8FE392B0DB}|">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/TrafficAgent.cs">
+    <Files>
+      <File FileName="Assets/Scripts/TrafficAgent.cs" Line="72" Column="59" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="ReplicantDriveSim" expanded="True">
+            <Node name="Assets" expanded="True">
+              <Node name="Scripts" expanded="True">
+                <Node name="TrafficAgent.cs" selected="True" />
+              </Node>
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="c9cf7a40-500a-4ab2-839a-808f3fcd9795" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>
