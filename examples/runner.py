@@ -75,7 +75,7 @@ def run_episodes(env, num_episodes):
                     # continuous_actions[2] = 0.0  # Another modification
                     actions[agent] = (discrete_action, continuous_actions)
 
-                print(f"actions: {actions}")
+                print(f"Action for {agent} decision: {actions[agent][0]} control: {actions[agent][1]}")
 
                 # Step the environment
                 observations, rewards, terminateds, truncateds, infos = env.step(
@@ -85,7 +85,7 @@ def run_episodes(env, num_episodes):
                 for agent in rewards:
                     total_reward = rewards[agent]
                     print(f"Rewards for {agent}: {total_reward}")
-                    print(f"Reward components for {agent}: {infos[agent]}")
+                    # print(f"Reward components for {agent}: {infos[agent]}")
 
                 # Check if the episode is done
                 done = terminateds.get("__all__", False) or truncateds.get(
