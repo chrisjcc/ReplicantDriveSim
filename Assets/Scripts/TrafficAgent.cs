@@ -1339,9 +1339,9 @@ public class TrafficAgent : Agent
     /// <param name="message">The debug message to be logged</param>
     private void LogDebug(string message)
     {
-        //#if UNITY_EDITOR
+        #if UNITY_EDITOR
         Debug.Log(message);
-        //#endif
+        #endif
     }
 
     /// <summary>

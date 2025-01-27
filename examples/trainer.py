@@ -112,7 +112,7 @@ def main():
             logging_level="INFO",
             _temp_dir="/tmp/ray_tmp",  # Redirect Ray's temporary directory to use a different directory with more available space
             _system_config={
-                "object_spilling_config":  ""
+                "object_spilling_config":  None
             },  # Disable Object Spilling if disk space is a bottleneck, and you have sufficient memory, disable object spilling
         )
 
@@ -189,7 +189,7 @@ def main():
                 local_dir="./ray_results",
                 checkpoint_config=train.CheckpointConfig(
                     num_to_keep=1,
-                    checkpoint_frequency=100,
+                    checkpoint_frequency=500,
                     checkpoint_at_end=True,
                 ),
                 callbacks=[
@@ -204,6 +204,7 @@ def main():
                 stop={
                     "training_iteration": config_data["stop"]["training_iteration"]
                 },  # Stop after 100 iterations, each iteration can consist of multiple episodes, depending on how the rollout and batch sizes are configured.
+                verbose=0,  # Suppresses most output
             ),
             tune_config=tune.TuneConfig(
                 num_samples=1,

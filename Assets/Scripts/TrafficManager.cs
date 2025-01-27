@@ -1723,9 +1723,9 @@ public class TrafficManager : MonoBehaviour
     /// <param name="message">The debug message to be logged</param>
     private void LogDebug(string message)
     {
-        //#if UNITY_EDITOR
+        #if UNITY_EDITOR
         Debug.Log(message);
-        //#endif
+        #endif
     }
 
     private void MaxEpisodeSteps(float newValue)
@@ -2069,7 +2069,7 @@ public class TrafficManager : MonoBehaviour
         {
             // Unregister the channel when the TrafficManager is destroyed
             SideChannelManager.UnregisterSideChannel(floatPropertiesChannel);
-            floatPropertiesChannel = null; // NEW
+            floatPropertiesChannel = null;
         }
 
         if(sideChannel != null)
@@ -2176,7 +2176,7 @@ public class TrafficManager : MonoBehaviour
 
         CleanUpSimulation();
 
-        Traffic_destroy(trafficSimulationPtr); // NEW
+        Traffic_destroy(trafficSimulationPtr);
 
         LogDebug("TrafficManager::OnDestroy completely successfully.");
     }
