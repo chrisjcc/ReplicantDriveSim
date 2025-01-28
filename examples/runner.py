@@ -7,9 +7,16 @@ import yaml
 from mlagents_envs.exception import UnityCommunicatorStoppedException
 from ray.rllib.policy.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
+from ray.tune.registry import register_env
 
 import replicantdrivesim
 
+# Define the environment creator
+def env_creator(config):
+    return replicantdrivesim.make("replicantdrivesim-v0", config)
+
+# Register the environment with Ray
+register_env("CustomUnityMultiAgentEnv", env_creator)
 
 def run_episodes(env, num_episodes):
     """Run a defined number of episodes with the environment."""
@@ -88,9 +95,7 @@ def run_episodes(env, num_episodes):
                     # print(f"Reward components for {agent}: {infos[agent]}")
 
                 # Check if the episode is done
-                done = terminateds.get("__all__", False) or truncateds.get(
-                    "__all__", False
-                )
+                done = terminateds.get("__all__", False) or truncateds.get("__all__", False)
 
             print(f"Episode {episode + 1} finished")
 
@@ -132,10 +137,8 @@ def main():
     ray.init()
 
     try:
-        # Create the Unity environment
-        env = replicantdrivesim.make(
-            env_name="replicantdrivesim-v0", config=config_data
-        )
+        # Create an instance of the environment
+        env = env_creator(config_data)
 
         # Run the episodes
         run_episodes(env, num_episodes)
