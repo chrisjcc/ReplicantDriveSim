@@ -33,7 +33,7 @@ public class CreateDualRoad : MonoBehaviour
     public PhysicsMaterial roadPhysicsMaterial;
 
     public float singleRoadWidth = 15f; // Width for a single road (2 lanes)
-    public float roadLength = 3250f;
+    public float roadLength = 100f;
     public float boundaryHeight = 5f;
     public float medianWidth = 5f; // Width of the median between the two roads
 

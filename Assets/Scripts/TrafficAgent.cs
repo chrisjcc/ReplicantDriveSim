@@ -185,7 +185,7 @@ public class TrafficAgent : Agent
     /// </summary>
     private void ResetAgentActions()
     {
-        LogDebug("TraffocAgemts::ResetAgentActions started.");
+        LogDebug("TrafficAgent::ResetAgentActions started.");
         GetRandomActions();
     }
 
@@ -445,18 +445,15 @@ public class TrafficAgent : Agent
     {
         LogDebug("TrafficAgent::CollectObservations started.");
 
-        LogDebug($"CollectObservations called. trafficManager null? {trafficManager == null}");
-        LogDebug($"trafficManager.agentColliders null? {trafficManager.agentColliders == null}");
-        LogDebug($"trafficManager.agentColliders count: {trafficManager.agentColliders?.Count ?? 0}");
-        LogDebug($"Number of agent colliders: {trafficManager.agentColliders.Count}");
-        LogDebug($"Collected {sensor.ObservationSize()} observations");
-
-        if (!InitializeTrafficManager(sensor))
+        if (!InitializeTrafficManager())
             return;
 
+        // Orientation (only y rotation, normalized to [-1, 1])
+        //sensor.AddObservation(transform.rotation);     // Adds (x, y, z, w) quaternion in world space
+
         // The RayPerceptionSensorComponent3D will automatically add its observations
-        CollectPositionAndRotationObservations(sensor);
-        CollectSpeedObservations(sensor);
+        CollectOrientationObservations(sensor);
+        CollectSpeedObservations(sensor); // Observe vehicle agent speed
 
         LogDebug("TrafficAgent::CollectObservations completed successfully.");
     }
@@ -501,7 +498,7 @@ public class TrafficAgent : Agent
     /// </summary>
     /// <param name="sensor">A VectorSensor, currently unused in the method.</param>
     /// <returns>Boolean indicating successful initialization/validation of TrafficManager and agent collider.</returns>
-    private bool InitializeTrafficManager(VectorSensor sensor)
+    private bool InitializeTrafficManager()
     {
         if (trafficManager == null || !trafficManager.agentColliders.ContainsKey(gameObject.name))
         {
@@ -557,22 +554,22 @@ public class TrafficAgent : Agent
     ///
     /// </summary>
     /// <param name="sensor">The VectorSensor to which observations are added.</param>
-    private void CollectPositionAndRotationObservations(VectorSensor sensor)
+    private void CollectOrientationObservations(VectorSensor sensor)
     {
-        // Add agent's position and rotation as observations
-        sensor.AddObservation(transform.position);    // Adds (x, y, z) in world space
-        //sensor.AddObservation(transform.localPosition); // Adds (x, y, z) relative to parent
-
         // Add rotation observations (we might want to use Quaternion or Euler angles)
-        sensor.AddObservation(transform.rotation.eulerAngles.y); // Adds only the y-rotation, often represents the "yaw" or horizontal rotation.
-        // Orientation (only y rotation, normalized to [-1, 1])
-        //sensor.AddObservation(transform.rotation.eulerAngles.y / 180.0f - 1.0f);
-        //sensor.AddObservation(transform.rotation.eulerAngles); // Adds (x, y, z) Euler angles
-        //sensor.AddObservation(transform.rotation);     // Adds (x, y, z, w) quaternion in world space
-        //sensor.AddObservation(transform.localRotation); // Adds (x, y, z, w) quaternion relative to parent
+        //sensor.AddObservation(transform.rotation.y); // Adds only the y-rotation, often represents the "yaw" or horizontal rotation.
 
-        // We might want to observe the agent's forward direction
-        //sensor.AddObservation(transform.forward); // Adds (x, y, z) direction vector. This adds the forward direction of the object as a normalized vector in world space. It's particularly useful for understanding the direction the agent is facing, regardless of its position.
+        // Add the local Euler angles (rotation) as observations
+        Vector3 localAngles = Mathf.Deg2Rad * transform.localEulerAngles;  // Convert to radians
+        sensor.AddObservation(localAngles);  // Add the Vector3 as an observation
+
+        // Orientation (only y rotation, normalized to [-1, 1])
+        //sensor.AddObservation(transform.rotation);     // Adds (x, y, z, w) quaternion in world space
+
+        // Add the agent's forward, up, and right directions as observations
+        //sensor.AddObservation(transform.InverseTransformDirection(transform.forward)); // Forward vector
+        //sensor.AddObservation(transform.InverseTransformDirection(transform.up));      // Up vector
+        //sensor.AddObservation(transform.InverseTransformDirection(transform.right));   // Right vector
     }
 
     /// <summary>
@@ -617,11 +614,14 @@ public class TrafficAgent : Agent
         // Debug logs to check method calls
         LogDebug("TrafficAgent::CollectSpeedObservations started.");
 
-        // Agent's own speed and orientation
-        Rigidbody rb = GetComponent<Rigidbody>();
-        rb.isKinematic = false; // true;
-        rb.useGravity = false;
-        float speed = 0.0f;
+        // Collect agent vehicles velocity
+        sensor.AddObservation(transform.InverseTransformDirection(GetComponent<Rigidbody>().linearVelocity));
+
+        // Agent's own speed
+        //Rigidbody rb = GetComponent<Rigidbody>();
+        //rb.isKinematic = false; // true;
+        //rb.useGravity = false;
+        //float speed = 0.0f;
 
         // Calculate velocity manually
         /*
@@ -630,6 +630,7 @@ public class TrafficAgent : Agent
         Vector3 velocity = (currentPosition - previousPosition) / deltaTime;
         */
 
+        /*
         if (rb != null)
         {
             speed = rb.linearVelocity.magnitude; // Normalize speed if needed (max speed = 50)
@@ -645,11 +646,12 @@ public class TrafficAgent : Agent
             sensor.AddObservation(speed); // No Rigidbody attached or zero velocity
             Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
         }
+        */
 
         // Update previousPosition for the next frame
         //previousPosition = currentPosition;
 
-        LogDebug($"Observations: Position = {transform.position}, Velocity = {speed}");
+        //LogDebug($"Observations: Position = {transform.position}, Velocity = {speed}");
     }
 
     /// <summary>
@@ -904,21 +906,21 @@ public class TrafficAgent : Agent
 
         Vector3 rayStart = GetRayStartPosition(agentCollider);
 
-        float delta_angle = trafficManager.raySensor.MaxRayDegrees / (trafficManager.raySensor.RaysPerDirection - 1);
+        float delta_angle = trafficManager.rayPerceptionSensor.MaxRayDegrees / (trafficManager.rayPerceptionSensor.RaysPerDirection - 1);
 
-        for (int i = 0; i < trafficManager.raySensor.RaysPerDirection; i++)
+        for (int i = 0; i < trafficManager.rayPerceptionSensor.RaysPerDirection; i++)
         {
             float angle = delta_angle * i;
-            Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.raySensor.MaxRayDegrees / 2, 0) * Vector3.forward);
+            Vector3 direction = transform.TransformDirection(Quaternion.Euler(0, angle - trafficManager.rayPerceptionSensor.MaxRayDegrees / 2, 0) * Vector3.forward);
 
             // Ray hit at a certain distance
-            if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.raySensor.RayLength))
+            if (Physics.Raycast(rayStart, direction, out RaycastHit hit, trafficManager.rayPerceptionSensor.RayLength))
             {
                 Debug.DrawRay(rayStart, direction * hit.distance, rayHitColor, 0.0f);
             }
             else // Ray did not hit
             {
-                Debug.DrawRay(rayStart, direction * trafficManager.raySensor.RayLength, rayMissColor, 0.0f);
+                Debug.DrawRay(rayStart, direction * trafficManager.rayPerceptionSensor.RayLength, rayMissColor, 0.0f);
             }
         }
     }
@@ -999,6 +1001,7 @@ public class TrafficAgent : Agent
                 // Penalize the agent for colliding with another traffic participant
                 AddReward(collisionWithOtherAgentPenalty);
                 LogDebug($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
+                //EndEpisode();
                 break;
 
             case "RoadBoundary":
@@ -1055,13 +1058,13 @@ public class TrafficAgent : Agent
         LogDebug("TrafficAgent::OnCollisionStay started.");
 
         // Check if the agent is colliding with the road boundary or median boundary
-        if (collision.gameObject.layer == roadLayer)
+        if (collision.gameObject.layer == roadBoundaryLayer)
         {
             // Reward for staying on the road (road surface)
-            AddReward(onRoadReward);
+            AddReward(offRoadPenalty);
             LogDebug("Agent rewarded for staying on the road.");
         }
-        else if (collision.gameObject.layer == LayerMask.NameToLayer("MedianBoundary"))
+        else if (collision.gameObject.layer == medianBoundaryLayer)
         {
             // Penalize for staying on the median boundary
             AddReward(medianCrossingPenalty);
@@ -1099,19 +1102,13 @@ public class TrafficAgent : Agent
         LogDebug("TrafficAgent::OnCollisionExit started.");
 
         // Check if the agent has left the road
-        if (collision.gameObject.layer == roadLayer)
+        if (collision.gameObject.layer == roadBoundaryLayer)
         {
-            // Reward for exiting the boundary and returning to the road
+            // Reward for exiting the boundary (right/left boundary) and returning to the road
             AddReward(onRoadReward);
-            LogDebug("Agent left the road and returned to it. Reward added.");
+            LogDebug("Agent left the road boundary and returned to the road. Reward added.");
         }
-        else if (collision.gameObject.layer == LayerMask.NameToLayer("RoadBoundary"))
-        {
-            // Reward for exiting the road boundary (right/left boundary)
-            AddReward(onRoadReward);
-            LogDebug("Agent left the road boundary. Reward added.");
-        }
-        else if (collision.gameObject.layer == LayerMask.NameToLayer("MedianBoundary"))
+        else if (collision.gameObject.layer == medianBoundaryLayer)
         {
             // Reward for exiting the median boundary
             AddReward(onRoadReward);
