@@ -39,7 +39,7 @@ public class TrafficManager : MonoBehaviour
     [HideInInspector] public float AngleStep { get; private set; }
 
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "TrafficAgent";
-    [HideInInspector] public RayPerceptionSensorComponent3D raySensor;
+    [HideInInspector] public RayPerceptionSensorComponent3D rayPerceptionSensor;
 
     // Reward Settings
     [SerializeField] public float offRoadPenalty = -0.5f;
@@ -321,6 +321,7 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void InitializeTrafficSimulation()
     {
+        LogDebug("TrafficManager::InitializeTrafficSimulation started");
         LogDebug("Attempting to create traffic simulation.");
 
         // Assuming you have a reference to the Traffic_create and Traffic_destroy functions from the C API
@@ -350,6 +351,8 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void ClearExistingAgents()
     {
+        LogDebug("TrafficManager::ClearExistingAgents started");
+
         // Clear existing agents before initializing
         foreach (var agent in agentInstances.Values)
         {
@@ -523,6 +526,7 @@ public class TrafficManager : MonoBehaviour
     /// <param name="rotation">The new rotation for the agent</param>
     private void UpdateExistingAgent(TrafficAgent agent, Vector3 position, Quaternion rotation)
     {
+        LogDebug("TrafficManager::UpdateExistingAgent started");
         LogDebug($"Agent ID: {agent.name} already exists. Updating position and rotation.");
 
         agent.transform.position = position;
@@ -554,6 +558,8 @@ public class TrafficManager : MonoBehaviour
     /// <param name="rotation">The initial rotation for the new agent</param>
     private void CreateNewAgent(string agentId, Vector3 position, Quaternion rotation)
     {
+        LogDebug($"TrafficManager::CreateNewAgent started.");
+
         GameObject agentObject = Instantiate(agentPrefab, position, rotation);
         agentObject.name = agentId;
         agentObject.transform.SetParent(this.transform);
@@ -725,6 +731,8 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void SpawnAgent(int index)
     {
+        LogDebug("TrafficManager::SpawnAgent started.");
+
         string agentId = GetAgentId(index);
         Vector3 position = GetAgentPosition(agentId);
         Quaternion rotation = GetAgentRotation(agentId);
@@ -2370,29 +2378,40 @@ public class TrafficManager : MonoBehaviour
     {
         Debug.Log($"Adding RaySensor to agent: {agent.name}");
 
-        // If you need to adjust the sensor's position relative to the car:
-        GameObject sensorObject = new GameObject("RaySensor");
+        // If you need to adjust the sensor's position relative to the vehicle:
+        GameObject sensorObject = new GameObject("RaySensor"); // Created at run-time and hidden from Scene View Visibility
         sensorObject.transform.SetParent(agent.transform);
         sensorObject.transform.localPosition = new Vector3(0.0f, 0.0f, 0.0f); // Raycasts emit from collider box center-of-geometry
 
         // Add and configure the RayPerceptionSensorComponent3D
-        //RayPerceptionSensorComponent3D raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
-        //raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
-        raySensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
+        //RayPerceptionSensorComponent3D rayPerceptionSensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
+        rayPerceptionSensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
 
         // Configure the sensor
-        raySensor.SensorName = $"{agent.name}_RaySensor";
-        raySensor.DetectableTags = new List<string> { "RoadBoundary", "TrafficAgent"};
-        raySensor.RaysPerDirection = 15;
-        raySensor.MaxRayDegrees = 180;
-        raySensor.SphereCastRadius = 0.5f;
-        raySensor.RayLength = 100f;
-        raySensor.ObservationStacks = 1;
-        raySensor.StartVerticalOffset = 2.5f;
+        rayPerceptionSensor.SensorName = $"{agent.name}_RaySensor";
+        rayPerceptionSensor.DetectableTags = new List<string> { "RoadBoundary", "TrafficAgent"};
+        rayPerceptionSensor.RaysPerDirection = 15;
+        rayPerceptionSensor.MaxRayDegrees = 180;
+        rayPerceptionSensor.SphereCastRadius = 0.5f;
+        rayPerceptionSensor.RayLength = 100f;
+        rayPerceptionSensor.ObservationStacks = 1;
+        rayPerceptionSensor.StartVerticalOffset = 2.5f;
+        rayPerceptionSensor.UseBatchedRaycasts = true; // This ensures that all raycasts for the sensor are processed in a single physics
+
+        // Checking if the sensor was successfully added to the agent:
+        if (rayPerceptionSensor != null)
+        {
+            Debug.Log($"Ray Sensor enabled: {rayPerceptionSensor.enabled}");
+            Debug.Log($"Ray Sensor gameObject active: {rayPerceptionSensor.gameObject.activeInHierarchy}");
+        }
+        else
+        {
+            Debug.Log("No Ray Perception Sensor found on sensorObject!");
+        }
 
         Debug.Log($"Finished adding RaySensor to agent: {agent.name}");
-        Debug.Log($"RaySensor configuration: RaysPerDirection={raySensor.RaysPerDirection}, " +
-                  $"MaxRayDegrees={raySensor.MaxRayDegrees}, SphereCastRadius={raySensor.SphereCastRadius}, " +
-                  $"RayLength={raySensor.RayLength}");
+        Debug.Log($"RaySensor configuration: RaysPerDirection={rayPerceptionSensor.RaysPerDirection}, " +
+                  $"MaxRayDegrees={rayPerceptionSensor.MaxRayDegrees}, SphereCastRadius={rayPerceptionSensor.SphereCastRadius}, " +
+                  $"RayLength={rayPerceptionSensor.RayLength}");
     }
 }
