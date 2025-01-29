@@ -46,7 +46,6 @@ class UnityEnvResource:
         self.float_properties_channel = FloatPropertiesChannel(self.channel_id)
         self.field_value_channel = CustomSideChannel()
 
-
         # Extract environment configuration
         self.env_config = config.get("env_config", {})
 
@@ -57,7 +56,6 @@ class UnityEnvResource:
         self.env_parameters.set_float_parameter(
             "initialAgentCount", self.initial_agent_count
         )
-
 
         self.rewards = self.env_config.get("rewards", {})
 
