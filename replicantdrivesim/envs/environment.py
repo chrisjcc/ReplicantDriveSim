@@ -54,9 +54,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
 
         # Set the max number steps per episode
-        self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
-
-        # Set the max number steps per episode
         ray.get(
             self.unity_env_handle.set_float_property.remote(
                 "MaxSteps", self.max_episode_steps
