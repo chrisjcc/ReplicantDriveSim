@@ -25,7 +25,6 @@ env_config:
 
 ppo_config:
   framework: "torch"
-  num_cpus_per_worker: 2
   num_gpus: 0
 
 multi_agent:

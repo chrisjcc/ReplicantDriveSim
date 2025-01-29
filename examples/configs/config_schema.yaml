@@ -25,7 +25,6 @@ env_config:
 
 ppo_config:
   framework: enum('torch', 'tf', 'tf2')
-  num_cpus_per_worker: int(min=1)
   num_gpus: int(min=0)
 
 multi_agent:
