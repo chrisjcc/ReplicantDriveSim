@@ -31,6 +31,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         super().__init__()
         self.current_agent_count = config.get("env_config", {}).get("initial_agent_count", 2)
 
+        # Initialize agents list and possible_agents list
+        self.possible_agents = [f"agent_{i}" for i in range(self.current_agent_count)]
+        self.agents = self.possible_agents.copy()  # Start with all possible agents active
+
         # Keep track of how many times we have called `step` so far.
         self.episode_timesteps = 0
 
@@ -50,6 +54,9 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
 
         # Set the max number steps per episode
+        self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
+
+        # Set the max number steps per episode
         ray.get(
             self.unity_env_handle.set_float_property.remote(
                 "MaxSteps", self.max_episode_steps
@@ -63,8 +70,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         try:
             ray.get(self.unity_env_handle.reset.remote())
         except Exception as e:
-            print(f"Error resetting Unity environment: {e}")
             # Handle the error appropriately, maybe re-initialize the environment
+            print(f"Error resetting Unity environment: {e}")
 
         api_version_string = ray.get(self.unity_env_handle.get_api_version.remote())
         print(f"API Version: {api_version_string}")
@@ -81,8 +88,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         print(f"Action spec - Continuous: {self.behavior_spec.action_spec.continuous_size}, Discrete: {self.behavior_spec.action_spec.discrete_branches}")
 
         # Initialize observation and action spaces
-        self.observation_space = None
-        self.action_space = None
         self.observation_spaces = {}
         self.action_spaces = {}
         self.action_tuple = ActionTuple()
@@ -125,15 +130,11 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                     # Source: https://highway-env.farama.org/_modules/highway_env/envs/common/action/#ContinuousAction
                     low=np.array([-np.pi/4, 0.0, -5.0]),  # -45 degrees
                     high=np.array([np.pi/4, 5.0, 0.0]),   # +45 degrees
-
                     shape=(self.behavior_spec.action_spec.continuous_size,),
                     dtype=np.float32,
                 ),
             )
         )
-
-        # Add the private attribute `_agent_ids`, which is a set containing the ids of agents supported by the environment
-        self._agent_ids = {f"agent_{i}" for i in range(self.num_active_agents)}
 
         # Establish observation and action spaces
         self._update_spaces()
@@ -163,17 +164,15 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             None
         """
         # Populate observation_spaces and action_spaces for each agent
-        for i in range(self.num_active_agents):
-            agent_key = f"agent_{i}"
-            self.observation_spaces[agent_key] = self.single_agent_obs_space
-            self.action_spaces[agent_key] = self.single_agent_action_space
+        self.observation_spaces = gym.spaces.Dict({
+            agent_id: self.single_agent_obs_space
+            for agent_id in self.possible_agents
+        })
 
-        self.observation_space = {
-            f"agent_{i}": self.single_agent_obs_space for i in range(self.num_active_agents)
-        }
-        self.action_space = {
-            f"agent_{i}": self.single_agent_action_space for i in range(self.num_active_agents)
-        }
+        self.action_spaces = gym.spaces.Dict({
+            agent_id: self.single_agent_action_space
+            for agent_id in self.possible_agents
+        })
 
     def __str__(self):
         return f"<{type(self).__name__} with custom behavior spec>"
@@ -241,7 +240,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         """
         return {
             agent_id: space.sample()
-            for agent_id, space in self.observation_space.items()
+            for agent_id, space in self.observation_spaces.items()
         }
 
     def action_space_sample(self, agent_id: list = None):
@@ -262,7 +261,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         """
         return {
             agent_idx: act_sample.sample()
-            for agent_idx, act_sample in self.action_space.items()
+            for agent_idx, act_sample in self.action_spaces.items()
             if agent_id is None or agent_idx in agent_id
         }
 
@@ -336,10 +335,13 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                     )
                 )
                 print(f"Setting new agent count to: {new_agent_count}")
+                # Update agents and possible_agents lists
+                self.possible_agents = [f"agent_{i}" for i in range(new_agent_count)]
+                self.agents = self.possible_agents.copy()
 
         self.episode_timesteps = 0
 
-        # Reset the environment only once (ideally)
+        # Reset the Unity environment
         ray.get(self.unity_env_handle.reset.remote())
 
         # Get decision steps after the reset
@@ -350,24 +352,25 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             # Here you may want to handle the error by either reinitializing the environment or raising an exception
             return None, {}
 
-        # Set the number of activate agents
-        #self.num_agents = len(decision_steps.agent_id)
-
-        # Update num_agents and observation_space
+        # Update spaces if needed
         self._update_spaces()
+
+        # Reset the agents list at the start of each episode
+        self.agents = self.possible_agents.copy()
 
         obs_dict = {}
         for i, agent_id in enumerate(decision_steps.agent_id):
             obs = decision_steps[agent_id].obs[0].astype(np.float32)
             agent_key = f"agent_{i}"
-            obs_dict[agent_key] = obs
+            if agent_key in self.agents:
+                obs_dict[agent_key] = obs
 
         # Checking if the observations are within the bounds of the observation space
         for agent_id, obs in obs_dict.items():
-            if not self.observation_space[agent_id].contains(obs):
+            if not self.observation_spaces[agent_id].contains(obs):
                 print(f"Warning: Observation for {agent_key} is out of bounds:")
                 print(f"Observation: {obs}")
-                print(f"Observation space: {self.observation_space[agent_id]}")
+                print(f"Observation space: {self.observation_spaces[agent_id]}")
 
         # Returning the observations and an empty info dict
         return obs_dict, {}
@@ -403,7 +406,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
 
         if self.episode_timesteps > self.max_episode_steps:
             truncateds_dict = dict(
-                {"__all__": True}, **{agent_id: True for agent_id in self._agent_ids}
+                {"__all__": True}, **{agent_id: True for agent_id in self.agents}
             )
 
         # Check if all agents are terminated

@@ -46,7 +46,6 @@ class UnityEnvResource:
         self.float_properties_channel = FloatPropertiesChannel(self.channel_id)
         self.field_value_channel = CustomSideChannel()
 
-
         # Extract environment configuration
         self.env_config = config.get("env_config", {})
 
@@ -95,6 +94,7 @@ class UnityEnvResource:
             ),  # Whether to launch Unity without graphics
             log_folder=self.env_config.get("log_folder", "./Logs"), # Directory to write the Unity Player log file into
             seed=self.env_config.get("seed", 42),  # Environment random seed value
+            timeout_wait=self.env_config.get("timeout_wait", 300),
         )
 
     def set_configuration(self, engine_config: EngineConfig) -> None:

@@ -23,6 +23,7 @@ from ray.rllib.utils.typing import AgentID, MultiAgentDict, PolicyID
 from ray.train import RunConfig
 from ray.tune import Tuner
 from ray.tune.registry import register_env
+from ray.rllib.utils.pre_checks.env import check_multiagent_environments
 
 import replicantdrivesim
 
@@ -30,7 +31,7 @@ import replicantdrivesim
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
 
 # Set it for the current notebook environment
-version = "0"  # Default "1"
+version = "1" #"0"  # Default "1"
 os.environ["RAY_AIR_NEW_OUTPUT"] = version
 os.environ["RAY_AIR_RICH_LAYOUT"] = version
 
@@ -130,6 +131,8 @@ def main():
         # Define the configuration for the PPO algorithm
         env = replicantdrivesim.make("replicantdrivesim-v0", config=config_data)
 
+        check_multiagent_environments(env)
+
         config = PPO.get_default_config()
         config = config.environment(
             env=env_name,
@@ -159,9 +162,9 @@ def main():
         # and training will be done by the local worker. On the other hand, setting num_env_runners=5
         # will create the local worker (responsible for training updates)
         # and 5 remote workers (responsible for sample collection).
-        config = config.rollouts(
-            num_rollout_workers=config_data["rollouts"]["num_rollout_workers"],
-            num_envs_per_worker=config_data["rollouts"]["num_envs_per_worker"],
+        config = config.env_runners(
+            num_env_runners=config_data["rollouts"]["num_env_runners"],
+            num_envs_per_env_runner=config_data["rollouts"]["num_envs_per_env_runner"],
             rollout_fragment_length=config_data["rollouts"]["rollout_fragment_length"],
             batch_mode=config_data["rollouts"]["batch_mode"],
         )
@@ -169,7 +172,6 @@ def main():
         # Training configuration
         config = config.training(
             train_batch_size=config_data["training"]["train_batch_size"],
-            sgd_minibatch_size=config_data["training"]["sgd_minibatch_size"],
             num_sgd_iter=config_data["training"]["num_sgd_iter"],
             lr=config_data["training"]["lr"],
             gamma=config_data["training"]["gamma"],
@@ -188,12 +190,16 @@ def main():
             "git_commit_hash": "c15d456f12bb54180b25dfa8e0d2268694dd1a9e",
         }
 
+        # Resolve the user directory
+        user_home = os.path.expanduser("~")
+        storage_path = f"file://{user_home}/ray_results"
+
         tuner = Tuner(
             PPO,
             param_space=config,
             run_config=RunConfig(
                 name="PPO_Highway_Experiment",
-                local_dir="./ray_results",
+                storage_path=storage_path,
                 checkpoint_config=train.CheckpointConfig(
                     num_to_keep=1,
                     checkpoint_frequency=500,

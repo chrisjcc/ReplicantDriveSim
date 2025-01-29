@@ -1,10 +1,10 @@
-# config_schema.yaml
-
 mlflow:
   experiment_name: str()
 
 ray:
   num_cpus: int(min=1)
+
+env: str()  # Add this to match the `env` field in config.yaml
 
 unity_env:
   worker_id: int()
@@ -12,10 +12,12 @@ unity_env:
   no_graphics: bool()
   seed: int()
   log_folder: str()
+  timeout_wait: int(min=1)  # Added to match timeout_wait in config.yaml
 
 env_config:
   initial_agent_count: int(min=1)
   episode_horizon: int(min=1)
+  rewards: map()  # Add to match the rewards dictionary in config.yaml
 
 ppo_config:
   framework: enum('torch', 'tf', 'tf2')
@@ -34,9 +36,9 @@ multi_agent:
           continuous: list()  # Dimensions of continuous action space (if type is "Hybrid")
 
 rollouts:
-  num_rollout_workers: int(min=0)
-  num_envs_per_worker: int(min=1)
-  rollout_fragment_length: int(min=1)
+  num_env_runners: int(min=0)  # Added to match num_env_runners in config.yaml
+  num_envs_per_env_runner: int(min=1)  # Added to match num_envs_per_env_runner in config.yaml
+  rollout_fragment_length: any()  # Allow "auto" or an int value
   batch_mode: enum('truncate_episodes', 'complete_episodes')
 
 training:
@@ -57,9 +59,3 @@ environment:
 
 stop:
   training_iteration: int(min=1)
----
-policy:
-  # Define the structure of a policy if needed
-  # This is a placeholder and should be adjusted based on your actual policy structure
-  observation_space: any()
-  action_space: any()

@@ -4,16 +4,26 @@ mlflow:
 ray:
   num_cpus: 4
 
+env: CustomUnityMultiAgentEnv
+
 unity_env:
   worker_id: 0
   base_port: 5004
   no_graphics: False
   seed: 42
   log_folder: ./Logs
+  timeout_wait: 60  # timeout for establishing the connection (in seconds)
 
 env_config:
   initial_agent_count: 1
   episode_horizon: 1000
+
+  # Reward configuration
+  rewards:
+    off_road_penalty: -0.5
+    on_road_reward: 0.01
+    collision_with_other_agent_penalty: -1.0
+    median_crossing_penalty: -1.0
 
 ppo_config:
   framework: "torch"
@@ -32,15 +42,15 @@ multi_agent:
           continuous: [3]  # 3 continuous actions
 
 rollouts:
-  num_rollout_workers: 2
-  num_envs_per_worker: 1
-  rollout_fragment_length: 200
+  num_env_runners: 1
+  num_envs_per_env_runner: 1
+  rollout_fragment_length: "auto"
   batch_mode: "truncate_episodes"
 
 training:
-  train_batch_size: 4000
-  sgd_minibatch_size: 128
-  num_sgd_iter: 30
+  train_batch_size: 2000
+  sgd_minibatch_size: 64
+  num_sgd_iter: 15
   lr: 3.0e-4
   gamma: 0.99
   lambda: 0.95

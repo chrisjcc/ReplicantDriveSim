@@ -2384,7 +2384,6 @@ public class TrafficManager : MonoBehaviour
         sensorObject.transform.localPosition = new Vector3(0.0f, 0.0f, 0.0f); // Raycasts emit from collider box center-of-geometry
 
         // Add and configure the RayPerceptionSensorComponent3D
-        //RayPerceptionSensorComponent3D rayPerceptionSensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
         rayPerceptionSensor = sensorObject.AddComponent<RayPerceptionSensorComponent3D>();
 
         // Configure the sensor

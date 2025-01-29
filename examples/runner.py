@@ -7,6 +7,7 @@ import yaml
 from mlagents_envs.exception import UnityCommunicatorStoppedException
 from ray.rllib.policy.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune.registry import register_env
 
 import replicantdrivesim
