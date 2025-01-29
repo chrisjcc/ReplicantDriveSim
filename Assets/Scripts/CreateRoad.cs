@@ -30,7 +30,7 @@ using UnityEngine;
 public class CreateDualRoad : MonoBehaviour
 {
     public Texture2D roadTexture;
-    public PhysicsMaterial roadPhysicsMaterial;
+    public PhysicMaterial roadPhysicsMaterial;
 
     public float singleRoadWidth = 15f; // Width for a single road (2 lanes)
     public float roadLength = 100f;
@@ -61,7 +61,7 @@ public class CreateDualRoad : MonoBehaviour
         // Ensure roadPhysicsMaterial is not null and initialize if needed
         if (roadPhysicsMaterial == null)
         {
-            roadPhysicsMaterial = new PhysicsMaterial("RoadMaterial");
+            roadPhysicsMaterial = new PhysicMaterial("RoadMaterial");
             roadPhysicsMaterial.dynamicFriction = 1f;
             roadPhysicsMaterial.staticFriction = 0f;
         }

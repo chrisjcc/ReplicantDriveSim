@@ -50,7 +50,7 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             capture_frame_rate=60  # The capture frame rate (default: 60)
         )))
 
-        # Reset entire env every this number of step calls.
+        # Set the max number steps per episode
         self.max_episode_steps = config.get("env_config", {}).get("episode_horizon", 1000)
 
         # Set the max number steps per episode
@@ -320,6 +320,8 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                 - Any: The initial observation of the environment after resetting.
                 - Tuple[Any, Dict]: A tuple containing the initial observation and an optional info dictionary.
         """
+        self.episode_timesteps = 0
+
         # Handle seed if provided
         if seed is not None:
             np.random.seed(seed)
@@ -339,8 +341,6 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
                 self.possible_agents = [f"agent_{i}" for i in range(new_agent_count)]
                 self.agents = self.possible_agents.copy()
 
-        self.episode_timesteps = 0
-
         # Reset the Unity environment
         ray.get(self.unity_env_handle.reset.remote())
 
@@ -352,7 +352,10 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
             # Here you may want to handle the error by either reinitializing the environment or raising an exception
             return None, {}
 
-        # Update spaces if needed
+        # Set the number of activate agents
+        #self.num_agents = len(decision_steps.agent_id)
+
+        # Update spaces ( num_agents and observation) if needed
         self._update_spaces()
 
         # Reset the agents list at the start of each episode

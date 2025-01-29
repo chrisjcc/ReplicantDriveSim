@@ -1,8 +1,9 @@
 mlflow:
   experiment_name: str()
 
-ray:
+ray_init:
   num_cpus: int(min=1)
+  num_gpus: int(min=0)
 
 env: str()  # Add this to match the `env` field in config.yaml
 
@@ -17,7 +18,12 @@ unity_env:
 env_config:
   initial_agent_count: int(min=1)
   episode_horizon: int(min=1)
-  rewards: map()  # Add to match the rewards dictionary in config.yaml
+
+  rewards:
+    off_road_penalty: num()
+    on_road_reward: num()
+    collision_with_other_agent_penalty: num()
+    median_crossing_penalty: num()
 
 ppo_config:
   framework: enum('torch', 'tf', 'tf2')
@@ -30,21 +36,25 @@ multi_agent:
         type: str()  # e.g., "Box", "Discrete"
         shape: list()  # Dimensions of observation space
       action_space:
-        type: str()  # e.g., "Box", "Discrete", "Hybrid"
+        type: str()  # e.g., "Box", "Discrete", "Tuple"
         shape:
-          discrete: list()  # Dimensions of discrete action space (if type is "Hybrid")
-          continuous: list()  # Dimensions of continuous action space (if type is "Hybrid")
+          discrete: list()  # Dimensions of discrete action space (if type is "Tuple")
+          continuous: list()  # Dimensions of continuous action space (if type is "Tuple")
 
-rollouts:
-  num_env_runners: int(min=0)  # Added to match num_env_runners in config.yaml
-  num_envs_per_env_runner: int(min=1)  # Added to match num_envs_per_env_runner in config.yaml
-  rollout_fragment_length: any()  # Allow "auto" or an int value
+env_runners:
+  num_env_runners: int(min=1)
+  num_envs_per_env_runner: int(min=1)
+  num_cpus_per_env_runner: int(min=1)
+  num_gpus_per_env_runner: int(min=0)
+  rollout_fragment_length: str()
   batch_mode: enum('truncate_episodes', 'complete_episodes')
 
 training:
+  num_workers: int(min=1)
+  num_gpus: int(min=0)
   train_batch_size: int(min=1)
   sgd_minibatch_size: int(min=1)
-  num_sgd_iter: int(min=1)
+  num_epochs: int(min=1)
   lr: num(min=0)
   gamma: num(min=0, max=1)
   lambda: num(min=0, max=1)

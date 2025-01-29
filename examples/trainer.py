@@ -5,6 +5,16 @@ import os
 import gymnasium as gym
 import mlflow
 import numpy as np
+
+# Suppress DeprecationWarnings from output
+os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
+os.environ["RAY_DEDUP_LOGS"] = "0"
+# Set it for the current notebook environment
+version = "0" # "2"  # Default "1"
+os.environ["RAY_AIR_NEW_OUTPUT"] = version
+os.environ["RAY_AIR_RICH_LAYOUT"] = version
+
+
 import ray
 import yamale
 import yaml
@@ -27,23 +37,17 @@ from ray.rllib.utils.pre_checks.env import check_multiagent_environments
 
 import replicantdrivesim
 
-# Suppress DeprecationWarnings from output
-os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
-
-# Set it for the current notebook environment
-version = "1" #"0"  # Default "1"
-os.environ["RAY_AIR_NEW_OUTPUT"] = version
-os.environ["RAY_AIR_RICH_LAYOUT"] = version
-
 # Set all loggers to CRITICAL or disable them to effectively silence logging output
+logging_level = logging.DEBUG
+
 gym_logger = logging.getLogger("gymnasium")
-gym_logger.setLevel(logging.CRITICAL)
+gym_logger.setLevel(logging_level)
 
 ray_logger = logging.getLogger("ray")
-ray_logger.setLevel(logging.CRITICAL)
+ray_logger.setLevel(logging_level)
 
 ray_rllib_logger = logging.getLogger("ray.rllib")
-ray_rllib_logger.setLevel(logging.CRITICAL)
+ray_rllib_logger.setLevel(logging_level)
 
 
 def validate_yaml_schema(data_path, schema_path):
@@ -109,7 +113,8 @@ def main():
         # Initialize Ray
         ray.init(
             ignore_reinit_error=True,
-            num_cpus=config_data["ray"]["num_cpus"],
+            num_cpus=config_data["ray_init"]["num_cpus"],
+            num_gpus=config_data["ray_init"]["num_gpus"],
             runtime_env={
                 "env_vars": {
                     "RAY_AIR_NEW_OUTPUT": version,
@@ -130,10 +135,15 @@ def main():
 
         # Define the configuration for the PPO algorithm
         env = replicantdrivesim.make("replicantdrivesim-v0", config=config_data)
-
-        check_multiagent_environments(env)
+        # check_multiagent_environments(env)
 
         config = PPO.get_default_config()
+
+        # Update the configuration
+        # This configuration modifies the global settings for the entire training process
+        config["num_workers"] = 2  # Number of worker processes for training
+        config["num_gpus"] = 0     # No GPU
+
         config = config.environment(
             env=env_name,
             env_config=config_data,
@@ -142,7 +152,9 @@ def main():
             ],  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
         )
         config = config.framework(config_data["ppo_config"]["framework"])
-        config = config.resources(num_gpus=config_data["ppo_config"]["num_gpus"])
+        config = config.resources(
+            num_gpus=config_data["ppo_config"]["num_gpus"]  # No GPU
+        )
 
         # Multi-agent configuration
         config = config.multi_agent(
@@ -163,16 +175,18 @@ def main():
         # will create the local worker (responsible for training updates)
         # and 5 remote workers (responsible for sample collection).
         config = config.env_runners(
-            num_env_runners=config_data["rollouts"]["num_env_runners"],
-            num_envs_per_env_runner=config_data["rollouts"]["num_envs_per_env_runner"],
-            rollout_fragment_length=config_data["rollouts"]["rollout_fragment_length"],
-            batch_mode=config_data["rollouts"]["batch_mode"],
+            num_env_runners=config_data["env_runners"]["num_env_runners"],
+            num_envs_per_env_runner=config_data["env_runners"]["num_envs_per_env_runner"],
+            num_cpus_per_env_runner=config_data["env_runners"]["num_cpus_per_env_runner"],
+            num_gpus_per_env_runner=config_data["env_runners"]["num_gpus_per_env_runner"],
+            rollout_fragment_length=config_data["env_runners"]["rollout_fragment_length"],
+            batch_mode=config_data["env_runners"]["batch_mode"],
         )
 
         # Training configuration
         config = config.training(
             train_batch_size=config_data["training"]["train_batch_size"],
-            num_sgd_iter=config_data["training"]["num_sgd_iter"],
+            num_epochs=config_data["training"]["num_epochs"],
             lr=config_data["training"]["lr"],
             gamma=config_data["training"]["gamma"],
             lambda_=config_data["training"]["lambda"],
@@ -182,8 +196,14 @@ def main():
             kl_coeff=config_data["training"]["kl_coeff"],
             vf_loss_coeff=config_data["training"]["vf_loss_coeff"],
         )
+
+        # config = config.evaluation(evaluation_num_env_runners=1)
         config = config.checkpointing(export_native_model_files=True)
         config = config.debugging(log_level="ERROR")
+        config = config.api_stack(
+            enable_rl_module_and_learner=False,
+            enable_env_runner_and_connector_v2=False
+        ) # To not run PPO on the new API stack
 
         tags = {
             "user_name": "chrisjcc",
@@ -219,12 +239,13 @@ def main():
                 },  # Stop after 100 iterations, each iteration can consist of multiple episodes, depending on how the rollout and batch sizes are configured.
                 verbose=0,  # Suppresses most output
             ),
-            tune_config=tune.TuneConfig(
-                num_samples=1,
-                max_concurrent_trials=1,
-                metric="episode_reward_mean",
-                mode="max",
-            ),
+            # No need for tune.TuneConfig since we're not tuning hyperparameters
+            #tune_config=tune.TuneConfig(
+            #    num_samples=1,
+            #    max_concurrent_trials=1,
+            #    metric="episode_reward_mean",
+            #    mode="max",
+            #),
         )
 
         results = tuner.fit()
