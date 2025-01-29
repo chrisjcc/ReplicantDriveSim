@@ -1,22 +1,31 @@
 mlflow:
   experiment_name: "MARLExperiment"
 
-ray:
-  num_cpus: 4
+ray_init:
+  num_cpus: 4  # Total available CPUs across the entire setup
+  num_gpus: 0
 
 unity_env:
   worker_id: 0
   base_port: 5004
   no_graphics: False
   seed: 42
-  log_folder: ./Logs
+  log_folder: /Users/christiancontrerascampana/Desktop/project/unity5_traffic_sim/ReplicantDriveSim/Logs
 
 env_config:
   initial_agent_count: 1
   episode_horizon: 1000
 
+  # Reward configuration
+  rewards:
+    off_road_penalty: -0.5
+    on_road_reward: 0.01
+    collision_with_other_agent_penalty: -1.0
+    median_crossing_penalty: -1.0
+
 ppo_config:
   framework: "torch"
+  num_cpus_per_worker: 2
   num_gpus: 0
 
 multi_agent:
@@ -31,16 +40,20 @@ multi_agent:
           discrete: [5]  # 5 discrete actions
           continuous: [3]  # 3 continuous actions
 
-rollouts:
-  num_rollout_workers: 2
-  num_envs_per_worker: 1
-  rollout_fragment_length: 200
+env_runners:
+  num_env_runners: 1                # Use one environment runner
+  num_envs_per_env_runner: 1        # One environment per runner (as you're running a single environment)
+  num_cpus_per_env_runner: 1        # Assign one CPU per environment runner (you have only 4 CPUs available)
+  num_gpus_per_env_runner: 0        # No GPUs per environment runner
+  rollout_fragment_length: "auto"
   batch_mode: "truncate_episodes"
 
 training:
-  train_batch_size: 4000
-  sgd_minibatch_size: 128
-  num_sgd_iter: 30
+  num_workers: 2                    # Allocate 2 worker processes for training (this is feasible with 4 CPUs)
+  num_gpus: 0                       # No GPUs for training
+  train_batch_size: 1024
+  sgd_minibatch_size: 64
+  num_epochs: 1
   lr: 3.0e-4
   gamma: 0.99
   lambda: 0.95
@@ -51,7 +64,7 @@ training:
   vf_loss_coeff: 1.0
 
 environment:
-  disable_env_checking: true
+  disable_env_checking: false
 
 stop:
   training_iteration: 10000
