@@ -615,7 +615,7 @@ public class TrafficAgent : Agent
         LogDebug("TrafficAgent::CollectSpeedObservations started.");
 
         // Collect agent vehicles velocity
-        sensor.AddObservation(transform.InverseTransformDirection(GetComponent<Rigidbody>().linearVelocity));
+        sensor.AddObservation(transform.InverseTransformDirection(GetComponent<Rigidbody>().velocity));
 
         // Agent's own speed
         //Rigidbody rb = GetComponent<Rigidbody>();
