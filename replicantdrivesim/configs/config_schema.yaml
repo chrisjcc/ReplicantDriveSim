@@ -5,7 +5,7 @@ ray_init:
   num_cpus: int(min=1)
   num_gpus: int(min=0)
 
-env: str()  # Add this to match the `env` field in config.yaml
+env: str()
 
 unity_env:
   worker_id: int()
@@ -13,7 +13,7 @@ unity_env:
   no_graphics: bool()
   seed: int()
   log_folder: str()
-  timeout_wait: int(min=1)  # Added to match timeout_wait in config.yaml
+  timeout_wait: int(min=1)
 
 env_config:
   initial_agent_count: int(min=1)
