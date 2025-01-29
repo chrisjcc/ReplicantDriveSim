@@ -5,6 +5,16 @@ import os
 import gymnasium as gym
 import mlflow
 import numpy as np
+
+# Suppress DeprecationWarnings from output
+os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
+os.environ["RAY_DEDUP_LOGS"] = "0"
+# Set it for the current notebook environment
+version = "0" # "2"  # Default "1"
+os.environ["RAY_AIR_NEW_OUTPUT"] = version
+os.environ["RAY_AIR_RICH_LAYOUT"] = version
+
+
 import ray
 import yamale
 import yaml
@@ -26,23 +36,17 @@ from ray.tune.registry import register_env
 
 import replicantdrivesim
 
-# Suppress DeprecationWarnings from output
-os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
-
-# Set it for the current notebook environment
-version = "0"  # Default "1"
-os.environ["RAY_AIR_NEW_OUTPUT"] = version
-os.environ["RAY_AIR_RICH_LAYOUT"] = version
-
 # Set all loggers to CRITICAL or disable them to effectively silence logging output
+logging_level = logging.DEBUG
+
 gym_logger = logging.getLogger("gymnasium")
-gym_logger.setLevel(logging.CRITICAL)
+gym_logger.setLevel(logging_level)
 
 ray_logger = logging.getLogger("ray")
-ray_logger.setLevel(logging.CRITICAL)
+ray_logger.setLevel(logging_level)
 
 ray_rllib_logger = logging.getLogger("ray.rllib")
-ray_rllib_logger.setLevel(logging.CRITICAL)
+ray_rllib_logger.setLevel(logging_level)
 
 
 def validate_yaml_schema(data_path, schema_path):
@@ -148,7 +152,6 @@ def main():
         )
         config = config.framework(config_data["ppo_config"]["framework"])
         config = config.resources(
-            num_cpus_per_worker=config_data["ppo_config"]["num_cpus_per_worker"],
             num_gpus=config_data["ppo_config"]["num_gpus"]  # No GPU
         )
 
@@ -196,6 +199,10 @@ def main():
         # config = config.evaluation(evaluation_num_env_runners=1)
         config = config.checkpointing(export_native_model_files=True)
         config = config.debugging(log_level="ERROR")
+        config = config.api_stack(
+            enable_rl_module_and_learner=False,
+            enable_env_runner_and_connector_v2=False
+        ) # To not run PPO on the new API stack
 
         tags = {
             "user_name": "chrisjcc",
