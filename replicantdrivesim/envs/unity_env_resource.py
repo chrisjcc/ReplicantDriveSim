@@ -46,8 +46,9 @@ class UnityEnvResource:
         self.float_properties_channel = FloatPropertiesChannel(self.channel_id)
         self.field_value_channel = CustomSideChannel()
 
-        # Extract environment configuration
+        # Extract Unity and Gym-based environment configuration
         self.env_config = config.get("env_config", {})
+        self.unity_env_config = config.get("unity_env", {})
 
         # Set the number of desired active agents
         self.initial_agent_count = self.env_config.get("initial_agent_count", 2)
@@ -57,6 +58,7 @@ class UnityEnvResource:
             "initialAgentCount", self.initial_agent_count
         )
 
+        # Prepare reward signal configuration
         self.rewards = self.env_config.get("rewards", {})
 
         # Parse and send reward configurations
@@ -76,10 +78,10 @@ class UnityEnvResource:
             file_name=config[
                 "file_name"
             ],  # Path to the Unity environment binary executable
-            worker_id=self.env_config.get(
+            worker_id=self.unity_env_config.get(
                 "worker_id", 0
             ),  # Worker ID for parallel environments
-            base_port=self.env_config.get(
+            base_port=self.unity_env_config.get(
                 "base_port", 5004
             ),  # Base port for communication with Unity
             side_channels=[
@@ -88,11 +90,11 @@ class UnityEnvResource:
                 self.float_properties_channel,
                 self.field_value_channel,
             ],
-            no_graphics=self.env_config.get(
+            no_graphics=self.unity_env_config.get(
                 "no_graphics", False
             ),  # Whether to launch Unity without graphics
-            log_folder=self.env_config.get("log_folder", "./Logs"), # Directory to write the Unity Player log file into
-            seed=self.env_config.get("seed", 42),  # Environment random seed value
+            log_folder=self.unity_env_config.get("log_folder", "./Logs"), # Directory to write the Unity Player log file into
+            seed=self.unity_env_config.get("seed", 42),  # Environment random seed value
         )
 
     def set_configuration(self, engine_config: EngineConfig) -> None:
