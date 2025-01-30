@@ -304,19 +304,15 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         """
         Resets the environment to an initial state and returns the initial observation.
 
-        This method is used to reset the environment at the beginning of an episode.
-        If a seed is provided, it ensures the environment's behavior is deterministic
-        by starting from a reproducible state. Additional options can be passed to
-        modify the reset behavior.
-
         Args:
-            seed (Optional[int]): An optional integer to seed the environment's random number generator.
-            options (Optional[dict]): An optional dictionary with parameters to customize the reset behavior.
+            seed (Optional[int]): Optional integer to seed the environment's RNG.
+            options (Optional[dict]): Optional parameters to customize reset behavior.
 
         Returns:
-            Union[Any, Tuple[Any, dict]]:
-                - Any: The initial observation of the environment after resetting.
-                - Tuple[Any, Dict]: A tuple containing the initial observation and an optional info dictionary.
+            Union[Any, Tuple[Any, dict]]: Initial observation and info dictionary.
+
+        Raises:
+            EnvironmentError: If the Unity environment fails to reset properly.
         """
         self.episode_timesteps = 0
 
@@ -324,57 +320,89 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         if seed is not None:
             np.random.seed(seed)
 
-        # Check if options contain a new agent count
-        if options and "new_agent_count" in options:
-            new_agent_count = options["new_agent_count"]
+        # Update agent count if specified in options
+        if self._should_update_agent_count(options):
+            self._update_agent_count(options["new_agent_count"])
 
-            if new_agent_count != self.current_agent_count:
-                ray.get(
-                    self.unity_env_handle.set_float_property.remote(
-                        "initialAgentCount", new_agent_count
-                    )
-                )
-                print(f"Setting new agent count to: {new_agent_count}")
-                # Update agents and possible_agents lists
-                self.possible_agents = [f"agent_{i}" for i in range(new_agent_count)]
-                self.agents = self.possible_agents.copy()
+        # Reset Unity environment and get initial state
+        try:
+            ray.get(self.unity_env_handle.reset.remote())
+            decision_steps, terminal_steps = ray.get(
+                self.unity_env_handle.get_steps.remote(self._behavior_name)
+            )
+        except Exception as e:
+            raise EnvironmentError(f"Failed to reset Unity environment: {e}")
 
-        # Reset the Unity environment
-        ray.get(self.unity_env_handle.reset.remote())
+        # Validate environment state
+        if not self._is_valid_environment_state(decision_steps):
+            return self._create_default_observations(), {}
 
-        # Get decision steps after the reset
-        decision_steps, terminal_steps = ray.get(self.unity_env_handle.get_steps.remote(self._behavior_name))
-
-        if decision_steps is None:
-            print("Warning: No decision steps returned, the environment might not been closed.")
-            # Here you may want to handle the error by either reinitializing the environment or raising an exception
-            return None, {}
-
-        # Set the number of activate agents
-        #self.num_agents = len(decision_steps.agent_id)
-
-        # Update spaces ( num_agents and observation) if needed
+        # Update spaces and reset agent list
         self._update_spaces()
-
-        # Reset the agents list at the start of each episode
         self.agents = self.possible_agents.copy()
 
+        # Create and validate observations
+        obs_dict = self._create_observations(decision_steps)
+        if not obs_dict:
+            return self._create_default_observations(), {}
+
+        self._validate_observations(obs_dict)
+
+        return obs_dict, {}
+
+    def _should_update_agent_count(self, options: Optional[dict]) -> bool:
+        """Determines if agent count should be updated based on options."""
+        if not options or "new_agent_count" not in options:
+            return False
+        return options["new_agent_count"] != self.current_agent_count
+
+    def _update_agent_count(self, new_agent_count: int) -> None:
+        """Updates the environment's agent count and related properties."""
+        ray.get(
+            self.unity_env_handle.set_float_property.remote(
+                "initialAgentCount", new_agent_count
+            )
+        )
+        print(f"Setting new agent count to: {new_agent_count}")
+        self.possible_agents = [f"agent_{i}" for i in range(new_agent_count)]
+        self.agents = self.possible_agents.copy()
+
+    def _is_valid_environment_state(self, decision_steps) -> bool:
+        """Validates the environment state after reset."""
+        if decision_steps is None:
+            print("Warning: No decision steps returned, the environment might not be initialized.")
+            return False
+
+        if not any(agent_id in decision_steps for agent_id in self.possible_agents):
+            print("Warning: No active agents found after reset.")
+            return False
+
+        return True
+
+    def _create_observations(self, decision_steps) -> Dict[str, np.ndarray]:
+        """Creates observation dictionary from decision steps."""
         obs_dict = {}
         for i, agent_id in enumerate(decision_steps.agent_id):
             obs = decision_steps[agent_id].obs[0].astype(np.float32)
             agent_key = f"agent_{i}"
             if agent_key in self.agents:
                 obs_dict[agent_key] = obs
+        return obs_dict
 
-        # Checking if the observations are within the bounds of the observation space
+    def _validate_observations(self, obs_dict: Dict[str, np.ndarray]) -> None:
+        """Validates observations against their defined spaces."""
         for agent_id, obs in obs_dict.items():
             if not self.observation_spaces[agent_id].contains(obs):
-                print(f"Warning: Observation for {agent_key} is out of bounds:")
+                print(f"Warning: Observation for {agent_id} is out of bounds:")
                 print(f"Observation: {obs}")
                 print(f"Observation space: {self.observation_spaces[agent_id]}")
 
-        # Returning the observations and an empty info dict
-        return obs_dict, {}
+    def _create_default_observations(self) -> Dict[str, np.ndarray]:
+        """Creates default zero-filled observations for all agents."""
+        return {
+            agent_id: np.zeros(self.observation_spaces[agent_id].shape, dtype=np.float32)
+            for agent_id in self.possible_agents
+        }
 
     def step(
         self, action_dict: MultiAgentDict

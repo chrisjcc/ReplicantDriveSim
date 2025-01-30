@@ -40,6 +40,7 @@ public class TrafficManager : MonoBehaviour
 
     [HideInInspector] public string TrafficAgentLayerName { get; set; } = "TrafficAgent";
     [HideInInspector] public RayPerceptionSensorComponent3D rayPerceptionSensor;
+    [SerializeField] public bool includeRayCastObservation = true; // Flag to enable/disable raycast observations
 
     // Reward Settings
     [SerializeField] public float offRoadPenalty = -0.5f;
