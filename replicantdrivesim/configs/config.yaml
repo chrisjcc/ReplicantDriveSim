@@ -32,7 +32,7 @@ multi_agent:
     shared_policy:
       observation_space:
         type: "Box"  # Continuous observation space
-        shape: [5]  # 5 continuous values in the observation space
+        shape: [6]  # 5 continuous values in the observation space
       action_space:
         type: "Tuple"  # Custom type to indicate a combination of discrete and continuous spaces
         shape:
@@ -48,22 +48,25 @@ env_runners:
   batch_mode: "truncate_episodes"
 
 training:
-  num_workers: 2                    # Allocate 2 worker processes for training (this is feasible with 4 CPUs)
+  num_workers: 3                    # Allocate 2 worker processes for training (this is feasible with 4 CPUs)
   num_gpus: 0                       # No GPUs for training
-  train_batch_size: 1024
-  sgd_minibatch_size: 64
-  num_epochs: 1
+  train_batch_size: 4096
+  sgd_minibatch_size: 256           # Consider values in the range of 128–256
+  num_epochs: 5                     # Training for only one epoch is too low for PPO, increasing it convergence
   lr: 3.0e-4
   gamma: 0.99
   lambda: 0.95
   clip_param: 0.2
-  vf_clip_param: 10.0
+  vf_clip_param: 1.0                # Lowering it to 1.0 or 2.0 provides better value function stability
   entropy_coeff: 0.01
-  kl_coeff: 0.5
-  vf_loss_coeff: 1.0
+  kl_coeff: 0.2                     # PPO relies on KL divergence to control policy updates, a 0.5 coefficient may be too aggressive, 0.2 is a more standard starting point
+  vf_loss_coeff: 0.25               # If the value function dominates training loss, reducing this coefficient helps balance policy and value learning, consider 0.5 or even 0.25
+  checkpoint_at_end: true
+  checkpoint_freq: 1
+  num_to_keep: 3
 
 environment:
   disable_env_checking: false
 
 stop:
-  training_iteration: 10000
+  training_iteration: 5
