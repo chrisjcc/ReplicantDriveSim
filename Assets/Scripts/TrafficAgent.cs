@@ -448,6 +448,43 @@ public class TrafficAgent : Agent
         if (!InitializeTrafficManager())
             return;
 
+        if (trafficManager.includeRayCastObservation)
+        {
+            // Get Ray Perception Sensor observations manually
+            RayPerceptionSensorComponent3D raySensor = GetComponentInChildren<RayPerceptionSensorComponent3D>();
+
+            if (raySensor != null)
+            {
+                // Get RayPerceptionInput (contains raycasting information)
+                RayPerceptionInput raySpec = raySensor.GetRayPerceptionInput();
+
+                if (raySpec.RayLength == 0) // Ensure rayInput is valid
+                {
+                    Debug.LogWarning("RayPerceptionInput is not properly initialized.");
+                    return;
+                }
+
+                // Must provide the parameters ray perception input and batched boolean
+                RayPerceptionOutput rayOutput = RayPerceptionSensor.Perceive(raySpec, true);
+
+                // Debug raycast outputs
+                LogDebug($"Maximum distance each ray can travel: {raySpec.RayLength}");
+                LogDebug($"Total number of rays casted: {rayOutput.RayOutputs.Length}");
+
+                foreach (var ray in rayOutput.RayOutputs)
+                {
+                    LogDebug($"Hit: {ray.HasHit}, Hit Fraction: {ray.HitFraction}, Hit Tag Index: {ray.HitTagIndex}");
+                }
+
+                // Add raycast results as observations
+                foreach (var ray in rayOutput.RayOutputs)
+                {
+                    sensor.AddObservation(ray.HasHit ? 1.0f : 0.0f); // 1 if hit, 0 if no hit
+                    sensor.AddObservation(ray.HitFraction); // Distance to hit object, normalized to [0,1]
+                }
+            }
+        }
+
         // Orientation (only y rotation, normalized to [-1, 1])
         //sensor.AddObservation(transform.rotation);     // Adds (x, y, z, w) quaternion in world space
 

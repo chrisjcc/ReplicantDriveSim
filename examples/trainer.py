@@ -220,9 +220,9 @@ def main():
                 name="PPO_Highway_Experiment",
                 storage_path=storage_path,
                 checkpoint_config=train.CheckpointConfig(
-                    num_to_keep=1,
-                    checkpoint_frequency=500,
-                    checkpoint_at_end=True,
+                    num_to_keep=config_data["training"]["num_to_keep"], # If num_to_keep is too low, snapshots are triggered too often
+                    checkpoint_frequency=config_data["training"]["checkpoint_freq"],
+                    checkpoint_at_end=config_data["training"]["checkpoint_at_end"],
                 ),
                 callbacks=[
                     MLflowLoggerCallback(
@@ -236,7 +236,7 @@ def main():
                 stop={
                     "training_iteration": config_data["stop"]["training_iteration"]
                 },  # Stop after 100 iterations, each iteration can consist of multiple episodes, depending on how the rollout and batch sizes are configured.
-                verbose=0,  # Suppresses most output
+                verbose=1,  # Suppresses most output
             ),
             # No need for tune.TuneConfig since we're not tuning hyperparameters
             #tune_config=tune.TuneConfig(

@@ -8,10 +8,10 @@ ray_init:
   num_gpus: int(min=0)
 
 unity_env:
-  worker_id: int()
+  worker_id: int(min=0)
   base_port: int(min=1024, max=65535)
   no_graphics: bool()
-  seed: int()
+  seed: int(min=0)
   log_folder: str()
 
 env_config:
@@ -31,20 +31,20 @@ multi_agent:
   policies:
     shared_policy:
       observation_space:
-        type: str()  # e.g., "Box", "Discrete"
-        shape: list()  # Dimensions of observation space
+        type: enum('Box', 'Discrete')  # Restricting to common RL spaces
+        shape: list(int(min=1), len=1)  # Ensuring a single-dimension shape list
       action_space:
-        type: str()  # e.g., "Box", "Discrete", "Tuple"
+        type: enum('Box', 'Discrete', 'Tuple')
         shape:
-          discrete: list()  # Dimensions of discrete action space (if type is "Tuple")
-          continuous: list()  # Dimensions of continuous action space (if type is "Tuple")
+          discrete: list(int(min=1), len=1)  # Expecting a list with at least one discrete action
+          continuous: list(int(min=1), len=1)  # Expecting a list with at least one continuous action
 
 env_runners:
   num_env_runners: int(min=1)
   num_envs_per_env_runner: int(min=1)
   num_cpus_per_env_runner: int(min=1)
   num_gpus_per_env_runner: int(min=0)
-  rollout_fragment_length: str()
+  rollout_fragment_length: str()  # Auto or numerical values parsed externally
   batch_mode: enum('truncate_episodes', 'complete_episodes')
 
 training:
@@ -61,6 +61,9 @@ training:
   entropy_coeff: num(min=0)
   kl_coeff: num(min=0)
   vf_loss_coeff: num(min=0)
+  checkpoint_at_end: bool()
+  checkpoint_freq: int(min=1)
+  num_to_keep: int(min=1)
 
 environment:
   disable_env_checking: bool()
