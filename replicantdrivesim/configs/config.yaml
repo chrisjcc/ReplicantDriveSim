@@ -32,7 +32,7 @@ multi_agent:
     shared_policy:
       observation_space:
         type: "Box"  # Continuous observation space
-        shape: [6]  # 5 continuous values in the observation space
+        shape: [68]  # 68 continuous values in the observation space
       action_space:
         type: "Tuple"  # Custom type to indicate a combination of discrete and continuous spaces
         shape:
