@@ -79,7 +79,7 @@ For building a standalone version of the traffic simulation library, follow thes
 ```shell
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 ..
 cmake --build . --config Release
 cd ..
 ```
