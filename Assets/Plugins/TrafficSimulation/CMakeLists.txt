@@ -21,6 +21,13 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 message(STATUS "CMAKE_SOURCE_DIR is: ${CMAKE_SOURCE_DIR}")
 
+# -------- LIBOPENDRIVE CONFIGURATION --------
+# Ensure libOpenDRIVE is built as a shared library
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build libOpenDRIVE as a shared library")
+
+# Add libOpenDRIVE as a subdirectory
+add_subdirectory(${CMAKE_SOURCE_DIR}/../libOpenDRIVE libOpenDRIVE)
+
 # -------- UNITY TARGET CONFIGURATION --------
 
 # Define source and header files for Unity
@@ -76,8 +83,15 @@ if(APPLE)
     )
 endif()
 
-# Add include directories for Unity
-target_include_directories(${UNITY_TARGET} PUBLIC ${CMAKE_SOURCE_DIR}/include)
+# Add include directories for Unity, including libOpenDRIVE and pugixml
+target_include_directories(${UNITY_TARGET} PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/../libOpenDRIVE/include
+    ${pugixml_SOURCE_DIR}/src  # Include pugixml headers
+)
+
+# Link libOpenDRIVE to Unity target
+target_link_libraries(${UNITY_TARGET} PUBLIC OpenDRIVE)
 
 # -------- PYPI TARGET CONFIGURATION --------
 
