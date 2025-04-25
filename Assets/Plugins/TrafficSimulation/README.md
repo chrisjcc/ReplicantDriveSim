@@ -6,6 +6,8 @@ permalink: Plugins/TrafficSimulation/
 
 # Build and Install the Traffic Simulation Library
 
+This directory contains the `libReplicantDriveSim` plugin for Unity, integrating `libOpenDRIVE` for OpenDRIVE map support.
+
 <img src="https://raw.githubusercontent.com/chrisjcc/ReplicantDriveSim/main/External/images/NISSAN-GTR_ReplicantDriveSim_Raycasting.png" alt="Nissan GTR" width="800" height="600"/>
 
 ## Table of Contents
@@ -21,6 +23,10 @@ permalink: Plugins/TrafficSimulation/
 - [Versioning with Git Tags](#steps-to-create-a-git-tag-and-push-it-to-a-remote-repository)
 
 # Prerequisites
+- CMake 3.13 or higher
+- Unity (version X.X.X)
+- macOS (for building .dylib files)
+- Git (for submodule management)
 
 ## Verifying Git LFS Installation
 
@@ -73,8 +79,8 @@ For building a standalone version of the traffic simulation library, follow thes
 ```shell
 mkdir build
 cd build
-cmake ..
-make
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --config Release
 cd ..
 ```
 

@@ -28,6 +28,7 @@ set(BUILD_SHARED_LIBS ON CACHE BOOL "Build libOpenDRIVE as a shared library")
 # Add libOpenDRIVE as a subdirectory
 add_subdirectory(${CMAKE_SOURCE_DIR}/../libOpenDRIVE libOpenDRIVE)
 
+
 # -------- UNITY TARGET CONFIGURATION --------
 
 # Define source and header files for Unity
@@ -57,7 +58,7 @@ add_library(${UNITY_TARGET} SHARED ${UNITY_SOURCES})
 
 # Set properties for Unity library
 set_target_properties(${UNITY_TARGET} PROPERTIES
-    PREFIX ""  # To avoid prepending "lib" to target libary e.g. libReplicantDriveSim.dylib
+    PREFIX ""  # Avoid prepending "lib" to target library e.g. libReplicantDriveSim.dylib
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON
@@ -75,11 +76,18 @@ else()
     set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 endif()
 
-# MacOS-specific settings for Unity
+# MacOS-specific settings for Unity and libOpenDRIVE
 if(APPLE)
     set_target_properties(${UNITY_TARGET} PROPERTIES
         MACOSX_RPATH ON
         INSTALL_NAME_DIR "@rpath"
+        SUFFIX ".dylib"
+    )
+    set_target_properties(OpenDrive PROPERTIES
+        MACOSX_RPATH ON
+        INSTALL_NAME_DIR "@rpath"
+        SUFFIX ".dylib"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"  # Move libOpenDrive.dylib to build/
     )
 endif()
 
