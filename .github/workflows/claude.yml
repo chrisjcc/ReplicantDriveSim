@@ -1,52 +1,59 @@
-name: Claude Code Automation
+name: Claude Code
 
 on:
   issue_comment:
-    types: [created, edited]
-  pull_request:
-    types: [opened, synchronize, reopened]
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
-  claude-automation:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, '@claude') || github.event_name == 'pull_request'
-
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
     steps:
-      # Checkout the repository to access the codebase
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch full history for Claude to analyze
+          fetch-depth: 1
 
-      # Set up Claude environment (assumes Claude CLI or API wrapper is installed)
-      - name: Set up Claude
-        run: |
-          npm install -g claude-code # Install Claude CLI (replace with actual installation method)
-          claude --version # Verify installation
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # model: "claude-opus-4-20250514"
+          
+          # Optional: Customize the trigger phrase (default: @claude)
+          # trigger_phrase: "/claude"
+          
+          # Optional: Trigger when specific user is assigned to an issue
+          # assignee_trigger: "claude-bot"
+          
+          # Optional: Allow Claude to run specific commands
+          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
+          
+          # Optional: Add custom instructions for Claude to customize its behavior for your project
+          # custom_instructions: |
+          #   Follow our coding standards
+          #   Ensure all new code has tests
+          #   Use TypeScript for new files
+          
+          # Optional: Custom environment variables for Claude
+          # claude_env: |
+          #   NODE_ENV: test
 
-      # Run Claude for issue comment processing
-      - name: Process Claude Command
-        if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          COMMENT_BODY="${{ github.event.comment.body }}"
-          claude process-comment --comment "$COMMENT_BODY" --repo ${{ github.repository }} --issue ${{ github.event.issue.number }}
-
-      # Run Claude for pull request review
-      - name: Review Pull Request
-        if: github.event_name == 'pull_request'
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          claude review-pr --pr ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --commit ${{ github.event.pull_request.head.sha }}
-
-      # Commit changes if Claude generates code or documentation
-      - name: Commit Claude Changes
-        if: success()
-        run: |
-          git config --global user.name "Claude Bot"
-          git config --global user.email "claude@users.noreply.github.com"
-          git add .
-          git commit -m "Automated changes by Claude: ${{ github.event.comment.body || 'PR review updates' }}"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
