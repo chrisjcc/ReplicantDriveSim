@@ -1,0 +1,52 @@
+name: Claude Code Automation
+
+on:
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  claude-automation:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, '@claude') || github.event_name == 'pull_request'
+
+    steps:
+      # Checkout the repository to access the codebase
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for Claude to analyze
+
+      # Set up Claude environment (assumes Claude CLI or API wrapper is installed)
+      - name: Set up Claude
+        run: |
+          npm install -g claude-code # Install Claude CLI (replace with actual installation method)
+          claude --version # Verify installation
+
+      # Run Claude for issue comment processing
+      - name: Process Claude Command
+        if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          claude process-comment --comment "$COMMENT_BODY" --repo ${{ github.repository }} --issue ${{ github.event.issue.number }}
+
+      # Run Claude for pull request review
+      - name: Review Pull Request
+        if: github.event_name == 'pull_request'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude review-pr --pr ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --commit ${{ github.event.pull_request.head.sha }}
+
+      # Commit changes if Claude generates code or documentation
+      - name: Commit Claude Changes
+        if: success()
+        run: |
+          git config --global user.name "Claude Bot"
+          git config --global user.email "claude@users.noreply.github.com"
+          git add .
+          git commit -m "Automated changes by Claude: ${{ github.event.comment.body || 'PR review updates' }}"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
