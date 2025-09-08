@@ -4,12 +4,25 @@
 #include <vector>
 #include <unordered_map>
 #include <cstring>
+#include <memory>
+#include <thread>
 
-// Helper function to convert C++ string to C string
+// Global variables moved from header to avoid ODR violations
+static std::ostringstream oss;
+static std::random_device rd;
+static std::mt19937 gen(rd());
+static std::uniform_real_distribution<float> dis(-35.0f * M_PI / 180.0f, 35.0f * M_PI / 180.0f);
+
+// Thread-local storage for C strings to avoid memory leaks
+static thread_local std::vector<std::unique_ptr<char[]>> string_storage;
+
+// Helper function to convert C++ string to C string with automatic memory management
 const char* createCString(const std::string& str) {
-    char* cstr = new char[str.length() + 1];
-    std::strcpy(cstr, str.c_str());
-    return cstr;
+    auto cstr = std::make_unique<char[]>(str.length() + 1);
+    std::strcpy(cstr.get(), str.c_str());
+    const char* result = cstr.get();
+    string_storage.push_back(std::move(cstr));
+    return result;
 }
 
 // Vehicle functions
@@ -130,7 +143,7 @@ EXPORT void Vehicle_setAcceleration(Vehicle* vehicle, float acceleration) {
 }
 
 EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance) {
-    vehicle->setSteering(distance);
+    vehicle->setSensorRange(distance);
 }
 
 // Traffic functions
@@ -194,10 +207,8 @@ EXPORT const char* Traffic_step(Traffic* traffic,
     }
     */
 
-    // Convert std::string to const char* that will persist after function returns
-    char* cstr = new char[result.length() + 1];
-    strcpy(cstr, result.c_str());
-    return cstr;
+    // Use RAII-based string management to prevent memory leaks
+    return createCString(result);
 }
 
 // Add a function to free the memory allocated for the string
