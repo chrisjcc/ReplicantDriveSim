@@ -68,7 +68,7 @@ jobs:
         working-directory: Assets/Plugins/TrafficSimulation
         run: |
           mkdir build && cd build
-          cmake ..         
+          cmake .. -DPython3_EXECUTABLE=$(which python)
           make
 
       - name: Archive Plugin Files
