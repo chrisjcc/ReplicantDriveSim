@@ -230,8 +230,8 @@ void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::v
     vehicle.setYaw(next_state.getYaw());
     vehicle.setSteering(steering);
 
-    vehicle.setVx(next_state.getVx()); // Longitudional speed
-    vehicle.setVz(next_state.getVz()); // lateral speed
+    vehicle.setVx(next_state.getVx()); // Lateral speed
+    vehicle.setVz(next_state.getVz()); // Longitudinal speed
 }
 
 /**

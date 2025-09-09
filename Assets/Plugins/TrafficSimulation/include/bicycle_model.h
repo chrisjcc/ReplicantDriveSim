@@ -221,4 +221,90 @@ public:
     double normalizeAngle(double angle) const;
 };
 
+/**
+ * @class AckermannModel
+ * @brief Extended bicycle model implementing Ackermann steering geometry.
+ *
+ * This class extends the basic bicycle model to include proper Ackermann steering
+ * geometry, accounting for the track width and differential wheel steering angles.
+ * This provides more accurate modeling for vehicles with front-wheel steering systems.
+ *
+ * Key Features:
+ * - Calculates individual wheel steering angles based on Ackermann geometry
+ * - Accounts for track width in steering calculations
+ * - Maintains compatibility with bicycle model interface
+ * - Provides foundation for multi-wheel dynamics simulation
+ */
+class AckermannModel : public BicycleModel {
+private:
+    double track_width;  ///< Distance between left and right wheels (m)
+
+public:
+    /**
+     * @brief Constructor for AckermannModel with Ackermann-specific parameters.
+     * 
+     * @param wb Distance between front and rear axles (m)
+     * @param tw Track width - distance between left and right wheels (m)  
+     * @param m Vehicle mass (kg)
+     * @param inertia Yaw moment of inertia (kg*m^2)
+     * @param front_length Distance from CG to front axle (m)
+     * @param rear_length Distance from CG to rear axle (m)
+     * @param front_stiffness Front cornering stiffness (N/rad)
+     * @param rear_stiffness Rear cornering stiffness (N/rad)
+     */
+    AckermannModel(double wb = 2.7, double tw = 1.6, double m = 1500.0, double inertia = 2500.0,
+                   double front_length = 1.35, double rear_length = 1.35,
+                   double front_stiffness = 50000.0, double rear_stiffness = 50000.0)
+        : BicycleModel(wb, m, inertia, front_length, rear_length, front_stiffness, rear_stiffness),
+          track_width(tw) {}
+
+    /**
+     * @brief Calculates individual wheel steering angles based on Ackermann geometry.
+     * 
+     * This method computes the inner and outer wheel steering angles required to
+     * satisfy Ackermann steering geometry, where all wheels follow circular paths
+     * with the same center point. This eliminates tire scrubbing during turns.
+     * 
+     * For a given center steering angle δ:
+     * - Inner wheel: δ_inner = atan(L / (R - T/2))
+     * - Outer wheel: δ_outer = atan(L / (R + T/2))
+     * 
+     * Where L is wheelbase, R is turning radius, and T is track width.
+     * 
+     * @param center_steering_angle The equivalent single-wheel steering angle (rad)
+     * @return std::pair<double, double> Inner and outer wheel angles (rad)
+     * @throws std::invalid_argument if steering angle results in impossible geometry
+     */
+    std::pair<double, double> calculateWheelAngles(double center_steering_angle) const;
+
+    /**
+     * @brief Updates vehicle state using Ackermann steering geometry.
+     * 
+     * This method extends the base kinematic model to account for the differential
+     * steering angles calculated from Ackermann geometry. It provides more accurate
+     * vehicle dynamics for applications requiring precise steering simulation.
+     * 
+     * @param vehicle Current vehicle state
+     * @param center_steering_angle Desired center steering angle (rad)
+     * @param velocity Vehicle velocity (m/s)
+     * @param dt Time step (s)
+     * @return Updated vehicle state
+     */
+    Vehicle updateAckermannState(const Vehicle& vehicle, double center_steering_angle, 
+                                double velocity, double dt) const;
+
+    /**
+     * @brief Gets the track width of the vehicle.
+     * @return Track width in meters
+     */
+    double getTrackWidth() const { return track_width; }
+
+    /**
+     * @brief Sets the track width of the vehicle.
+     * @param tw New track width in meters (must be positive)
+     * @throws std::invalid_argument if track width is not positive
+     */
+    void setTrackWidth(double tw);
+};
+
 #endif // BICYCLE_MODEL_H

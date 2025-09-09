@@ -12,7 +12,7 @@ double BicycleModel::calculateSteadyStateYawRate(double steering_angle_rad, doub
     if (wheelbase <= 0.0) {
         throw std::invalid_argument("Wheelbase must be positive.");
     }
-    return (velocity * steering_angle_rad) / wheelbase;
+    return (velocity * tan(steering_angle_rad)) / wheelbase;
 }
 
 // Normalize angle to [-π, π]
@@ -220,12 +220,14 @@ Vehicle BicycleModel::updateCoupledState(
     const double F_yr = computeNonlinearTireForce(Cr, F_normal_rear, alpha_r, a_x);
 
     // Update longitudinal and lateral accelerations
-    const double ax = (F_yf * cos(steering_angle_rad) - F_drag) / mass;
-    const double ay = (F_yf + F_yr) / mass;
+    const double ax = (F_yf * sin(steering_angle_rad)) / mass;  // Lateral acceleration from front tire forces
+    const double ay = (F_yf * cos(steering_angle_rad) + F_yr - F_drag) / mass;  // Longitudinal acceleration
 
-    // Update velocities and yaw rate
-    next_state.setVx(next_state.getVx() + ax * dt - current_state.getYawRate() * current_state.getVz());
-    next_state.setVz(next_state.getVz() + ay * dt + current_state.getYawRate() * current_state.getVx());
+    // Update velocities with proper centrifugal force coupling
+    // For body-fixed coordinates: v_dot = a + ω × v
+    const double omega_z = current_state.getYawRate();
+    next_state.setVx(current_state.getVx() + (ax - omega_z * current_state.getVz()) * dt);
+    next_state.setVz(current_state.getVz() + (ay + omega_z * current_state.getVx()) * dt);
     next_state.setYawRate(next_state.getYawRate() +  (F_yf * lf - F_yr * lr) / Iz * dt);
 
     // Update position and heading
@@ -255,4 +257,62 @@ double BicycleModel::computeNonlinearTireForce(
     const double Fy = D * sin(C * atan(term - E * (term - atan(term))));
 
     return Fy;
+}
+
+// AckermannModel implementation
+std::pair<double, double> AckermannModel::calculateWheelAngles(double center_steering_angle) const {
+    if (std::abs(center_steering_angle) < 1e-8) {
+        // Straight driving - both wheels have zero angle
+        return {0.0, 0.0};
+    }
+    
+    // Calculate turning radius from center steering angle
+    // For small angles: R ≈ L/δ, for exact: R = L/tan(δ)
+    const double turning_radius = wheelbase / std::tan(center_steering_angle);
+    
+    // Check for impossible geometry (turning radius too small)
+    if (std::abs(turning_radius) < track_width / 2.0) {
+        throw std::invalid_argument("Turning radius too small for vehicle track width");
+    }
+    
+    // Calculate wheel angles using Ackermann geometry
+    // Inner wheel (tighter turn): δ_inner = atan(L / (R - T/2))
+    // Outer wheel (wider turn): δ_outer = atan(L / (R + T/2))
+    
+    double inner_angle, outer_angle;
+    
+    if (center_steering_angle > 0) {  // Left turn
+        inner_angle = std::atan(wheelbase / (turning_radius - track_width / 2.0));
+        outer_angle = std::atan(wheelbase / (turning_radius + track_width / 2.0));
+    } else {  // Right turn
+        inner_angle = std::atan(wheelbase / (-turning_radius - track_width / 2.0));
+        outer_angle = std::atan(wheelbase / (-turning_radius + track_width / 2.0));
+    }
+    
+    return {inner_angle, outer_angle};
+}
+
+Vehicle AckermannModel::updateAckermannState(const Vehicle& vehicle, double center_steering_angle,
+                                           double velocity, double dt) const {
+    if (dt <= 0.0) {
+        throw std::invalid_argument("Time step (dt) must be positive.");
+    }
+    
+    // Calculate individual wheel angles
+    auto [inner_angle, outer_angle] = calculateWheelAngles(center_steering_angle);
+    
+    // Use average wheel angle for bicycle model approximation
+    // This maintains compatibility with the existing bicycle model framework
+    // while incorporating Ackermann geometry effects
+    const double effective_steering_angle = (inner_angle + outer_angle) / 2.0;
+    
+    // Apply standard kinematic bicycle model with effective steering angle
+    return updateKinematicState(vehicle, effective_steering_angle, velocity, dt);
+}
+
+void AckermannModel::setTrackWidth(double tw) {
+    if (tw <= 0.0) {
+        throw std::invalid_argument("Track width must be positive.");
+    }
+    track_width = tw;
 }
