@@ -119,7 +119,7 @@ Vehicle BicycleModel::updateDynamicState(
 
     // Constants for numerical stability and physics
     constexpr double MIN_VELOCITY = 0.1;  // m/s
-    constexpr double ROLLING_RESISTANCE_COEFF = 0.015;
+    constexpr double ROLLING_RESISTANCE_COEFF = 0.015;  // Dimensionless rolling resistance coefficient
 
     // Handle very low speed case with simplified model
     if (v_total < MIN_VELOCITY) {
@@ -220,14 +220,14 @@ Vehicle BicycleModel::updateCoupledState(
     const double F_yr = computeNonlinearTireForce(Cr, F_normal_rear, alpha_r, a_x);
 
     // Update longitudinal and lateral accelerations
-    const double ax = (F_yf * sin(steering_angle_rad)) / mass;  // Lateral acceleration from front tire forces
-    const double ay = (F_yf * cos(steering_angle_rad) + F_yr - F_drag) / mass;  // Longitudinal acceleration
+    const double ax = (F_yf * cos(steering_angle_rad) + F_yr - F_drag) / mass;  // Longitudinal acceleration
+    const double ay = (F_yf * sin(steering_angle_rad)) / mass;  // Lateral acceleration from front tire forces
 
     // Update velocities with proper centrifugal force coupling
     // For body-fixed coordinates: v_dot = a + ω × v
     const double omega_z = current_state.getYawRate();
-    next_state.setVx(current_state.getVx() + (ax - omega_z * current_state.getVz()) * dt);
-    next_state.setVz(current_state.getVz() + (ay + omega_z * current_state.getVx()) * dt);
+    next_state.setVx(current_state.getVx() + (ax + omega_z * current_state.getVz()) * dt);
+    next_state.setVz(current_state.getVz() + (ay - omega_z * current_state.getVx()) * dt);
     next_state.setYawRate(next_state.getYawRate() +  (F_yf * lf - F_yr * lr) / Iz * dt);
 
     // Update position and heading
@@ -246,11 +246,11 @@ double BicycleModel::computeNonlinearTireForce(
     double slip_angle,             // Slip angle (radians)
     double longitudinal_accel      // Longitudinal acceleration (optional, unused here)
 ) const {
-    // Parameters for the Magic Formula
-    const double B = 10.0;  // Stiffness factor
-    const double C = 1.9;   // Shape factor
-    const double D = normal_force; // Peak factor proportional to normal force
-    const double E = 0.97;  // Curvature factor
+    // Parameters for the Magic Formula (Pacejka tire model)
+    const double B = 10.0;  // Stiffness factor - controls initial slope
+    const double C = 1.9;   // Shape factor - controls curve shape
+    const double D = normal_force; // Peak factor proportional to normal force - maximum tire force
+    const double E = 0.97;  // Curvature factor - controls curve smoothness near peak
 
     // Calculate the lateral force using the Magic Formula
     const double term = B * slip_angle;

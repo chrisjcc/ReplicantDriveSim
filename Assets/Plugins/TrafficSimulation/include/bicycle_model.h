@@ -44,13 +44,6 @@
  * - Normalizes yaw angles for circular coordinate consistency.
  */
 
-/**
- * @class BicycleModel
- * @brief A simplified kinematic bicycle model for vehicle kinematics and control.
- *
- * This class implements a kinematic and dynamic bicycle model, commonly used in
- * path planning and vehicle control.
- */
 class BicycleModel {
 private:
     // Vehicle parameters
