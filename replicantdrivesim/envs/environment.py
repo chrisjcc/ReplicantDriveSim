@@ -316,9 +316,11 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         """
         self.episode_timesteps = 0
 
-        # Handle seed if provided
+        # Handle seed if provided - propagate to both numpy and Unity
         if seed is not None:
             np.random.seed(seed)
+            # Also propagate seed to Unity environment for full reproducibility
+            ray.get(self.unity_env_handle.set_float_parameter.remote("seed", float(seed)))
 
         # Update agent count if specified in options
         if self._should_update_agent_count(options):
@@ -354,7 +356,13 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         """Determines if agent count should be updated based on options."""
         if not options or "new_agent_count" not in options:
             return False
-        return options["new_agent_count"] != self.current_agent_count
+        
+        new_count = options["new_agent_count"]
+        # Validate agent count
+        if not isinstance(new_count, int) or new_count <= 0:
+            raise ValueError(f"new_agent_count must be a positive integer, got {new_count}")
+        
+        return new_count != self.current_agent_count
 
     def _update_agent_count(self, new_agent_count: int) -> None:
         """Updates the environment's agent count and related properties."""

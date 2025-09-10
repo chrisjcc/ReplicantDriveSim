@@ -40,11 +40,15 @@ class UnityEnvResource:
         Args:
             config (dict): Unity environment configuration parameters (e.g. number of agents).
         """
-        self.channel_id = uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f7")
+        # Generate unique channel IDs to avoid conflicts in multi-worker scenarios
+        self.channel_id = uuid.uuid4()
         self.engine_configuration_channel = EngineConfigurationChannel()
         self.env_parameters = EnvironmentParametersChannel()
         self.float_properties_channel = FloatPropertiesChannel(self.channel_id)
         self.field_value_channel = CustomSideChannel()
+        
+        # Resource management state
+        self.is_closed = False
 
         # Extract Unity and Gym-based environment configuration
         self.env_config = config.get("env_config", {})
@@ -171,6 +175,10 @@ class UnityEnvResource:
 
         try:
             return self.unity_env.get_steps(behavior_name)
+        except UnityCommunicatorStoppedException as e:
+            print(f"Unity communicator stopped: {str(e)}")
+            self.close()
+            raise
         except Exception as e:
             print(f"Error getting steps: {str(e)}")
             self.close()
@@ -190,6 +198,10 @@ class UnityEnvResource:
 
         try:
             self.unity_env.set_actions(behavior_name, action)
+        except UnityCommunicatorStoppedException as e:
+            print(f"Unity communicator stopped during set_actions: {e}")
+            self.close()
+            raise
         except Exception as e:
             print(f"Error during set_actions: {e}")
             self.close()
@@ -208,6 +220,10 @@ class UnityEnvResource:
 
         try:
             self.unity_env.reset()
+        except UnityCommunicatorStoppedException as e:
+            print(f"Unity communicator stopped during reset: {e}")
+            self.close()
+            raise
         except Exception as e:
             print(f"Error during reset: {e}")
             self.close()
@@ -262,10 +278,16 @@ class UnityEnvResource:
     def close(self) -> None:
         """
         Closes the Unity environment to free resources.
+        Thread-safe and prevents multiple close calls.
 
         Returns:
             None
         """
+        if self.is_closed:
+            return
+            
+        self.is_closed = True
+        
         if self.unity_env:
             try:
                 self.unity_env.close()
