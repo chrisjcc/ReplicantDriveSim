@@ -271,6 +271,14 @@ void Traffic::setMaxVehicleSpeed(float max_speed) {
 }
 
 /**
+* @brief Getter for the random seed.
+* @return The seed value used for random generation.
+*/
+unsigned int Traffic::getSeed() const {
+    return seed;
+}
+
+/**
  * @brief Generates a random float within a specified range.
  * @param a Lower bound of the range.
  * @param b Upper bound of the range.

@@ -116,6 +116,12 @@ public:
      */
     void setMaxVehicleSpeed(float max_speed);
 
+    /**
+     * @brief Getter for the random seed.
+     * @return The seed value used for random generation.
+     */
+    unsigned int getSeed() const;
+
 
 private:
     int num_agents; ///< Number of agents in the simulation.

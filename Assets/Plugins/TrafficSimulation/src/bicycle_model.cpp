@@ -299,7 +299,9 @@ Vehicle AckermannModel::updateAckermannState(const Vehicle& vehicle, double cent
     }
     
     // Calculate individual wheel angles
-    auto [inner_angle, outer_angle] = calculateWheelAngles(center_steering_angle);
+    const std::pair<double, double> wheel_angles = calculateWheelAngles(center_steering_angle);
+    const double inner_angle = wheel_angles.first;
+    const double outer_angle = wheel_angles.second;
     
     // Use average wheel angle for bicycle model approximation
     // This maintains compatibility with the existing bicycle model framework
