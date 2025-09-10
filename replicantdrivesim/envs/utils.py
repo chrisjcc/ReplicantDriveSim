@@ -17,7 +17,8 @@ class CustomSideChannel(SideChannel):
         Also initializes a dictionary to store received field values.
         """
         # Initialize the side channel with a unique identifier (UUID).
-        super().__init__(uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f8"))
+        # Generate unique UUID to avoid conflicts in multi-worker scenarios
+        super().__init__(uuid.uuid4())
 
         # A dictionary to store field values received from Unity.
         self.received_values: dict[str, float] = {}

@@ -101,5 +101,6 @@ __all__ = [
     "__version__",
 ]
 
-# Print a message to confirm this file is being executed
-print(f"replicantdrivesim (version {__version__})")
+# Print a message to confirm this file is being executed (only if not in CI/RLlib context)
+if not os.getenv("CI") and not os.getenv("RAY_DISABLE_IMPORT_WARNING"):
+    print(f"replicantdrivesim (version {__version__})")
