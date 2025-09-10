@@ -45,7 +45,7 @@
  */
 
 class BicycleModel {
-private:
+protected:
     // Vehicle parameters
     double wheelbase;    ///< Distance between the front and rear axles (m)
     double mass;         ///< Vehicle mass (kg)
