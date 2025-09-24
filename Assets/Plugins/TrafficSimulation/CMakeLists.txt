@@ -16,8 +16,12 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+
+# Modern CMake approach for compiler flags
+add_compile_options(-Wall)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-g)
+endif()
 
 message(STATUS "CMAKE_SOURCE_DIR is: ${CMAKE_SOURCE_DIR}")
 
@@ -179,10 +183,11 @@ if(APPLE)
     set_target_properties(${PYPI_TARGET} PROPERTIES SUFFIX ".so")
 endif()
 
-# Include directories for PyPI
-target_include_directories(${PYPI_TARGET} PUBLIC
-    ${CMAKE_SOURCE_DIR}/include
-    ${pybind11_INCLUDE_DIRS}
+# Modern CMake include directories for PyPI
+target_include_directories(${PYPI_TARGET}
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${pybind11_INCLUDE_DIRS}
 )
 
 # Add compile options for PyPI

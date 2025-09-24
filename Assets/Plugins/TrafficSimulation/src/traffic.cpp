@@ -117,8 +117,11 @@ const Vehicle& Traffic::get_agent_by_name(const std::string& name) const {
  */
 std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_positions() const {
     std::unordered_map<std::string, std::vector<float>> positions;
+    positions.reserve(num_agents); // Pre-allocate capacity
+    
     for (int i = 0; i < num_agents; ++i) {
-        positions["agent_" + std::to_string(i)] = {agents[i].getX(), agents[i].getY(), agents[i].getZ()};
+        const std::string agent_key = "agent_" + std::to_string(i);
+        positions[agent_key] = {agents[i].getX(), agents[i].getY(), agents[i].getZ()};
     }
     return positions;
 }
@@ -129,8 +132,11 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_positions
  */
 std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_velocities() const {
     std::unordered_map<std::string, std::vector<float>> velocities;
+    velocities.reserve(num_agents); // Pre-allocate capacity
+    
     for (int i = 0; i < num_agents; ++i) {
-        velocities["agent_" + std::to_string(i)] = {agents[i].getVx(), agents[i].getVy(), agents[i].getVz()};
+        const std::string agent_key = "agent_" + std::to_string(i);
+        velocities[agent_key] = {agents[i].getVx(), agents[i].getVy(), agents[i].getVz()};
     }
     return velocities;
 }
@@ -141,8 +147,11 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_velocitie
  */
 std::unordered_map<std::string, std::vector<float>> Traffic::get_previous_positions() const {
     std::unordered_map<std::string, std::vector<float>> previous_positions_map;
+    previous_positions_map.reserve(num_agents); // Pre-allocate capacity
+    
     for (int i = 0; i < num_agents; ++i) {
-        previous_positions_map["agent_" + std::to_string(i)] = {previous_positions[i].getX(), previous_positions[i].getY(), previous_positions[i].getZ()};
+        const std::string agent_key = "agent_" + std::to_string(i);
+        previous_positions_map[agent_key] = {previous_positions[i].getX(), previous_positions[i].getY(), previous_positions[i].getZ()};
     }
     return previous_positions_map;
 }
@@ -153,12 +162,15 @@ std::unordered_map<std::string, std::vector<float>> Traffic::get_previous_positi
  */
 std::unordered_map<std::string, std::vector<float>> Traffic::get_agent_orientations() const {
     std::unordered_map<std::string, std::vector<float>> orientations;
+    orientations.reserve(num_agents); // Pre-allocate capacity
+    
     for (int i = 0; i < num_agents; ++i) {
         // Euler angles (roll, pitch, yaw)
         float roll = 0.0;    // Replace with actual roll if available
         float pitch = 0.0;   // Replace with actual pitch if available
         float yaw = agents[i].getYaw(); // Not assuming yaw represents steering
-        orientations["agent_" + std::to_string(i)] = {roll, pitch, yaw};
+        const std::string agent_key = "agent_" + std::to_string(i);
+        orientations[agent_key] = {roll, pitch, yaw};
     }
 
     return orientations;
@@ -218,8 +230,8 @@ void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::v
     vehicle.setYaw(next_state.getYaw());
     vehicle.setSteering(steering);
 
-    vehicle.setVx(next_state.getVx()); // Longitudional speed
-    vehicle.setVz(next_state.getVz()); // lateral speed
+    vehicle.setVx(next_state.getVx()); // Lateral speed
+    vehicle.setVz(next_state.getVz()); // Longitudinal speed
 }
 
 /**
@@ -256,6 +268,14 @@ void Traffic::setMaxVehicleSpeed(float max_speed) {
     if (max_speed > 0) { // Ensure velocity is positive
         max_speed_ = max_speed;
     }
+}
+
+/**
+* @brief Getter for the random seed.
+* @return The seed value used for random generation.
+*/
+unsigned int Traffic::getSeed() const {
+    return seed;
 }
 
 /**

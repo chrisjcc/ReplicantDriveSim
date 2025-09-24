@@ -57,7 +57,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8'
+          python-version: '3.10'
 
       - name: Install pybind11
         run: |
@@ -68,7 +68,7 @@ jobs:
         working-directory: Assets/Plugins/TrafficSimulation
         run: |
           mkdir build && cd build
-          cmake ..         
+          cmake .. -DPython3_EXECUTABLE=$(which python)
           make
 
       - name: Archive Plugin Files
@@ -239,7 +239,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |

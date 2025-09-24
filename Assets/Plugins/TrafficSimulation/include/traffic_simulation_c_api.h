@@ -117,12 +117,7 @@ EXPORT void Traffic_setMaxVehicleSpeed(Traffic* traffic, float max_speed);
 // Utility function
 EXPORT void FreeString(const char* str);
 
-EXPORT std::ostringstream oss;
-
-// Create a random number generator
-EXPORT std::random_device rd; // Seed for the random number engine
-EXPORT std::mt19937 gen(rd()); // Mersenne Twister engine
-EXPORT std::uniform_real_distribution<float> dis(-35.0f * M_PI / 180.0f, 35.0f * M_PI / 180.0f); // Uniform distribution between -35 and 35 degrees in radians
+// Global variables moved to implementation file to avoid ODR violations
 
 #ifdef __cplusplus
 }
