@@ -14,7 +14,7 @@ try:
     from importlib.metadata import PackageNotFoundError, version
 
     try:
-        __version__ = version("ReplicantDriveSim")
+        __version__ = version("replicantdrivesim")
     except PackageNotFoundError:
         # package is not installed
         __version__ = "unknown"
@@ -24,7 +24,7 @@ except ImportError:
         from importlib_metadata import PackageNotFoundError, version
 
         try:
-            __version__ = version("ReplicantDriveSim")
+            __version__ = version("replicantdrivesim")
         except PackageNotFoundError:
             __version__ = "unknown"
     except ImportError:
