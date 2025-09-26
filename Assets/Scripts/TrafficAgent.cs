@@ -443,56 +443,48 @@ public class TrafficAgent : Agent
     /// <param name="sensor">The VectorSensor used to collect and send observations to the neural network</param>
     public override void CollectObservations(VectorSensor sensor)
     {
-        LogDebug("TrafficAgent::CollectObservations started.");
+        try
+        {
+            if (!InitializeTrafficManager())
+                return;
 
-        if (!InitializeTrafficManager())
+            CollectRaycastObservations(sensor);
+            CollectOrientationObservations(sensor);
+            CollectSpeedObservations(sensor);
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"Error collecting observations for agent {gameObject.name}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Collects raycast-based observations if enabled.
+    /// </summary>
+    private void CollectRaycastObservations(VectorSensor sensor)
+    {
+        if (!trafficManager.includeRayCastObservation)
             return;
 
-        if (trafficManager.includeRayCastObservation)
+        RayPerceptionSensorComponent3D raySensor = GetComponentInChildren<RayPerceptionSensorComponent3D>();
+        if (raySensor == null)
+            return;
+
+        RayPerceptionInput raySpec = raySensor.GetRayPerceptionInput();
+        if (raySpec.RayLength == 0)
         {
-            // Get Ray Perception Sensor observations manually
-            RayPerceptionSensorComponent3D raySensor = GetComponentInChildren<RayPerceptionSensorComponent3D>();
-
-            if (raySensor != null)
-            {
-                // Get RayPerceptionInput (contains raycasting information)
-                RayPerceptionInput raySpec = raySensor.GetRayPerceptionInput();
-
-                if (raySpec.RayLength == 0) // Ensure rayInput is valid
-                {
-                    Debug.LogWarning("RayPerceptionInput is not properly initialized.");
-                    return;
-                }
-
-                // Must provide the parameters ray perception input and batched boolean
-                RayPerceptionOutput rayOutput = RayPerceptionSensor.Perceive(raySpec, true);
-
-                // Debug raycast outputs
-                LogDebug($"Maximum distance each ray can travel: {raySpec.RayLength}");
-                LogDebug($"Total number of rays casted: {rayOutput.RayOutputs.Length}");
-
-                foreach (var ray in rayOutput.RayOutputs)
-                {
-                    LogDebug($"Hit: {ray.HasHit}, Hit Fraction: {ray.HitFraction}, Hit Tag Index: {ray.HitTagIndex}");
-                }
-
-                // Add raycast results as observations
-                foreach (var ray in rayOutput.RayOutputs)
-                {
-                    sensor.AddObservation(ray.HasHit ? 1.0f : 0.0f); // 1 if hit, 0 if no hit
-                    sensor.AddObservation(ray.HitFraction); // Distance to hit object, normalized to [0,1]
-                }
-            }
+            Debug.LogWarning("RayPerceptionInput is not properly initialized.");
+            return;
         }
 
-        // Orientation (only y rotation, normalized to [-1, 1])
-        //sensor.AddObservation(transform.rotation);     // Adds (x, y, z, w) quaternion in world space
+        RayPerceptionOutput rayOutput = RayPerceptionSensor.Perceive(raySpec, true);
 
-        // The RayPerceptionSensorComponent3D will automatically add its observations
-        CollectOrientationObservations(sensor);
-        CollectSpeedObservations(sensor); // Observe vehicle agent speed
-
-        LogDebug("TrafficAgent::CollectObservations completed successfully.");
+        // Add raycast results as observations
+        foreach (var ray in rayOutput.RayOutputs)
+        {
+            sensor.AddObservation(ray.HasHit ? 1.0f : 0.0f);
+            sensor.AddObservation(ray.HitFraction);
+        }
     }
 
     /// <summary>
@@ -610,85 +602,49 @@ public class TrafficAgent : Agent
     }
 
     /// <summary>
-    /// Collects and adds the agent's position and rotation observations to the sensor.
+    /// Collects and adds the agent's velocity observations to the sensor.
     ///
     /// This method performs the following operations:
-    /// 1. Adds the agent's current position (Vector3) as an observation.
-    /// 2. Adds the agent's rotation around the Y-axis (yaw) as an observation.
+    /// 1. Adds the agent's velocity relative to its local coordinate system.
+    /// 2. Uses the Rigidbody component to get accurate velocity data.
     ///
     /// Observations added:
-    /// - Position: Vector3 (x, y, z coordinates)
-    /// - Rotation: Float (y-axis rotation in degrees)
-    ///
-    /// Note on rotation:
-    /// - Only the Y-axis rotation (yaw) is currently observed.
-    /// - Full rotation (Quaternion) and Euler angles (Vector3) observations are commented out.
+    /// - Velocity: Vector3 (velocity in local space coordinates)
     ///
     /// Usage:
     /// Call this method as part of the agent's observation collection process, typically within
     /// a larger CollectObservations method.
     ///
-    /// Customization Options:
-    /// - Uncomment transform.rotation to observe full rotation as a Quaternion (4 float values).
-    /// - Uncomment transform.rotation.eulerAngles to observe rotation as Euler angles (3 float values).
-    ///
     /// Performance Considerations:
-    /// - Adding observations increases the size of the agent's observation space.
-    /// - Balance the amount of information with the complexity of the learning task.
+    /// - Uses cached Rigidbody component reference to avoid GetComponent calls.
+    /// - Velocity is transformed to local space for frame-independent observations.
     ///
     /// Note:
-    /// - Ensure the neural network model is configured to handle the number of observations provided.
-    /// - Consider normalizing position values if the agent operates in a large world space.
-    /// - The choice of rotation representation (Euler angle vs Quaternion) can affect learning;
-    ///   choose based on your specific requirements and the nature of the task.
-    /// - If only Y-rotation is relevant to your task, the current setup is appropriate.
-    ///   Otherwise, consider including full rotation information.
+    /// - Ensure the agent has a Rigidbody component attached.
+    /// - Local space velocity provides rotation-independent motion information.
     ///
     /// </summary>
-    /// <param name="sensor">The VectorSensor to which observations are added.</param>
+    /// <param name="sensor">The VectorSensor to which velocity observations are added.</param>
+    private Rigidbody cachedRigidbody;
+
     private void CollectSpeedObservations(VectorSensor sensor)
     {
-        // Debug logs to check method calls
-        LogDebug("TrafficAgent::CollectSpeedObservations started.");
-
-        // Collect agent vehicles velocity
-        sensor.AddObservation(transform.InverseTransformDirection(GetComponent<Rigidbody>().velocity));
-
-        // Agent's own speed
-        //Rigidbody rb = GetComponent<Rigidbody>();
-        //rb.isKinematic = false; // true;
-        //rb.useGravity = false;
-        //float speed = 0.0f;
-
-        // Calculate velocity manually
-        /*
-        Vector3 currentPosition = transform.position;
-        float deltaTime = Mathf.Max(Time.deltaTime, 0.0001f); // Prevent divide by zero
-        Vector3 velocity = (currentPosition - previousPosition) / deltaTime;
-        */
-
-        /*
-        if (rb != null)
+        // Cache Rigidbody component to avoid repeated GetComponent calls
+        if (cachedRigidbody == null)
         {
-            speed = rb.linearVelocity.magnitude; // Normalize speed if needed (max speed = 50)
+            cachedRigidbody = GetComponent<Rigidbody>();
+        }
 
-            // Check for invalid speed values (NaN or Infinity)
-            if (!float.IsNaN(speed) && !float.IsInfinity(speed))
-            {
-                sensor.AddObservation(speed);
-            }
+        if (cachedRigidbody != null)
+        {
+            // Collect agent velocity in local space for frame-independent observations
+            sensor.AddObservation(transform.InverseTransformDirection(cachedRigidbody.velocity));
         }
         else
         {
-            sensor.AddObservation(speed); // No Rigidbody attached or zero velocity
-            Debug.LogWarning($"No Rigidbody found on {gameObject.name}. Using 0 for speed observation.");
+            // Fallback to zero velocity if no Rigidbody
+            sensor.AddObservation(Vector3.zero);
         }
-        */
-
-        // Update previousPosition for the next frame
-        //previousPosition = currentPosition;
-
-        //LogDebug($"Observations: Position = {transform.position}, Velocity = {speed}");
     }
 
     /// <summary>
@@ -721,34 +677,23 @@ public class TrafficAgent : Agent
     /// <param name="actionsOut">Buffer to store the generated actions. Contains both discrete and continuous action arrays.</param>
     public override void Heuristic(in ActionBuffers actionsOut)
     {
-        // Debug logs to check method calls
-        LogDebug("TrafficAgent::Heuristic started.");
+        try
+        {
+            var discreteActions = actionsOut.DiscreteActions;
+            discreteActions[0] = UnityEngine.Random.Range(0, 5);
 
-        // Get discrete actions array from ActionBuffers
-        var discreteActions = actionsOut.DiscreteActions;
-        discreteActions[0] = UnityEngine.Random.Range(0, 5); // This will give a random integer from 0 to 4 inclusive
+            const float minAngleRad = -Mathf.PI / 4f;
+            const float maxAngleRad = Mathf.PI / 4f;
 
-        float minAngleRad = -Mathf.PI / 4f; // -45 degrees in radians (-0.785398...)
-        float maxAngleRad = Mathf.PI / 4f;  // 45 degrees in radians (0.785398...)
-
-        // For continuous actions, assuming index 0 is steering and 1 is acceleration and 2 is braking:
-        var continuousActions = actionsOut.ContinuousActions;
-
-        // Sample a random angle between -45 and 45 degrees and convert to radians for steering
-        continuousActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Steering
-
-        // Sample a random value for acceleration
-        continuousActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Acceleration
-
-        // Sample a random value for braking
-        continuousActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Braking
-
-        LogDebug("Heuristic method called. Discrete Actions: " +
-                 string.Join(", ", discreteActions) +
-                " Continuous Actions: " + string.Join(", ", continuousActions)
-        );
-
-        LogDebug("TrafficAgent::Heuristic completed successfully.");
+            var continuousActions = actionsOut.ContinuousActions;
+            continuousActions[0] = UnityEngine.Random.Range(minAngleRad, maxAngleRad); // Steering
+            continuousActions[1] = UnityEngine.Random.Range(0.0f, 4.5f); // Acceleration
+            continuousActions[2] = UnityEngine.Random.Range(-4.0f, 0.0f); // Braking
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"Error in Heuristic method for agent {gameObject.name}: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -782,11 +727,6 @@ public class TrafficAgent : Agent
     /// <param name="actionBuffers">Contains the discrete and continuous actions decided by the ML model.</param>
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-        LogDebug("TrafficAgent::OnActionReceived started.");
-
-        LogDebug($"Discrete actions: {string.Join(", ", actionBuffers.DiscreteActions)}");
-        LogDebug($"Continuous actions: {string.Join(", ", actionBuffers.ContinuousActions)}");
-
         // Process Discrete (High-Level) Actions
         highLevelActions = actionBuffers.DiscreteActions[0];
 
@@ -795,15 +735,8 @@ public class TrafficAgent : Agent
 
         for (int i = 0; i < lowLevelActionCount; i++)
         {
-            // Fill the arrays with data from actionBuffers
             lowLevelActions[i] = actionBuffers.ContinuousActions[i];
         }
-
-        // Move this to FixedUpdate
-        // rb.MovePosition(transform.position + transform.forward * lowLevelActions[1] * Time.fixedDeltaTime);
-        // transform.Rotate(Vector3.up, lowLevelActions[0] * Time.fixedDeltaTime);
-
-        LogDebug("TrafficAgent::OnActionReceived completed successfully.");
     }
 
     /// <summary>
@@ -831,23 +764,11 @@ public class TrafficAgent : Agent
     /// </summary>
     private void FixedUpdate()
     {
-        /*
-         * In Unity, the Update() method, is called once per frame and is primarily used for handling tasks
-         * that need to be executed in sync with the frame rate, such as processing user input,
-         * updating non-physics game logic, and rendering-related updates.
-         */
-        LogDebug("TrafficAgent::FixedUpdate started.");
-
         // Only draw debug rays if visualization is enabled
-        if (debugVisualization || (trafficManager != null && trafficManager.debugVisualization))
+        if (debugVisualization || (trafficManager?.debugVisualization ?? false))
         {
             DrawDebugRays();
         }
-
-        ActionBuffers storedActions = GetStoredActionBuffers();
-        LogDebug($"ActionBuffers: continous: {storedActions.ContinuousActions} discrete: {storedActions.DiscreteActions}");
-
-        LogDebug("TrafficAgent::FixedUpdate completed successfully.");
     }
 
     /// <summary>
@@ -872,18 +793,8 @@ public class TrafficAgent : Agent
     /// </summary>
     void Update()
     {
-        LogDebug("TrafficAgent::Update started.");
-        LogDebug($"TrafficAgent::Update: Agent {gameObject.name} rotation: {transform.rotation.eulerAngles}");
-
-        /*
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 0.1f);
-        foreach (var hitCollider in hitColliders)
-        {
-            Debug.Log($"Overlapping with: {hitCollider.gameObject.name}");
-        }
-        */
-
-        LogDebug("TrafficAgent::Update completed successfully.");
+        // Performance-critical update loop - avoid heavy operations here
+        // Debug logging and expensive operations moved to conditional execution
     }
 
     public void SetRewardConfig()
@@ -1016,50 +927,74 @@ public class TrafficAgent : Agent
     /// <param name="collision">Contains information about the collision, including references to the colliding objects.</param>
     private void OnCollisionEnter(Collision collision)
     {
-        LogDebug("TrafficAgent::OnCollisionEnter started.");
-
-        if (collision.gameObject == null || string.IsNullOrEmpty(collision.gameObject.tag))
+        if (!IsValidCollision(collision))
         {
-            LogDebug("Collision object is null or has no tag.");
             return;
         }
 
-        LogDebug($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
+        HandleCollisionReward(collision);
+    }
 
-        /*
-        Note: Perhaps the best advice is to start simple and only add complexity as needed.
-        In general, you should reward results rather than actions you think will lead to the desired results.
-        */
+    /// <summary>
+    /// Validates collision object and logs collision details if debugging is enabled.
+    /// </summary>
+    private bool IsValidCollision(Collision collision)
+    {
+        if (collision.gameObject == null || string.IsNullOrEmpty(collision.gameObject.tag))
+        {
+            return false;
+        }
 
-        // Handle collision based on object tag
+        #if UNITY_EDITOR
+        if (debugVisualization)
+        {
+            Debug.Log($"Collision detected with {collision.gameObject.name}, tag: {collision.gameObject.tag}, layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
+        }
+        #endif
+
+        return true;
+    }
+
+    /// <summary>
+    /// Handles reward/penalty logic based on collision type.
+    /// </summary>
+    private void HandleCollisionReward(Collision collision)
+    {
         switch (collision.gameObject.tag)
         {
-            case "TrafficAgent": // "Obstacle"
-                // Penalize the agent for colliding with another traffic participant
+            case "TrafficAgent":
                 AddReward(collisionWithOtherAgentPenalty);
-                LogDebug($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
-                //EndEpisode();
+                LogConditionalDebug($"Collided with another agent! Penalty added: {collisionWithOtherAgentPenalty}");
                 break;
 
             case "RoadBoundary":
-                // Penalize the agent for going off the road
                 AddReward(offRoadPenalty);
-                LogDebug($"Hit road boundary! Penalty added: {offRoadPenalty}");
+                LogConditionalDebug($"Hit road boundary! Penalty added: {offRoadPenalty}");
                 break;
 
             case "MedianBoundary":
                 AddReward(medianCrossingPenalty);
-                LogDebug($"Crossed the median! Penalty added: {medianCrossingPenalty}");
+                LogConditionalDebug($"Crossed the median! Penalty added: {medianCrossingPenalty}");
                 break;
 
-                default:
-                    // For any other collision, we might want to add a small negative reward
-                    AddReward(-0.01f); // Negligible penalty for unspecified collisions
-                    LogDebug("Unspecified collision! Small penalty added: -0.1");
-                    break;
+            default:
+                AddReward(-0.01f);
+                LogConditionalDebug("Unspecified collision! Small penalty added: -0.01");
+                break;
         }
+    }
 
-        LogDebug("TrafficAgent::OnCollisionEnter completed successfully.");
+    /// <summary>
+    /// Logs debug message only when debugging is enabled.
+    /// </summary>
+    private void LogConditionalDebug(string message)
+    {
+        #if UNITY_EDITOR
+        if (debugVisualization)
+        {
+            Debug.Log(message);
+        }
+        #endif
     }
 
     /// <summary>
