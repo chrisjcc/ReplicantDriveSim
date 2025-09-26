@@ -16,14 +16,16 @@
  * This model uses the classic kinematic bicycle equations:
  * - β = arctan(lr * tan(δ) / L)   where δ is the steering angle
  * - ψ̇ = (v * cos(β) * tan(δ)) / L
- * - ẋ = v * cos(ψ + β)
- * - ẏ = v * sin(ψ + β)
+ * - żₗₒₙgᵢₜᵤdᵢₙₐₗ = v * cos(ψ + β)  [maps to Unity Z-axis]
+ * - ẋₗₐₜₑᵣₐₗ = v * sin(ψ + β)      [maps to Unity X-axis]
  *
- * Here:
+ * Here (Unity Coordinate System):
  * - **β** represents the slip angle, a function of the steering angle **δ**.
  * - **ψ̇** is the yaw rate.
  * - **v** is the vehicle's velocity.
- * - **ẋ** and **ẏ** are the longitudinal and lateral velocity components in global coordinates.
+ * - **X-axis**: Lateral (side-to-side) direction
+ * - **Y-axis**: Vertical (up-down) direction  
+ * - **Z-axis**: Longitudinal (forward-backward) direction
  *
  *
  * Use Cases:
