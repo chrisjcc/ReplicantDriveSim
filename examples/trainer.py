@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 
 import gymnasium as gym
 import mlflow
@@ -35,6 +36,16 @@ from ray.tune import Tuner
 from ray.tune.registry import register_env
 
 import replicantdrivesim
+
+# Check if C++ bindings are available before proceeding
+if not replicantdrivesim.cpp_bindings_available():
+    print("ERROR: C++ bindings are not available!")
+    print("Please build the C++ extensions first:")
+    print("  python setup.py build_ext --inplace")
+    print("  # OR")
+    print("  pip install -e . --force-reinstall")
+    print("\nFor more help, run: python check_environment.py")
+    sys.exit(1)
 
 # Set all loggers to CRITICAL or disable them to effectively silence logging output
 logging_level = logging.DEBUG
@@ -118,7 +129,9 @@ def main():
                 "env_vars": {
                     "RAY_AIR_NEW_OUTPUT": version,
                     "RAY_AIR_RICH_LAYOUT": version,
-                }
+                },
+                # Ensure worker processes can import replicantdrivesim
+                "py_modules": [replicantdrivesim],
             },
             log_to_driver=False,
             logging_level="INFO",

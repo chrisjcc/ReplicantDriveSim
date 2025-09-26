@@ -30,16 +30,43 @@ except ImportError:
     except ImportError:
         __version__ = "unknown"
 
+# Try to import C++ bindings
+_cpp_bindings_available = False
 try:
     from .replicantdrivesim import Traffic, Vehicle  # Import C++ bindings
+    _cpp_bindings_available = True
 except ImportError as e:
-    print(f"Error importing C++ bindings: {e}")
-    print(f"Current sys.path: {sys.path}")
-    print(f"Current working directory: {os.getcwd()}")
-    raise
+    # Create placeholder classes if C++ bindings are not available
+    print(f"Warning: C++ bindings not available: {e}")
+    
+    class Traffic:
+        """Placeholder Traffic class when C++ bindings are not available."""
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("C++ bindings not available. Please build the extensions first.")
+    
+    class Vehicle:
+        """Placeholder Vehicle class when C++ bindings are not available."""
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("C++ bindings not available. Please build the extensions first.")
+    
+    # Only show the detailed error message if not in a Ray worker context
+    if not os.getenv("CI") and not os.getenv("RAY_DISABLE_IMPORT_WARNING"):
+        print(f"Current sys.path: {sys.path}")
+        print(f"Current working directory: {os.getcwd()}")
+        print("\nTo fix this issue, please build the C++ extensions by running:")
+        print("  pip install -e . --force-reinstall")
+        print("Or if you're developing:")
+        print("  python setup.py build_ext --inplace")
+        print("\nMake sure you have pybind11 installed:")
+        print("  pip install pybind11")
 
 from .envs.environment import CustomUnityMultiAgentEnv
 from .envs.unity_env_resource import create_unity_env
+
+
+def cpp_bindings_available():
+    """Check if C++ bindings are available."""
+    return _cpp_bindings_available
 
 
 def get_unity_executable_path():
@@ -95,6 +122,7 @@ def make(env_name, config: dict):
 __all__ = [
     "Traffic",
     "Vehicle",
+    "cpp_bindings_available",
     "get_unity_executable_path",
     "make",
     "CustomUnityMultiAgentEnv",
