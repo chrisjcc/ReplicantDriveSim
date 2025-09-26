@@ -224,14 +224,15 @@ void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::v
     );
 
     // Update vehicle properties based on bicycle model state
-    vehicle.setX(next_state.getX());  // lateral position
-    vehicle.setZ(next_state.getZ());  // forward position
+    // Unity coordinate system: X=lateral, Y=vertical, Z=longitudinal
+    vehicle.setX(next_state.getX());  // X = lateral position
+    vehicle.setZ(next_state.getZ());  // Z = longitudinal/forward position
 
     vehicle.setYaw(next_state.getYaw());
     vehicle.setSteering(steering);
 
-    vehicle.setVx(next_state.getVx()); // Lateral speed
-    vehicle.setVz(next_state.getVz()); // Longitudinal speed
+    vehicle.setVx(next_state.getVx()); // Vx = lateral speed
+    vehicle.setVz(next_state.getVz()); // Vz = longitudinal speed
 }
 
 /**
