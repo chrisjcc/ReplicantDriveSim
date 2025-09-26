@@ -43,15 +43,27 @@ using UnityEngine;
 /// </summary>
 public class DynamicBEVCameraController : MonoBehaviour
 {
+    [Header("Target Settings")]
     public Transform targetObject; // The object the camera should follow
+    public string targetManagerName = "TrafficSimulationManager"; // Name of the parent object containing targets
+    public string defaultTargetName = "agent_0"; // Default target name to search for
+    
+    [Header("Camera Settings")]
+    public Camera targetCamera; // The camera to control (if null, uses Camera.main)
     public float cameraHeight = 150f; // The height of the camera above the target object
     public float cameraDistance = 5f; // The distance of the camera from the target object
     public float smoothSpeed = 5f; // The speed at which the camera smoothly follows the target
     public float cameraXPosition = 0f; // The fixed x-position of the camera
+    
+    [Header("Search Settings")]
+    public float searchInterval = 1f; // Time between target search attempts (in seconds)
+    public int maxSearchAttempts = 10; // Maximum number of search attempts (-1 for unlimited)
 
     private Transform cameraTransform;
     private Quaternion fixedRotation;
     private bool isSearching = true;
+    private float lastSearchTime;
+    private int searchAttempts = 0;
 
     /// <summary>
     /// Initializes key components of the dynamic BEV camera controller when the script starts.
@@ -83,8 +95,29 @@ public class DynamicBEVCameraController : MonoBehaviour
     /// </summary>
     void Start()
     {
-        cameraTransform = Camera.main.transform;
+        // Use assigned camera or fall back to Camera.main
+        Camera camera = targetCamera != null ? targetCamera : Camera.main;
+        
+        if (camera == null)
+        {
+            Debug.LogError("DynamicBEVCameraController: No camera found! Please assign a camera or ensure Camera.main is available.");
+            enabled = false; // Disable the script if no camera is available
+            return;
+        }
+        
+        cameraTransform = camera.transform;
         fixedRotation = Quaternion.Euler(90f, 0f, 90f); // Fixed rotation to look horizontally along the x-axis
+        
+        // If no target is assigned, start searching
+        if (targetObject == null)
+        {
+            isSearching = true;
+            lastSearchTime = Time.time;
+        }
+        else
+        {
+            isSearching = false;
+        }
     }
 
     /// <summary>
@@ -121,9 +154,18 @@ public class DynamicBEVCameraController : MonoBehaviour
     /// </summary>
     void Update()
     {
-        if (isSearching)
+        // Only search if we need to and enough time has passed since last search
+        if (isSearching && Time.time - lastSearchTime >= searchInterval)
         {
             FindTarget();
+            lastSearchTime = Time.time;
+        }
+        
+        // Check if target still exists - restart search if it was destroyed
+        if (!isSearching && targetObject == null)
+        {
+            Debug.LogWarning("DynamicBEVCameraController: Target object was destroyed. Restarting search...");
+            RestartTargetSearch();
         }
     }
 
@@ -167,18 +209,37 @@ public class DynamicBEVCameraController : MonoBehaviour
     /// </summary>
     void FindTarget()
     {
-        GameObject trafficManager = GameObject.Find("TrafficSimulationManager");
-        if (trafficManager != null)
+        // Check if we've exceeded max search attempts
+        if (maxSearchAttempts > 0 && searchAttempts >= maxSearchAttempts)
         {
-            Transform agent = trafficManager.transform.Find("agent_0");
-
-            if (agent != null)
-            {
-                targetObject = agent;
-                isSearching = false;
-                Debug.Log("Default target 'agent_0' set successfully.");
-            }
+            Debug.LogWarning($"DynamicBEVCameraController: Exceeded maximum search attempts ({maxSearchAttempts}). Stopping search.");
+            isSearching = false;
+            return;
         }
+        
+        searchAttempts++;
+        
+        // Search for the target manager
+        GameObject trafficManager = GameObject.Find(targetManagerName);
+        if (trafficManager == null)
+        {
+            Debug.LogWarning($"DynamicBEVCameraController: Could not find '{targetManagerName}' in scene (Attempt {searchAttempts}).");
+            return;
+        }
+        
+        // Search for the target within the manager
+        Transform agent = trafficManager.transform.Find(defaultTargetName);
+        if (agent == null)
+        {
+            Debug.LogWarning($"DynamicBEVCameraController: Could not find '{defaultTargetName}' in '{targetManagerName}' (Attempt {searchAttempts}).");
+            return;
+        }
+        
+        // Target found successfully
+        targetObject = agent;
+        isSearching = false;
+        searchAttempts = 0; // Reset for future searches
+        Debug.Log($"DynamicBEVCameraController: Target '{defaultTargetName}' found and set successfully.");
     }
 
     /// <summary>
@@ -226,7 +287,8 @@ public class DynamicBEVCameraController : MonoBehaviour
     /// </summary>
     void LateUpdate()
     {
-        if (targetObject != null)
+        // Only update camera if we have both a camera transform and a target
+        if (cameraTransform != null && targetObject != null)
         {
             // Calculate the desired camera position based on the target object's position
             Vector3 desiredPosition = new Vector3(cameraXPosition, targetObject.position.y + cameraHeight, targetObject.position.z - cameraDistance);
@@ -276,9 +338,63 @@ public class DynamicBEVCameraController : MonoBehaviour
     ///
     /// </summary>
     /// <param name="target">The Transform of the new target object for the camera to follow.</param>
+    /// <summary>
+    /// Sets a new target object for the camera to follow and stops the automatic target search.
+    /// </summary>
+    /// <param name="target">The Transform of the new target object. Can be null to clear the target.</param>
     public void SetTargetObject(Transform target)
     {
         targetObject = target;
+        
+        if (target != null)
+        {
+            isSearching = false;
+            searchAttempts = 0;
+            Debug.Log($"DynamicBEVCameraController: Target manually set to '{target.name}'.");
+        }
+        else
+        {
+            Debug.Log("DynamicBEVCameraController: Target cleared. Restarting search if enabled.");
+            if (enabled) // Only restart search if the component is enabled
+            {
+                RestartTargetSearch();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Restarts the target search process. Useful when the current target is lost.
+    /// </summary>
+    public void RestartTargetSearch()
+    {
+        isSearching = true;
+        searchAttempts = 0;
+        lastSearchTime = Time.time;
+        Debug.Log("DynamicBEVCameraController: Target search restarted.");
+    }
+    
+    /// <summary>
+    /// Stops the target search process.
+    /// </summary>
+    public void StopTargetSearch()
+    {
         isSearching = false;
+        Debug.Log("DynamicBEVCameraController: Target search stopped.");
+    }
+    
+    /// <summary>
+    /// Returns whether the camera is currently searching for a target.
+    /// </summary>
+    public bool IsSearchingForTarget()
+    {
+        return isSearching;
+    }
+    
+    /// <summary>
+    /// Returns whether the camera has a valid target.
+    /// </summary>
+    public bool HasValidTarget()
+    {
+        return targetObject != null;
     }
 }
