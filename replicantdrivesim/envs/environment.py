@@ -142,7 +142,9 @@ class CustomUnityMultiAgentEnv(MultiAgentEnv):
         print(f"API Version: {self.api_version}")
 
         # Get the simulation time step (i.e., frames per second)
-        self.fps = int(ray.get(self.unity_env_handle.get_field_value.remote("FramesPerSecond")).get("FramesPerSecond", 25))
+        fps_result = ray.get(self.unity_env_handle.get_field_value.remote("FramesPerSecond"))
+        fps_value = fps_result.get("FramesPerSecond")
+        self.fps = int(fps_value if fps_value is not None else 25)
 
     @property
     def single_agent_obs_space(self):
