@@ -261,6 +261,13 @@ def main():
             runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
             run_id = runs.iloc[0].run_id
 
+            # Use env.agents which contains the list of active agent IDs
+            # Add fallback to env.possible_agents if agents list is empty
+            agent_ids = env.agents if env.agents else env.possible_agents
+            
+            if not agent_ids:
+                raise ValueError("No agents found in environment - cannot create model signature")
+            
             input_schema = Schema(
                 [
                     TensorSpec(
@@ -268,7 +275,7 @@ def main():
                         (-1, env.size_of_single_agent_obs),
                         agent_id,
                     )
-                    for agent_id in env._agent_ids
+                    for agent_id in agent_ids
                 ]
             )
             model_signature = ModelSignature(inputs=input_schema)
