@@ -1,5 +1,6 @@
 #include "traffic_simulation_c_api.h"
 #include "traffic.h"
+#include <OpenDriveMap.h>
 #include <array>
 #include <vector>
 #include <unordered_map>
