@@ -55,11 +55,11 @@ To automate the build process without manually opening the Unity Editor, you can
 -batchmode \
 -nographics \
 -projectPath "/path/to/your/unity_project" \
--executeMethod UnityBuilderAction.BuildTools.BuildScript.PerformMacOSBuild \
+-executeMethod UnityBuilderAction.BuildScript.PerformMacOSBuild \
 -logFile "Logs/build_logfile.log"
 ```
 
-The build process will start, and Unity will generate the executable based on your project settings and the build script you've defined in `UnityBuilderAction.BuildTools.BuildScript.PerformMacOSBuild`. This command enables headless builds, making it easier to integrate with CI/CD pipelines or automated workflows
+The build process will start, and Unity will generate the executable based on your project settings and the build script you've defined in `UnityBuilderAction.BuildScript.PerformMacOSBuild`. This command enables headless builds, making it easier to integrate with CI/CD pipelines or automated workflows
 
 ### Command Breakdown
 
@@ -77,7 +77,7 @@ Let's break down what each part of this command does:
 4. `-projectPath "/path/to/your/unity_project"`
    - This specifies the path to your Unity project. Replace this with the actual path to your project on your machine.
 
-5. `-executeMethod UnityBuilderAction.BuildTools.BuildScript.PerformMacOSBuild`
+5. `-executeMethod UnityBuilderAction.BuildScript.PerformMacOSBuild`
    - This tells Unity which method to execute to perform the build. In this case, it's calling the `PerformMacOSBuild` method from the `BuildScript` class in the `UnityDriveSimulation.BuildTools` namespace.
 
 6. `-logFile "Logs/logfile.log"`
