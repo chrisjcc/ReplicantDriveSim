@@ -90,6 +90,25 @@ docker pull chrisjcc/replicantdrivesim:latest
 docker run -it chrisjcc/replicantdrivesim:latest
 ```
 
+### System Requirements
+
+#### Unity Version
+- **Unity 6** (6000.0.30f1 or later)
+- ML-Agents Package: 4.0.0
+- Unity AI Inference Engine: 2.2.1
+
+#### Python Requirements
+- **Python**: 3.10.1 - 3.10.12
+- **Ray RLlib**: 2.31.0
+- **ML-Agents**: 1.1.0
+- **Gymnasium**: 0.26.3
+- **NumPy**: 1.23.5
+- **PyTorch**: 2.1.1 or later
+- **Protocol Buffers**: 3.20.3
+- **gRPC**: 1.53.2
+
+For a complete list of dependencies, see `environment.yml` or `setup.cfg`.
+
 ### License
 ReplicantDriveSim is licensed under the MIT License. See the [LICENSE](https://github.com/chrisjcc/ReplicantDriveSim/blob/main/LICENSE) file for more details.
 
