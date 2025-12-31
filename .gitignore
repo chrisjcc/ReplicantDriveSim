@@ -3,8 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# C extensions (but keep Unity plugin)
 *.so
+# Exception: Keep the Unity plugin library
+!Assets/Plugins/TrafficSimulation/libReplicantDriveSim.so
 
 # Distribution / packaging
 .Python
@@ -170,9 +172,12 @@ cython_debug/
 [Bb]uilds/
 [Ll]ogs/
 
-# Compiled Dynamic Library
+# Compiled Dynamic Library (but keep plugin libraries for Unity)
 *.dll
 *.dylib
+# Exception: Keep the Unity plugin library
+!Assets/Plugins/TrafficSimulation/libReplicantDriveSim.dylib
+!Assets/Plugins/TrafficSimulation/libReplicantDriveSim.so
 
 # Unity auto-generated user-specific settings
 UserSettings/
