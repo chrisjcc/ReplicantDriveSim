@@ -114,11 +114,12 @@ if [ $? -eq 0 ]; then
         echo "Built library: $LIBRARY_FILE"
         echo "Library size: $(du -h "$LIBRARY_FILE" | cut -f1)"
 
-        # Copy to parent directory (Unity Plugins folder)
+        # Move to parent directory (Unity Plugins folder)
+        # Using 'mv' instead of 'cp' prevents Unity from seeing duplicate plugins
         DEST_DIR=".."
         echo ""
-        echo "Copying library to Unity Plugins folder..."
-        cp -v "$LIBRARY_FILE" "$DEST_DIR/"
+        echo "Moving library to Unity Plugins folder..."
+        mv -v "$LIBRARY_FILE" "$DEST_DIR/"
 
         echo ""
         echo "=================================================="
