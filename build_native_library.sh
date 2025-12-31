@@ -104,12 +104,21 @@ if [ $? -eq 0 ]; then
     echo "Build successful!"
     echo "=================================================="
 
-    # Find the built library
+    # Find the built library (actual file, not symlink)
     if [ "$PLATFORM" = "macOS" ]; then
-        LIBRARY_FILE=$(find . -name "libReplicantDriveSim.dylib" | head -n1)
+        # Find the actual versioned library file (not symlinks)
+        LIBRARY_FILE=$(find . -name "libReplicantDriveSim.*.*.*.dylib" -type f | head -n1)
+        if [ -z "$LIBRARY_FILE" ]; then
+            # Fallback to finding any .dylib (might be symlink)
+            LIBRARY_FILE=$(find . -name "libReplicantDriveSim.dylib" | head -n1)
+        fi
         EXTENSION=".dylib"
     elif [ "$PLATFORM" = "Linux" ]; then
-        LIBRARY_FILE=$(find . -name "libReplicantDriveSim.so" | head -n1)
+        # Find the actual versioned library file
+        LIBRARY_FILE=$(find . -name "libReplicantDriveSim.so.*" -type f | head -n1)
+        if [ -z "$LIBRARY_FILE" ]; then
+            LIBRARY_FILE=$(find . -name "libReplicantDriveSim.so" | head -n1)
+        fi
         EXTENSION=".so"
     else
         LIBRARY_FILE=$(find . -name "ReplicantDriveSim.dll" | head -n1)
@@ -158,14 +167,22 @@ if [ $? -eq 0 ]; then
             fi
         fi
 
-        # Move to parent directory (Unity Plugins folder)
-        # Using 'mv' instead of 'cp' prevents Unity from seeing duplicate plugins
+        # Copy to parent directory (Unity Plugins folder)
+        # We use cp (not mv) for the actual file to preserve the original
+        # Unity needs the unversioned name
         DEST_DIR=".."
         DEST_FILE="$DEST_DIR/libReplicantDriveSim${EXTENSION}"
 
         echo ""
-        echo "Moving library to Unity Plugins folder..."
-        mv -v "$LIBRARY_FILE" "$DEST_FILE"
+        echo "Copying library to Unity Plugins folder..."
+        # If source is a symlink, follow it and copy the actual file
+        if [ -L "$LIBRARY_FILE" ]; then
+            echo "Note: Source is a symlink, copying target file..."
+            cp -fL "$LIBRARY_FILE" "$DEST_FILE"
+        else
+            echo "Copying actual library file..."
+            cp -f "$LIBRARY_FILE" "$DEST_FILE"
+        fi
 
         # Verify the moved file
         if [ -f "$DEST_FILE" ]; then
