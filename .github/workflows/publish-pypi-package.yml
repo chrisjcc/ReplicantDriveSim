@@ -135,7 +135,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: StandaloneOSX # Build a macOS standalone. Or StandaloneLinux64 for Linux
-          unityVersion: auto # Use "auto" to get from your ProjectSettings/ProjectVersion.txt'
+          unityVersion: 6000.0.30f1 # Unity 6 - explicit version required for better compatibility
           versioning: Semantic
           # Enables caching the Unity Hub and Editor installation for MacOS runners (default: false).
           # This can significantly reduce project build times if you have enough available cache on Github Actions.
