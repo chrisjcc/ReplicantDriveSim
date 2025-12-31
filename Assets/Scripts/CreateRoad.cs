@@ -13,7 +13,7 @@ using UnityEngine;
 ///
 /// Public Properties:
 /// - roadTexture: Texture2D for the road surfaces.
-/// - roadPhysicsMaterial: PhysicMaterial for the roads' friction properties.
+/// - roadPhysicsMaterial: PhysicsMaterial for the roads' friction properties.
 /// - singleRoadWidth: Width of each road (default 15 units, accommodating two lanes).
 /// - roadLength: Length of the roads (default 3250 units).
 /// - boundaryHeight: Height of the boundary walls (default 5 units).
@@ -30,7 +30,7 @@ using UnityEngine;
 public class CreateRoad : MonoBehaviour
 {
     public Texture2D roadTexture;
-    public PhysicMaterial roadPhysicsMaterial;
+    public PhysicsMaterial roadPhysicsMaterial;
 
     public float singleRoadWidth = 15f; // Width for a single road (2 lanes)
     public float roadLength = 100f;
@@ -67,7 +67,7 @@ public class CreateRoad : MonoBehaviour
         // Ensure roadPhysicsMaterial is not null and initialize if needed
         if (roadPhysicsMaterial == null)
         {
-            roadPhysicsMaterial = new PhysicMaterial("RoadMaterial");
+            roadPhysicsMaterial = new PhysicsMaterial("RoadMaterial");
             roadPhysicsMaterial.dynamicFriction = 1f;
             roadPhysicsMaterial.staticFriction = 0f;
         }
