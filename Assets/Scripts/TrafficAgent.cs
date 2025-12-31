@@ -638,7 +638,7 @@ public class TrafficAgent : Agent
         if (cachedRigidbody != null)
         {
             // Collect agent velocity in local space for frame-independent observations
-            sensor.AddObservation(transform.InverseTransformDirection(cachedRigidbody.velocity));
+            sensor.AddObservation(transform.InverseTransformDirection(cachedRigidbody.linearVelocity));
         }
         else
         {
