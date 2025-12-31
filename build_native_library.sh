@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ReplicantDriveSim Native Library Build Script
+# ReplicantDriveSim Native Library Build Script - Fixed Version
 # This script builds the C++ traffic simulation library for Unity
 
 set -e  # Exit on error
@@ -44,6 +44,12 @@ fi
 
 cd "$PLUGIN_DIR"
 echo "Working directory: $(pwd)"
+
+# Clean previous build
+echo ""
+echo "Cleaning previous build..."
+rm -rf build
+rm -f libReplicantDriveSim.dylib libReplicantDriveSim.so ReplicantDriveSim.dll
 
 # Create and enter build directory
 echo ""
@@ -89,7 +95,7 @@ echo "Building with $CORES parallel jobs..."
 # Build the library
 echo ""
 echo "Building the library..."
-make -j${CORES}
+make -j${CORES} VERBOSE=1
 
 # Check build result
 if [ $? -eq 0 ]; then
@@ -100,7 +106,7 @@ if [ $? -eq 0 ]; then
 
     # Find the built library
     if [ "$PLATFORM" = "macOS" ]; then
-        LIBRARY_FILE=$(find . -name "libReplicantDriveSim.dylib" -o -name "libReplicantDriveSim.bundle" | head -n1)
+        LIBRARY_FILE=$(find . -name "libReplicantDriveSim.dylib" | head -n1)
         EXTENSION=".dylib"
     elif [ "$PLATFORM" = "Linux" ]; then
         LIBRARY_FILE=$(find . -name "libReplicantDriveSim.so" | head -n1)
@@ -110,16 +116,73 @@ if [ $? -eq 0 ]; then
         EXTENSION=".dll"
     fi
 
-    if [ -n "$LIBRARY_FILE" ]; then
-        echo "Built library: $LIBRARY_FILE"
-        echo "Library size: $(du -h "$LIBRARY_FILE" | cut -f1)"
+    if [ -n "$LIBRARY_FILE" ] && [ -f "$LIBRARY_FILE" ]; then
+        echo ""
+        echo "Found library: $LIBRARY_FILE"
+
+        # Check file size BEFORE moving
+        FILE_SIZE=$(stat -f%z "$LIBRARY_FILE" 2>/dev/null || stat -c%s "$LIBRARY_FILE" 2>/dev/null || echo "0")
+        HUMAN_SIZE=$(du -h "$LIBRARY_FILE" | cut -f1)
+
+        echo "Library size: $HUMAN_SIZE ($FILE_SIZE bytes)"
+
+        if [ "$FILE_SIZE" -eq 0 ]; then
+            echo ""
+            echo "=================================================="
+            echo "❌ ERROR: Library file is 0 bytes!"
+            echo "=================================================="
+            echo "The build produced an empty library file."
+            echo "This usually means:"
+            echo "1. Linking failed but didn't report an error"
+            echo "2. CMake configuration issue"
+            echo ""
+            echo "Check the build output above for linker warnings."
+            exit 1
+        fi
+
+        # Verify library has symbols
+        if [ "$PLATFORM" = "macOS" ]; then
+            echo ""
+            echo "Verifying library contents..."
+            if ! otool -L "$LIBRARY_FILE" > /dev/null 2>&1; then
+                echo "WARNING: Library might be corrupted (otool failed)"
+            fi
+
+            # Check for expected symbols
+            if nm "$LIBRARY_FILE" 2>/dev/null | grep -q "Traffic_create"; then
+                echo "✓ Found expected symbol: Traffic_create"
+            else
+                echo "❌ WARNING: Expected symbol 'Traffic_create' not found!"
+                echo "Available symbols:"
+                nm "$LIBRARY_FILE" 2>/dev/null | grep " T " | head -10
+            fi
+        fi
 
         # Move to parent directory (Unity Plugins folder)
         # Using 'mv' instead of 'cp' prevents Unity from seeing duplicate plugins
         DEST_DIR=".."
+        DEST_FILE="$DEST_DIR/libReplicantDriveSim${EXTENSION}"
+
         echo ""
         echo "Moving library to Unity Plugins folder..."
-        mv -v "$LIBRARY_FILE" "$DEST_DIR/"
+        mv -v "$LIBRARY_FILE" "$DEST_FILE"
+
+        # Verify the moved file
+        if [ -f "$DEST_FILE" ]; then
+            MOVED_SIZE=$(stat -f%z "$DEST_FILE" 2>/dev/null || stat -c%s "$DEST_FILE" 2>/dev/null || echo "0")
+            echo "✓ Library successfully moved"
+            echo "Final location: $DEST_FILE"
+            echo "Final size: $(du -h "$DEST_FILE" | cut -f1) ($MOVED_SIZE bytes)"
+
+            if [ "$MOVED_SIZE" -eq 0 ]; then
+                echo ""
+                echo "❌ ERROR: Moved file is 0 bytes!"
+                exit 1
+            fi
+        else
+            echo "❌ ERROR: Failed to move library to $DEST_FILE"
+            exit 1
+        fi
 
         echo ""
         echo "=================================================="
@@ -127,20 +190,33 @@ if [ $? -eq 0 ]; then
         echo "=================================================="
         echo ""
         echo "Next steps:"
-        echo "1. Open the project in Unity 6"
-        echo "2. Select the library file: Assets/Plugins/TrafficSimulation/libReplicantDriveSim${EXTENSION}"
-        echo "3. In Inspector, configure:"
+        echo "1. In Unity, select: Assets/Plugins/TrafficSimulation/libReplicantDriveSim${EXTENSION}"
+        echo "2. In Inspector, configure:"
         echo "   - Select platforms: ${PLATFORM}"
         if [ "$PLATFORM" = "macOS" ]; then
             echo "   - CPU: ${ARCH}"
         fi
         echo "   - Load on startup: ✓"
-        echo "4. Click 'Apply'"
+        echo "3. Click 'Apply'"
+        echo "4. Restart Unity (if already open)"
         echo "5. Press Play to test!"
         echo ""
     else
-        echo "WARNING: Could not find built library file"
-        echo "Check the build directory manually: $(pwd)"
+        echo ""
+        echo "=================================================="
+        echo "❌ ERROR: Could not find built library file"
+        echo "=================================================="
+        echo "Expected to find library matching pattern:"
+        if [ "$PLATFORM" = "macOS" ]; then
+            echo "  libReplicantDriveSim.dylib"
+        elif [ "$PLATFORM" = "Linux" ]; then
+            echo "  libReplicantDriveSim.so"
+        else
+            echo "  ReplicantDriveSim.dll"
+        fi
+        echo ""
+        echo "Files in build directory:"
+        ls -lh
         exit 1
     fi
 else
