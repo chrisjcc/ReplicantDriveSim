@@ -196,6 +196,15 @@ if [ $? -eq 0 ]; then
                 echo "❌ ERROR: Moved file is 0 bytes!"
                 exit 1
             fi
+
+            # Clean up build directory to prevent Unity from seeing duplicates
+            echo ""
+            echo "Cleaning up build directory..."
+            cd ..
+            if [ -d "build" ]; then
+                rm -rf build
+                echo "✓ Build directory removed (prevents duplicate plugin errors in Unity)"
+            fi
         else
             echo "❌ ERROR: Failed to move library to $DEST_FILE"
             exit 1
@@ -207,16 +216,20 @@ if [ $? -eq 0 ]; then
         echo "=================================================="
         echo ""
         echo "Next steps:"
-        echo "1. In Unity, select: Assets/Plugins/TrafficSimulation/libReplicantDriveSim${EXTENSION}"
-        echo "2. In Inspector, configure:"
-        echo "   - Select platforms: ${PLATFORM}"
+        echo "1. Restart Unity (if already open)"
+        echo "2. If this is the first time, configure the plugin in Unity:"
+        echo "   a. Select: Assets/Plugins/TrafficSimulation/libReplicantDriveSim${EXTENSION}"
+        echo "   b. In Inspector, configure:"
+        echo "      - Select platforms: ${PLATFORM}"
         if [ "$PLATFORM" = "macOS" ]; then
-            echo "   - CPU: ${ARCH}"
+            echo "      - CPU: ${ARCH}"
         fi
-        echo "   - Load on startup: ✓"
-        echo "3. Click 'Apply'"
-        echo "4. Restart Unity (if already open)"
-        echo "5. Press Play to test!"
+        echo "      - Load on startup: ✓"
+        echo "   c. Click 'Apply'"
+        echo "3. Press Play to test!"
+        echo ""
+        echo "Note: Build directory was automatically cleaned to prevent"
+        echo "      'Multiple plugins with the same name' errors."
         echo ""
     else
         echo ""

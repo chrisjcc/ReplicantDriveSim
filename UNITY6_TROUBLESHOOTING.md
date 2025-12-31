@@ -65,7 +65,24 @@ Error in TrafficManager Start: ReplicantDriveSim assembly:<unknown assembly> typ
 
 ### Solution: Build the Native Library
 
-#### For macOS Users:
+**Recommended:** Use the automated build script (handles everything including cleanup):
+
+```bash
+cd ~/Desktop/GitHub/ReplicantDriveSim  # or your project path
+./build_native_library.sh
+```
+
+The script will:
+- ✅ Build the C++ library for your platform
+- ✅ Copy it to the Unity Plugins folder
+- ✅ Verify the library has expected symbols
+- ✅ **Automatically clean up the build directory** (prevents duplicate plugin errors)
+
+#### Manual Build (Alternative)
+
+If you prefer to build manually:
+
+##### For macOS Users:
 
 1. **Install Prerequisites:**
    ```bash
@@ -169,7 +186,43 @@ Assets/
 
 ---
 
-## Issue 4: DynamicBEVCameraController Can't Find Agents
+## Issue 4: Multiple Plugins with Same Name ✅ AUTO-FIXED
+
+**Error Message:**
+```
+Multiple plugins with the same name 'libreplicantdrivesim' (found at
+'Assets/Plugins/TrafficSimulation/build/libReplicantDriveSim.dylib' and
+'Assets/Plugins/TrafficSimulation/libReplicantDriveSim.dylib').
+That means one or more plugins are set to be compatible with Editor.
+```
+
+**Root Cause:** After building, CMake creates versioned library files and symlinks in the `build/` directory. Unity scans `Assets/Plugins/` recursively and sees both:
+- The library in `TrafficSimulation/` (needed by Unity)
+- Duplicate files in `TrafficSimulation/build/` (build artifacts)
+
+**Status:** ✅ **AUTO-FIXED** - The updated `build_native_library.sh` script now automatically removes the build directory after successfully copying the library.
+
+### If You Already Have This Error
+
+If you built the library before the script was updated and still see this error:
+
+**Quick Fix:**
+```bash
+# Remove the build directory
+rm -rf ~/Desktop/GitHub/ReplicantDriveSim/Assets/Plugins/TrafficSimulation/build
+
+# Restart Unity
+```
+
+**Why This Works:** The build directory contains intermediate build files and symlinks. Unity only needs the library in `Assets/Plugins/TrafficSimulation/libReplicantDriveSim.dylib`. The build directory is already in `.gitignore` and is safe to delete.
+
+### Future Builds
+
+The updated build script (as of commit `0e2b292`) automatically cleans up the build directory after copying the library, so this error won't occur in future builds.
+
+---
+
+## Issue 5: DynamicBEVCameraController Can't Find Agents
 
 **Warning Message:**
 ```
