@@ -13,7 +13,7 @@ using UnityEngine;
 ///
 /// Public Properties:
 /// - roadTexture: Texture2D for the road surfaces.
-/// - roadPhysicsMaterial: PhysicMaterial for the roads' friction properties.
+/// - roadPhysicsMaterial: PhysicsMaterial for the roads' friction properties.
 /// - singleRoadWidth: Width of each road (default 15 units, accommodating two lanes).
 /// - roadLength: Length of the roads (default 3250 units).
 /// - boundaryHeight: Height of the boundary walls (default 5 units).

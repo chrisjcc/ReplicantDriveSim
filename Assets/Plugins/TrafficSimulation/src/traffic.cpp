@@ -192,9 +192,26 @@ void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::v
     Vehicle& next_state = agents[vehicle_id];
 
     // Process steering and acceleration inputs
-    float steering = low_level_action[0];
+    float desired_steering = low_level_action[0];
     float acceleration = low_level_action[1];
     float braking = low_level_action[2];
+
+    // === STEERING RATE LIMITING ===
+    // Real vehicles cannot change steering angle instantaneously
+    // Typical maximum steering rate: 30-60 deg/s (0.52-1.05 rad/s)
+    constexpr float MAX_STEERING_RATE = 1.0472f;  // 60 deg/s in rad/s
+
+    float current_steering = vehicle.getSteering();
+    float steering_change = desired_steering - current_steering;
+    float max_change = MAX_STEERING_RATE * time_step;
+
+    // Clamp steering change to maximum rate
+    if (std::abs(steering_change) > max_change) {
+        steering_change = (steering_change > 0.0f) ? max_change : -max_change;
+    }
+
+    float actual_steering = current_steering + steering_change;
+    // === END STEERING RATE LIMITING ===
 
     float net_acceleration = 0.0f;
 
@@ -218,7 +235,7 @@ void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::v
     // Update vehicle state using enhanced dynamic bicycle model
     next_state = vehicle_models[vehicle_id].updateDynamicState(
         vehicle, // Current state
-        steering,
+        actual_steering,  // Use rate-limited steering instead of desired_steering
         net_acceleration,
         time_step
     );
@@ -229,7 +246,7 @@ void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::v
     vehicle.setZ(next_state.getZ());  // Z = longitudinal/forward position
 
     vehicle.setYaw(next_state.getYaw());
-    vehicle.setSteering(steering);
+    vehicle.setSteering(actual_steering);  // Store rate-limited steering value
 
     vehicle.setVx(next_state.getVx()); // Vx = lateral speed
     vehicle.setVz(next_state.getVz()); // Vz = longitudinal speed
