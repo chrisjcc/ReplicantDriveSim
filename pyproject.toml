@@ -52,7 +52,7 @@ classifiers = [
 dependencies = [
     "mlagents==1.1.0",
     "mlagents-envs==1.1.0",
-    "gymnasium==0.26.3",
+    "gymnasium==0.28.1",  # Required by ray[rllib] 2.31.0
     "gym==0.21.0",  # Required by ML-Agents
     "ray[rllib]==2.31.0",
     "protobuf==3.20.3",
