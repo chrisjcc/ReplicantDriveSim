@@ -33,12 +33,12 @@ help: ## Display this help message
 
 install: ## Install package in editable mode (development)
 	@echo "$(GREEN)Installing replicantdrivesim in editable mode...$(RESET)"
-	@echo "$(GREEN)Step 1: Installing build dependencies and downgrade setuptools...$(RESET)"
-	$(PIP) install 'setuptools<66' wheel 'pybind11>=2.12.0'
-	@echo "$(GREEN)Step 2: Installing gym 0.21.0 with compatible setuptools...$(RESET)"
+	@echo "$(GREEN)Step 1: Downgrading build tools for gym compatibility...$(RESET)"
+	$(PIP) install 'setuptools<66' 'wheel<0.38' 'pybind11>=2.12.0'
+	@echo "$(GREEN)Step 2: Installing gym 0.21.0 with compatible build tools...$(RESET)"
 	$(PIP) install gym==0.21.0 --no-build-isolation
-	@echo "$(GREEN)Step 3: Upgrading setuptools for main package...$(RESET)"
-	$(PIP) install 'setuptools>=69.5.1,<70'
+	@echo "$(GREEN)Step 3: Upgrading build tools for main package...$(RESET)"
+	$(PIP) install 'setuptools>=69.5.1,<70' 'wheel>=0.43.0'
 	@echo "$(GREEN)Step 4: Installing package (no build isolation)...$(RESET)"
 	$(PIP) install --no-build-isolation -e .
 
