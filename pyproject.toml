@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "replicantdrivesim"
-version = "0.6.6"
+version = "0.6.7"
 description = "A Unity-based traffic simulation environment for multi-agent reinforcement learning"
 readme = "README.md"
 requires-python = ">=3.10.1,<=3.10.12"
@@ -56,6 +56,9 @@ dependencies = [
     "gym==0.21.0",  # Required by ML-Agents
     "ray[rllib]==2.31.0",
     "protobuf==3.20.3",
+    "wandb",
+    "hydra-core",
+    "omegaconf",
     "grpcio>=1.48.1",  # Satisfies mlagents and has conda-forge osx-arm64 binaries
     "numpy>=1.23.5,<1.24.0",
     "torch>=2.1.1",

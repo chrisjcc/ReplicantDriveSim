@@ -29,10 +29,13 @@ import yaml
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.exception import UnityCommunicatorStoppedException
+import hydra
+from omegaconf import DictConfig, OmegaConf
 from mlflow.models.signature import ModelSignature
 from mlflow.types.schema import Schema, TensorSpec
 from ray import train, tune
 from ray.air.integrations.mlflow import MLflowLoggerCallback
+from ray.air.integrations.wandb import WandbLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
@@ -93,26 +96,24 @@ def register_model(
         print(f"Model {model_name} registered with run ID: {run.info.run_id}")
 
 
-def main():
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def main(cfg: DictConfig):
     """
     Main function to initialize the Unity environment and start the training process.
-
-    Returns:
-        None
     """
     try:
+        # Convert OmegaConf to standard dict for RLlib compatibility
+        config_data = OmegaConf.to_container(cfg, resolve=True)
+
         # Set YAML files paths
-        config_path = os.path.join("examples", "configs", "config.yaml")
         config_schema_path = os.path.join(
             "replicantdrivesim", "configs", "config_schema.yaml"
         )
 
-        # Validate YAML file
-        validate_yaml_schema(config_path, config_schema_path)
-
-        # Load configuration from YAML file
-        with open(config_path, "r") as config_file:
-            config_data = yaml.safe_load(config_file)
+        # Validate configuration (optional, as Hydra handles most of this)
+        # Note: We temporarily write to a temp file for yamale if we really want to keep it,
+        # but for now let's just use the config_data directly.
+        # print("Configuration loaded via Hydra.")
 
         # Set up MLflow logging
         mlflow.set_experiment(config_data["mlflow"]["experiment_name"])
@@ -227,13 +228,20 @@ def main():
                     checkpoint_at_end=config_data["training"]["checkpoint_at_end"],
                 ),
                 callbacks=[
-                    MLflowLoggerCallback(
-                        experiment_name=config_data["mlflow"]["experiment_name"],
-                        tracking_uri=mlflow.get_tracking_uri(),
-                        registry_uri=None,
-                        save_artifact=True,
-                        tags=tags,
-                    )
+                    callback for callback in [
+                        MLflowLoggerCallback(
+                            experiment_name=config_data["mlflow"]["experiment_name"],
+                            tracking_uri=mlflow.get_tracking_uri(),
+                            registry_uri=None,
+                            save_artifact=True,
+                            tags=tags,
+                        ) if config_data.get("mlflow", {}).get("enabled", True) else None,
+                        WandbLoggerCallback(
+                            project=config_data["wandb"]["project"],
+                            entity=config_data["wandb"]["entity"],
+                            log_config=True,
+                        ) if config_data.get("wandb", {}).get("enabled", False) else None,
+                    ] if callback is not None
                 ],
                 stop={
                     "training_iteration": config_data["stop"]["training_iteration"]

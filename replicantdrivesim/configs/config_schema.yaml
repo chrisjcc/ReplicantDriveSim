@@ -2,6 +2,12 @@
 
 mlflow:
   experiment_name: str()
+  enabled: bool()
+
+wandb:
+  project: str()
+  entity: str()
+  enabled: bool()
 
 ray_init:
   num_cpus: int(min=1)
