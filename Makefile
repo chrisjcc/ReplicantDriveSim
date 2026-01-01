@@ -33,7 +33,10 @@ help: ## Display this help message
 
 install: ## Install package in editable mode (development)
 	@echo "$(GREEN)Installing replicantdrivesim in editable mode...$(RESET)"
-	$(PIP) install -e .
+	@echo "$(GREEN)Step 1: Installing build dependencies...$(RESET)"
+	$(PIP) install 'setuptools>=69.5.1,<70' wheel 'pybind11>=2.12.0'
+	@echo "$(GREEN)Step 2: Installing package (no build isolation to use compatible setuptools)...$(RESET)"
+	$(PIP) install --no-build-isolation -e .
 
 install-prod: ## Install package (production, non-editable)
 	@echo "$(GREEN)Installing replicantdrivesim...$(RESET)"
