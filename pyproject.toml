@@ -45,7 +45,6 @@ classifiers = [
     "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
-    "Framework :: Gymnasium",
 ]
 
 # Core dependencies
