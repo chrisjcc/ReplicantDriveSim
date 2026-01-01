@@ -49,7 +49,7 @@ install: ## Install package in editable mode (development)
 		echo "$(GREEN)Step 6: Installing package (no build isolation, no deps)...$(RESET)"; \
 		$(PYTHON) -m pip install --no-build-isolation --no-deps -e .; \
 		echo "$(GREEN)Step 7: Ensuring remaining dependencies are satisfied...$(RESET)"; \
-		$(PYTHON) -m pip install "gymnasium==0.28.1" "ray[rllib]==2.31.0" "numpy>=1.23.5,<1.24.0" "torch>=2.1.1" "mlflow<3.0.0" "yamale>=6.1.0" "protobuf==3.20.3"; \
+		$(PYTHON) -m pip install "gymnasium==0.28.1" "ray[rllib]==2.31.0" "numpy>=1.23.5,<1.24.0" "torch>=2.1.1" "mlflow<3.0.0" "yamale>=6.1.0" "protobuf==3.20.3" "wandb" "hydra-core" "omegaconf"; \
 	else \
 		echo "$(GREEN)Step 1: Downgrading pip and build tools for gym 0.21.0 compatibility...$(RESET)"; \
 		$(PYTHON) -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38' 'pybind11>=2.12.0'; \

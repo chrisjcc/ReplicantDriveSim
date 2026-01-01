@@ -1,5 +1,13 @@
 mlflow:
   experiment_name: "MARLExperiment"
+  enabled: false
+
+wandb:
+  project: "replicantdrivesim"
+  entity: "rl4aa"
+  enabled: true
+
+seed: 42
 
 ray_init:
   num_cpus: 4  # Total available CPUs across the entire setup
