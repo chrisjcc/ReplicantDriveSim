@@ -7,12 +7,20 @@ import mlflow
 import numpy as np
 
 # Suppress DeprecationWarnings from output
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message="`AlgorithmConfig.num_.*` has been deprecated")
+
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
 os.environ["RAY_DEDUP_LOGS"] = "0"
 # Set it for the current notebook environment
 version = "0" # "2"  # Default "1"
 os.environ["RAY_AIR_NEW_OUTPUT"] = version
 os.environ["RAY_AIR_RICH_LAYOUT"] = version
+
+# Silence specific Ray loggers that emit deprecation noise
+logging.getLogger("ray.rllib.algorithms.algorithm_config").setLevel(logging.ERROR)
+logging.getLogger("ray.tune.tune").setLevel(logging.ERROR)
 
 
 import ray
