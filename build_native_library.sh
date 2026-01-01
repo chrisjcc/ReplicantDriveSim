@@ -9,6 +9,10 @@ echo "=================================================="
 echo "ReplicantDriveSim - Native Library Build Script"
 echo "=================================================="
 
+# Optional Python executable argument
+PYTHON_EXE="${1:-python3}"
+echo "Using Python executable: $PYTHON_EXE"
+
 # Detect platform
 OS="$(uname -s)"
 case "${OS}" in
@@ -79,7 +83,15 @@ fi
 # Configure with CMake
 echo ""
 echo "Configuring with CMake..."
-cmake ${CMAKE_ARGS:-} ..
+
+# Get Python root directory (hint for CMake)
+PYTHON_ROOT=$(dirname $(dirname "$PYTHON_EXE"))
+
+cmake ${CMAKE_ARGS:-} \
+    -DPython3_EXECUTABLE="$PYTHON_EXE" \
+    -DPython3_ROOT_DIR="$PYTHON_ROOT" \
+    -DPython3_FIND_STRATEGY=LOCATION \
+    ..
 
 # Determine number of CPU cores
 if [ "$PLATFORM" = "macOS" ]; then
@@ -195,6 +207,17 @@ if [ $? -eq 0 ]; then
                 echo ""
                 echo "❌ ERROR: Moved file is 0 bytes!"
                 exit 1
+            fi
+
+            # Copy the Python module to the replicantdrivesim package directory
+            # The root directory is four levels up from Assets/Plugins/TrafficSimulation/build
+            PYTHON_PKG_DIR="../../../../replicantdrivesim"
+            echo "Copying Python module to $PYTHON_PKG_DIR..."
+            if [ -f "replicantdrivesim.so" ]; then
+                cp -f "replicantdrivesim.so" "$PYTHON_PKG_DIR/"
+                echo "✓ Python module successfully moved"
+            else
+                echo "WARNING: replicantdrivesim.so not found in build directory"
             fi
 
             # Clean up build directory to prevent Unity from seeing duplicates

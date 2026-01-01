@@ -32,7 +32,7 @@ fi
 # Project configuration
 PROJECT_PATH="${PROJECT_PATH:-$(pwd)}"
 BUILD_TARGET="${BUILD_TARGET:-${DEFAULT_BUILD_TARGET}}"
-BUILD_OUTPUT="${BUILD_OUTPUT:-${PROJECT_PATH}/Builds}"
+BUILD_OUTPUT="${BUILD_OUTPUT:-${PROJECT_PATH}/replicantdrivesim/Builds}"
 LOG_DIR="${LOG_DIR:-${PROJECT_PATH}/Logs}"
 LOG_FILE="${LOG_FILE:-${LOG_DIR}/unity_build_$(date +%Y%m%d_%H%M%S).log}"
 BUILD_METHOD="${BUILD_METHOD:-UnityBuilderAction.BuildScript.PerformBuild}"
@@ -228,8 +228,21 @@ build_unity_project() {
 
         # List build output
         if [ -d "$BUILD_OUTPUT" ]; then
-            echo "Build contents:"
+            echo "Build contents at $BUILD_OUTPUT:"
             ls -lh "$BUILD_OUTPUT" | head -20
+        fi
+
+        # Check if build ended up in the default root directory instead of BUILD_OUTPUT
+        # This happens because BuildScript.cs has a hardcoded path
+        ROOT_BUILDS="$PROJECT_PATH/Builds"
+        if [ "$BUILD_OUTPUT" != "$ROOT_BUILDS" ] && [ -d "$ROOT_BUILDS" ]; then
+            echo ""
+            echo "Notice: Unity generated build in default location $ROOT_BUILDS"
+            echo "Moving build results to $BUILD_OUTPUT for package compatibility..."
+            mkdir -p "$BUILD_OUTPUT"
+            cp -R "$ROOT_BUILDS/"* "$BUILD_OUTPUT/"
+            rm -rf "$ROOT_BUILDS"
+            echo "✓ Build results moved to $BUILD_OUTPUT"
         fi
 
         return 0

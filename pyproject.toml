@@ -56,10 +56,22 @@ dependencies = [
     "gym==0.21.0",  # Required by ML-Agents
     "ray[rllib]==2.31.0",
     "protobuf==3.20.3",
-    "grpcio>=1.11.0,<=1.48.2",  # Compatible with mlagents 1.1.0
+    "grpcio>=1.48.1",  # Satisfies mlagents and has conda-forge osx-arm64 binaries
     "numpy>=1.23.5,<1.24.0",
     "torch>=2.1.1",
     "pybind11>=2.12.0",
+    # ML-Agents Transitive Dependencies (required due to --no-deps workaround)
+    "attrs>=19.3.0",
+    "cattrs>=1.1.0,<1.7",
+    "h5py>=2.9.0",
+    "huggingface-hub>=0.14",
+    "onnx==1.15.0",
+    "Pillow>=4.2.1",
+    "pyyaml>=3.1.0",
+    "tensorboard>=2.14",
+    "pettingzoo==1.15.0",
+    "mlflow<3.0.0",
+    "yamale>=6.1.0",
 ]
 
 [project.optional-dependencies]
