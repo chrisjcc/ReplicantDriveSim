@@ -262,6 +262,8 @@ jobs:
 
       - name: Verify PyPi package installation
         run: |
+          # legacy gym 0.21.0 requires older setuptools
+          python -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38'
           pip install ReplicantDriveSim
           pip show ReplicantDriveSim
 
