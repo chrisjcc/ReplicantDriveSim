@@ -56,7 +56,7 @@ dependencies = [
     "gym==0.21.0",  # Required by ML-Agents
     "ray[rllib]==2.31.0",
     "protobuf==3.20.3",
-    "grpcio==1.53.2",
+    "grpcio>=1.11.0,<=1.48.2",  # Compatible with mlagents 1.1.0
     "numpy>=1.23.5,<1.24.0",
     "torch>=2.1.1",
     "pybind11>=2.12.0",
