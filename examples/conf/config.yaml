@@ -1,11 +1,11 @@
 mlflow:
   experiment_name: "MARLExperiment"
-  enabled: true
+  enabled: false
 
 wandb:
   project: "replicantdrivesim"
   entity: "rl4aa"
-  enabled: false
+  enabled: true
 
 seed: 42
 

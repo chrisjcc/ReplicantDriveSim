@@ -105,16 +105,6 @@ def main(cfg: DictConfig):
         # Convert OmegaConf to standard dict for RLlib compatibility
         config_data = OmegaConf.to_container(cfg, resolve=True)
 
-        # Set YAML files paths
-        config_schema_path = os.path.join(
-            "replicantdrivesim", "configs", "config_schema.yaml"
-        )
-
-        # Validate configuration (optional, as Hydra handles most of this)
-        # Note: We temporarily write to a temp file for yamale if we really want to keep it,
-        # but for now let's just use the config_data directly.
-        # print("Configuration loaded via Hydra.")
-
         # Set up MLflow logging
         mlflow.set_experiment(config_data["mlflow"]["experiment_name"])
 
