@@ -31,16 +31,16 @@ dependencies:
 
   # Install the package and all dependencies from pyproject.toml
   # This avoids redundancy and makes pyproject.toml the single source of truth
-  - pip:
-      # Editable install with all optional dependencies
-      # Alternatively, use: -e . for minimal install
-      # Or: -e .[dev] for development dependencies only
-      - -e .[all]
+  # Note: Run 'make install' or 'pip install -e .' after activating the environment
+  # - pip:
+  #     - -e .[all]
 
 # Environment setup instructions:
 # 1. Create environment:    conda env create -f environment.yml
 # 2. Activate environment:  conda activate drive
-# 3. Update environment:    make conda-update
-# 4. All Python dependencies are automatically installed from pyproject.toml
+# 3. Install package:       make install (or pip install -e .)
+# 4. Update environment:    conda env update -f environment.yml --prune
+#
+# Note: Python dependencies are managed in pyproject.toml to avoid redundancy
 
 prefix: /Users/christiancontrerascampana/anaconda3/envs/drive
