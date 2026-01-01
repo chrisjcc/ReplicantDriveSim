@@ -138,21 +138,15 @@ def main():
         # Get the default PPO configuration
         config = PPO.get_default_config()
 
-        # Update the configuration
-        # This configuration modifies the global settings for the entire training process
-        config["num_workers"] = 2  # Number of worker processes for training
-        config["num_gpus"] = 0     # No GPU
+        # Update the configuration using modern method-style API
 
         config = config.environment(
             env=env_name,
             env_config=config_data,
-            disable_env_checking=config_data["environment"][
-                "disable_env_checking"
-            ],  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
         )
         config = config.framework(config_data["ppo_config"]["framework"])
         config = config.resources(
-            num_gpus=config_data["ppo_config"]["num_gpus"]  # No GPU
+            num_gpus=0
         )
 
         # Multi-agent configuration
@@ -185,7 +179,7 @@ def main():
         # Training configuration
         config = config.training(
             train_batch_size=config_data["training"]["train_batch_size"],
-            num_epochs=config_data["training"]["num_epochs"],
+            num_sgd_iter=config_data["training"]["num_epochs"],
             lr=config_data["training"]["lr"],
             gamma=config_data["training"]["gamma"],
             lambda_=config_data["training"]["lambda"],

@@ -6,8 +6,8 @@
 # Default target
 .DEFAULT_GOAL := help
 
-# Python interpreter
-PYTHON := python3
+# Python interpreter detection
+PYTHON ?= $(shell which python3)
 PIP := $(PYTHON) -m pip
 
 # Build scripts
@@ -33,10 +33,33 @@ help: ## Display this help message
 
 install: ## Install package in editable mode (development)
 	@echo "$(GREEN)Installing replicantdrivesim in editable mode...$(RESET)"
-	@echo "$(GREEN)Step 1: Installing build dependencies...$(RESET)"
-	$(PIP) install 'setuptools>=69.5.1,<70' wheel 'pybind11>=2.12.0'
-	@echo "$(GREEN)Step 2: Installing package (no build isolation to use compatible setuptools)...$(RESET)"
-	$(PIP) install --no-build-isolation -e .
+	@UNAME_S=$$(uname -s); UNAME_M=$$(uname -m); \
+	if [ "$$UNAME_S" = "Darwin" ] && [ "$$UNAME_M" = "arm64" ]; then \
+		echo "$(CYAN)Detected macOS arm64. Applying clean dependency workaround...$(RESET)"; \
+		echo "$(GREEN)Step 1: Installing native dependencies via conda...$(RESET)"; \
+		conda install -y -c conda-forge "grpcio=1.48.1" "protobuf=3.20.3"; \
+		echo "$(GREEN)Step 2: Downgrading pip and build tools for gym 0.21.0 compatibility...$(RESET)"; \
+		$(PYTHON) -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38' 'pybind11>=2.12.0'; \
+		echo "$(GREEN)Step 3: Installing core dependencies (no-deps)...$(RESET)"; \
+		$(PYTHON) -m pip install mlagents==1.1.0 mlagents-envs==1.1.0 --no-deps; \
+		echo "$(GREEN)Step 4: Installing gym 0.21.0 with compatible tools...$(RESET)"; \
+		$(PYTHON) -m pip install gym==0.21.0 --no-build-isolation; \
+		echo "$(GREEN)Step 5: Upgrading pip and build tools for main package...$(RESET)"; \
+		$(PYTHON) -m pip install 'pip>=24.0' 'setuptools>=69.5.1,<70' 'wheel>=0.43.0'; \
+		echo "$(GREEN)Step 6: Installing package (no build isolation, no deps)...$(RESET)"; \
+		$(PYTHON) -m pip install --no-build-isolation --no-deps -e .; \
+		echo "$(GREEN)Step 7: Ensuring remaining dependencies are satisfied...$(RESET)"; \
+		$(PYTHON) -m pip install "gymnasium==0.28.1" "ray[rllib]==2.31.0" "numpy>=1.23.5,<1.24.0" "torch>=2.1.1" "mlflow<3.0.0" "yamale>=6.1.0" "protobuf==3.20.3"; \
+	else \
+		echo "$(GREEN)Step 1: Downgrading pip and build tools for gym 0.21.0 compatibility...$(RESET)"; \
+		$(PYTHON) -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38' 'pybind11>=2.12.0'; \
+		echo "$(GREEN)Step 2: Installing gym 0.21.0 with compatible tools...$(RESET)"; \
+		$(PYTHON) -m pip install gym==0.21.0 --no-build-isolation; \
+		echo "$(GREEN)Step 3: Upgrading pip and build tools for main package...$(RESET)"; \
+		$(PYTHON) -m pip install 'pip>=24.0' 'setuptools>=69.5.1,<70' 'wheel>=0.43.0'; \
+		echo "$(GREEN)Step 4: Installing package (no build isolation)...$(RESET)"; \
+		$(PYTHON) -m pip install --no-build-isolation -e .; \
+	fi
 
 install-prod: ## Install package (production, non-editable)
 	@echo "$(GREEN)Installing replicantdrivesim...$(RESET)"
@@ -63,7 +86,7 @@ build-native: ## Build C++ native library (traffic simulation plugin)
 		exit 1; \
 	fi
 	@chmod +x $(BUILD_NATIVE_SCRIPT)
-	$(BUILD_NATIVE_SCRIPT)
+	$(BUILD_NATIVE_SCRIPT) $(PYTHON)
 
 build-unity: ## Build Unity application (standalone builds)
 	@echo "$(GREEN)Building Unity application...$(RESET)"
