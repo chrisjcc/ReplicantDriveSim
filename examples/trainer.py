@@ -146,8 +146,7 @@ def main():
         )
         config = config.framework(config_data["ppo_config"]["framework"])
         config = config.resources(
-            num_cpus_per_learner=config_data["training"].get("num_cpus_per_learner", 1),
-            num_gpus_per_learner=config_data["training"].get("num_gpus_per_learner", 0),
+            num_gpus=0
         )
 
         # Multi-agent configuration
