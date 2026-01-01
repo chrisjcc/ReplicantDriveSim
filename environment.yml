@@ -12,7 +12,7 @@ dependencies:
 
   # Package management tools
   - pip
-  - setuptools
+  - setuptools>=69.5.1,<70  # <70 required for gym==0.21.0 compatibility
   - wheel
 
   # Build dependencies for native library compilation
