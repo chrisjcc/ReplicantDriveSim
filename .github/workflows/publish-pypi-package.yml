@@ -122,7 +122,7 @@ jobs:
       - name: Extract Unity Plugin Build Artifacts
         run: |
           # Extract the file and overwrite existing files without prompting
-          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          unzip -o ./macos-unity-plugin-build-${{ needs.build-unity-plugin.outputs.VERSION }}.zip
 
           # Remove the ZIP file
           rm -rf ./macos-unity-plugin-build-${{ needs.build-unity-plugin.outputs.VERSION }}.zip metadata.txt
@@ -171,15 +171,15 @@ jobs:
             const release = await github.rest.repos.getReleaseByTag({
               owner,
               repo,
-               tag: process.env.VERSION
+               tag: ${{ needs.build-unity-plugin.outputs.VERSION }}
             });
 
             await github.rest.repos.uploadReleaseAsset({
               owner,
               repo,
               release_id: release.data.id,
-              name: `macOS-unity-Build-project-${process.env.VERSION}.zip`,
-              data: fs.readFileSync(`./macOS-unity-Build-project-${process.env.VERSION}.zip`)
+              name: `macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip`,
+              data: fs.readFileSync(`./macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip`)
             });
 
 
