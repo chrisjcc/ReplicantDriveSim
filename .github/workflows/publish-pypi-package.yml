@@ -279,7 +279,8 @@ jobs:
         run: |
           # legacy gym 0.21.0 requires older setuptools
           python -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38'
-          pip install replicantdrivesim==${{ env.VERSION }}
+          # Test installation of the full RL stack (including conditional dependencies)
+          pip install "replicantdrivesim[rl]==${{ env.VERSION }}"
           pip show replicantdrivesim
 
       # In the PyPI workflow

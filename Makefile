@@ -47,7 +47,7 @@ install: ## Install package in editable mode (development)
 		echo "$(GREEN)Step 5: Upgrading pip and build tools for main package...$(RESET)"; \
 		$(PYTHON) -m pip install 'pip>=24.0' 'setuptools>=69.5.1,<70' 'wheel>=0.43.0'; \
 		echo "$(GREEN)Step 6: Installing package (no build isolation, no deps)...$(RESET)"; \
-		$(PYTHON) -m pip install --no-build-isolation --no-deps -e .; \
+		$(PYTHON) -m pip install --no-build-isolation --no-deps -e ".[rl]"; \
 		echo "$(GREEN)Step 7: Ensuring remaining dependencies are satisfied...$(RESET)"; \
 		$(PYTHON) -m pip install "gymnasium==0.28.1" "ray[rllib]==2.31.0" "numpy>=1.23.5,<1.24.0" "torch>=2.1.1" "mlflow<3.0.0" "yamale>=6.1.0" "protobuf==3.20.3" "wandb" "hydra-core" "omegaconf"; \
 	else \
@@ -58,7 +58,7 @@ install: ## Install package in editable mode (development)
 		echo "$(GREEN)Step 3: Upgrading pip and build tools for main package...$(RESET)"; \
 		$(PYTHON) -m pip install 'pip>=24.0' 'setuptools>=69.5.1,<70' 'wheel>=0.43.0'; \
 		echo "$(GREEN)Step 4: Installing package (no build isolation)...$(RESET)"; \
-		$(PYTHON) -m pip install --no-build-isolation -e .; \
+		$(PYTHON) -m pip install --no-build-isolation -e ".[rl]"; \
 	fi
 
 install-prod: ## Install package (production, non-editable)
@@ -67,11 +67,11 @@ install-prod: ## Install package (production, non-editable)
 
 install-dev: ## Install package with development dependencies
 	@echo "$(GREEN)Installing replicantdrivesim with dev dependencies...$(RESET)"
-	$(PIP) install -e ".[dev]"
+	$(PIP) install -e ".[dev,rl]"
 
 install-all: ## Install package with all optional dependencies
 	@echo "$(GREEN)Installing replicantdrivesim with all dependencies...$(RESET)"
-	$(PIP) install -e ".[all]"
+	$(PIP) install -e ".[all,rl]"
 
 uninstall: ## Uninstall package
 	@echo "$(GREEN)Uninstalling replicantdrivesim...$(RESET)"
