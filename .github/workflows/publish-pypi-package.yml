@@ -156,7 +156,8 @@ jobs:
 
       - name: Upload Unity Build Artifact
         uses: actions/upload-artifact@v4
-        with:	
+        with:
+          name: macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}
           path: macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip
 
       - name: Update Release Asset
@@ -212,10 +213,10 @@ jobs:
           cd replicantdrivesim
 
           # Extract the file and overwrite existing files without prompting
-          unzip -o macOS-unity-Build-project-${{ env.VERSION }}.zip
+          unzip -o macOS-unity-Build-project-${{ needs.build-unity-project.outputs.VERSION }}.zip
 
           # Remove the ZIP file
-          rm macOS-unity-Build-project-${{ env.VERSION }}.zip
+          rm macOS-unity-Build-project-${{ needs.build-unity-project.outputs.VERSION }}.zip
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
