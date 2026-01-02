@@ -260,10 +260,13 @@ jobs:
           twine upload dist/*
 
       - name: Verify PyPi package installation
+        env:
+          GRPC_PYTHON_BUILD_SYSTEM_OPENSSL: 1
+          GRPC_PYTHON_BUILD_SYSTEM_ZLIB: 1
         run: |
           # legacy gym 0.21.0 requires older setuptools
           python -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38'
-          pip install replicantdrivesim
+          pip install replicantdrivesim==${{ needs.build-unity-project.outputs.VERSION }}
           pip show replicantdrivesim
 
       # In the PyPI workflow
