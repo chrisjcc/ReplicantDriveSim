@@ -177,7 +177,7 @@ jobs:
             const release = await github.rest.repos.getReleaseByTag({
               owner,
               repo,
-              tag: VERSION
+              tag: `v${VERSION}`
             });
 
             await github.rest.repos.uploadReleaseAsset({
