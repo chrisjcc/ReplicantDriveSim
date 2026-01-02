@@ -49,9 +49,9 @@ classifiers = [
 
 # Core dependencies
 dependencies = [
-    "mlagents-envs==1.1.0",
+    "mlagents-envs==1.1.0 ; sys_platform != 'darwin' or platform_machine != 'arm64'",
     "gymnasium==0.28.1",  # Required by ray[rllib] 2.31.0
-    "gym==0.21.0",  # Required by ML-Agents
+    "gym==0.21.0 ; sys_platform != 'darwin' or platform_machine != 'arm64'",  # Required by ML-Agents
     "ray[rllib]==2.31.0",
     "protobuf==3.20.3",
     "wandb",
@@ -70,12 +70,18 @@ dependencies = [
     "Pillow>=4.2.1",
     "pyyaml>=3.1.0",
     "tensorboard>=2.14",
-    "pettingzoo==1.15.0",
+    "pettingzoo==1.15.0 ; sys_platform != 'darwin' or platform_machine != 'arm64'",
     "mlflow<3.0.0",
     "yamale>=6.1.0",
 ]
 
 [project.optional-dependencies]
+# RL-specific dependencies (problematic on Apple Silicon)
+rl = [
+    "mlagents-envs==1.1.0",
+    "gym==0.21.0",
+    "pettingzoo==1.15.0",
+]
 # Development dependencies
 dev = [
     "pytest>=7.0.0",
