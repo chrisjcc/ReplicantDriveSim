@@ -54,6 +54,15 @@ jobs:
         env:
           READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
         run: |
+          # First, sync versions so RTD knows about new tags
+          echo "Syncing versions..."
+          curl -s -X POST \
+          -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
+          "https://app.readthedocs.org/api/v3/projects/${REPO_LOWER}/sync-versions/"
+    
+          # Give RTD a moment to process
+          sleep 5
+
           function trigger_build() {
             local url=$1
             local response=$(curl -s -w "\n%{http_code}" -X POST \
@@ -71,7 +80,7 @@ jobs:
           # If version-specific build fails, try latest
           if [ "$http_code" -eq 404 ]; then
             echo "Version-specific build failed, trying 'latest' version..."
-            response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/latest/builds/")
+            response=$(trigger_build "https://app.readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/latest/builds/")
             http_code=$(echo "$response" | tail -n1)
             body=$(echo "$response" | head -n-1)
           fi
