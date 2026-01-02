@@ -50,7 +50,7 @@ jobs:
 
       - name: Create metadata file
         run: |
-          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
           echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
           echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
@@ -102,7 +102,7 @@ jobs:
 
       - name: Create metadata file
         run: |
-          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Version: ${{ needs.build-unity-plugin.outputs.VERSION }}" > metadata.txt
           echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
           echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
@@ -116,7 +116,7 @@ jobs:
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-unity-plugin-build-${{ env.VERSION }}
+          name: macos-unity-plugin-build-${{ needs.build-unity-plugin.outputs.VERSION }}
           path: ./
 
       - name: Extract Unity Plugin Build Artifacts
@@ -125,7 +125,7 @@ jobs:
           unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
 
           # Remove the ZIP file
-          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip metadata.txt
+          rm -rf ./macos-unity-plugin-build-${{ needs.build-unity-plugin.outputs.VERSION }}.zip metadata.txt
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
@@ -152,14 +152,12 @@ jobs:
 
       - name: Package Builds with metadata
         run: |
-          zip -r macOS-unity-Build-project-${{ env.VERSION }}.zip ./Builds ./Logs metadata.txt
+          zip -r macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip ./Builds ./Logs metadata.txt
 
       - name: Upload Unity Build Artifact
         uses: actions/upload-artifact@v4
         with:	
-          name: macOS-unity-Build-project-${{ env.VERSION }}
-          # Upload the entire Builds and Logs directories
-          path: macOS-unity-Build-project-${{ env.VERSION }}.zip
+          path: macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip
 
       - name: Update Release Asset
         uses: actions/github-script@v6
@@ -205,7 +203,7 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ env.VERSION }}
+          name: macOS-unity-Build-project-${{ needs.build-unity-project.outputs.VERSION }}
           path: ./replicantdrivesim
 
       - name: Extract Unity Build Artifact
@@ -222,19 +220,19 @@ jobs:
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-unity-plugin-build-${{ env.VERSION }}
+          name: macos-unity-plugin-build-${{ needs.build-unity-project.outputs.VERSION }}
           path: ./
 
       - name: Extract Unity Plugin Artifact
         run: |
           # Extract the file and overwrite existing files without prompting
-          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          unzip -o ./macos-unity-plugin-build-${{ needs.build-unity-project.outputs.VERSION }}.zip
 
           # Copy the compiled C extension Python module to the 'replicantdrivesim' directory
           cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim.so replicantdrivesim/
 
           # Remove the ZIP file
-          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          rm -rf ./macos-unity-plugin-build-${{ needs.build-unity-project.outputs.VERSION }}.zip
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -264,8 +262,8 @@ jobs:
         run: |
           # legacy gym 0.21.0 requires older setuptools
           python -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38'
-          pip install ReplicantDriveSim
-          pip show ReplicantDriveSim
+          pip install replicantdrivesim
+          pip show replicantdrivesim
 
       # In the PyPI workflow
       - name: Notify Release Completion
