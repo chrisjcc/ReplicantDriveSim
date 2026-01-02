@@ -164,22 +164,24 @@ jobs:
         uses: actions/github-script@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build-unity-plugin.outputs.VERSION }}
         with:
           script: |
             const fs = require('fs');
+            const { VERSION } = process.env;
             const { owner, repo } = context.repo;
             const release = await github.rest.repos.getReleaseByTag({
               owner,
               repo,
-               tag: ${{ needs.build-unity-plugin.outputs.VERSION }}
+              tag: VERSION
             });
 
             await github.rest.repos.uploadReleaseAsset({
               owner,
               repo,
               release_id: release.data.id,
-              name: `macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip`,
-              data: fs.readFileSync(`./macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip`)
+              name: `macOS-unity-Build-project-${VERSION}.zip`,
+              data: fs.readFileSync(`./macOS-unity-Build-project-${VERSION}.zip`)
             });
 
 
