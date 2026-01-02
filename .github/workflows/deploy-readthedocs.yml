@@ -54,30 +54,17 @@ jobs:
         env:
           READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
         run: |
-          # Create JSON payload
-          PAYLOAD=$(jq -n \
-            --arg ref "${{ steps.version.outputs.version }}" \
-            '{
-              "ref": $ref,
-              "build_config": true,
-              "build_environment": true
-            }')
-
-          echo "Using payload: $PAYLOAD"
-
           function trigger_build() {
             local url=$1
             local response=$(curl -s -w "\n%{http_code}" -X POST \
               -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$PAYLOAD" \
               "$url")
 
             echo "$response"
           }
 
           # Try version-specific build first
-          response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${{ steps.version.outputs.rtd_version }}/builds/")
+          response=$(trigger_build "https://app.readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${{ steps.version.outputs.rtd_version }}/builds/")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
 
