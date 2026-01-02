@@ -52,6 +52,10 @@ The project is equipped with a robust continuous integration and deployment (CI/
 - The library supports **Ray's RLlib**, enabling multi-agent training for autonomous driving scenarios.
 - With a simple import, you can hand over the environment to Ray for scalable and efficient agent training.
 - This feature is designed for large-scale experiments, leveraging Ray's distributed architecture.
+- **Hydra Configuration**: Managed via Hydra, supporting powerful command-line overrides and multi-run experiments (e.g., seeding sweeps):
+  ```bash
+  python examples/trainer.py --multirun seed=42,43
+  ```
 
 ### 4. Comprehensive Documentation
 Doxygen-generated documentation is available for the C++ code, and additional project documentation is published on Read the Docs and GitHub Pages, ensuring developers have clear and detailed guidance for integration and usage.
