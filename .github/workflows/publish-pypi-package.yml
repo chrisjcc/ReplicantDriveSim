@@ -39,7 +39,9 @@ jobs:
           else
             VERSION=$(git describe --tags --always)
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          # Strip 'v' prefix if present
+          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
+          echo "VERSION=$VERSION_CLEAN" >> $GITHUB_OUTPUT
 
       - name: Print version
         run: echo "Building PyPI package for version ${{ steps.get_version.outputs.VERSION }}"
@@ -277,7 +279,7 @@ jobs:
         run: |
           # legacy gym 0.21.0 requires older setuptools
           python -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38'
-          pip install replicantdrivesim==${{ needs.build-unity-project.outputs.VERSION }}
+          pip install replicantdrivesim==${{ env.VERSION }}
           pip show replicantdrivesim
 
       # In the PyPI workflow

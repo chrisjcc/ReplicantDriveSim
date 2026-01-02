@@ -8,10 +8,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "replicantdrivesim"
-version = "0.7.3"
+version = "0.7.4"
 description = "A Unity-based traffic simulation environment for multi-agent reinforcement learning"
 readme = "README.md"
-requires-python = ">=3.10.1,<=3.10.12"
+requires-python = ">=3.10.1,<3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Christian Contreras Campana", email = "chrisjcc.physics@gmail.com"}
@@ -57,7 +57,7 @@ dependencies = [
     "wandb",
     "hydra-core",
     "omegaconf",
-    "grpcio>=1.48.1,<=1.48.2",  # Satisfies mlagents and has conda-forge osx-arm64 binaries
+    "grpcio>=1.48.1",  # Satisfies mlagents and has modern Apple Silicon wheels
     "numpy>=1.23.5,<1.24.0",
     "torch>=2.1.1",
     "pybind11>=2.12.0",
