@@ -67,7 +67,7 @@ jobs:
       - name: Install Native Dependencies via Conda
         shell: bash -l {0}
         run: |
-          conda install -y "grpcio=1.48.1" "protobuf=3.20.3" pybind11
+          conda install -y "grpcio=1.48.2" "protobuf=3.20.3" pybind11
 
       - name: Compile Native C++ Library
         shell: bash -l {0}
@@ -250,7 +250,7 @@ jobs:
       - name: Install Native Dependencies via Conda
         shell: bash -l {0}
         run: |
-          conda install -y "grpcio=1.48.1" "protobuf=3.20.3"
+          conda install -y "grpcio=1.48.2" "protobuf=3.20.3"
 
       - name: Install Python Build Tools
         shell: bash -l {0}
@@ -283,7 +283,8 @@ jobs:
           echo "Waiting 60 seconds for PyPI indexing..."
           sleep 60
           # Test installation of the full RL stack (including conditional dependencies)
-          pip install --no-cache-dir "replicantdrivesim[rl]==${{ env.VERSION }}"
+          # We pin grpcio to the already installed conda version to prevent pip from trying to build a 'newer' patch from source
+          pip install --no-cache-dir "replicantdrivesim[rl]==${{ env.VERSION }}" "grpcio==1.48.2"
           pip show replicantdrivesim
       # In the PyPI workflow
       - name: Notify Release Completion
