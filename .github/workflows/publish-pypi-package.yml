@@ -278,11 +278,13 @@ jobs:
         shell: bash -l {0}
         run: |
           # legacy gym 0.21.0 requires older setuptools
-          python -m pip install 'pip<24.1' 'setuptools<66' 'wheel<0.38'
+          python -m pip install "pip<24.1" "setuptools<66" "wheel<0.38"
+          # Wait for PyPI indexing (new versions can take a minute to show up)
+          echo "Waiting 60 seconds for PyPI indexing..."
+          sleep 60
           # Test installation of the full RL stack (including conditional dependencies)
-          pip install "replicantdrivesim[rl]==${{ env.VERSION }}"
+          pip install --no-cache-dir "replicantdrivesim[rl]==${{ env.VERSION }}"
           pip show replicantdrivesim
-
       # In the PyPI workflow
       - name: Notify Release Completion
         if: success()
