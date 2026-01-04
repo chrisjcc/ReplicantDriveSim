@@ -54,22 +54,23 @@ VehicleState* WorldToRoadCoordinates(void* accessor, double x, double y, double 
     state->isValid = false;
     
     try {
-        // Create 3D point for world position
-        odr::Vec3D worldPos(x, y, z);
+        // Create 3D point for world position using brace initialization for std::array
+        odr::Vec3D worldPos{{x, y, z}};
         
         // Find closest road position
         double minDistance = std::numeric_limits<double>::max();
         bool foundValidPosition = false;
         
-        // Get all roads in the map
+        // Get all roads in the map (returns std::vector<Road>)
         const auto& roads = mapAccessor->map->get_roads();
         
-        for (const auto& roadPair : roads) {
-            const auto& road = roadPair.second;
-            int roadId = roadPair.first;
+        for (const auto& road : roads) {
+            std::string roadIdStr = road.id;
+            int roadId = 0;
+            try { roadId = std::stoi(roadIdStr); } catch (...) { roadId = -1; }
             
             // Sample along the road to find closest point
-            double roadLength = road.get_lanesection(0).get_length(); // Get approximate length
+            double roadLength = road.length;
             const int samples = 100;
             
             for (int i = 0; i <= samples; i++) {
@@ -77,23 +78,20 @@ VehicleState* WorldToRoadCoordinates(void* accessor, double x, double y, double 
                 
                 try {
                     // Get road position at s=s, t=0 (reference line)
-                    odr::Vec3D roadPos = road.get_position(s, 0.0);
+                    odr::Vec3D heading_vec;
+                    odr::Vec3D roadPos = road.get_xyz(s, 0.0, 0.0, &heading_vec);
                     
-                    // Calculate distance to world position
-                    double dist = std::sqrt(
-                        std::pow(worldPos[0] - roadPos[0], 2) +
-                        std::pow(worldPos[1] - roadPos[1], 2) +
-                        std::pow(worldPos[2] - roadPos[2], 2)
-                    );
+                    // Calculate distance to world position using odr::euclDistance
+                    double dist = odr::euclDistance(worldPos, roadPos);
                     
                     if (dist < minDistance) {
                         minDistance = dist;
                         
-                        // Calculate t coordinate (lateral offset)
-                        odr::Vec3D heading_vec = road.get_heading_vector(s);
-                        odr::Vec3D right_vec(-heading_vec[1], heading_vec[0], 0.0); // Perpendicular right vector
+                        // Perpendicular right vector
+                        odr::Vec3D right_vec{{-heading_vec[1], heading_vec[0], 0.0}};
                         
-                        odr::Vec3D offset = worldPos - roadPos;
+                        // Use odr::sub for vector subtraction
+                        odr::Vec3D offset = odr::sub(worldPos, roadPos);
                         double t = offset[0] * right_vec[0] + offset[1] * right_vec[1];
                         
                         // Find which lane this position belongs to
@@ -101,14 +99,14 @@ VehicleState* WorldToRoadCoordinates(void* accessor, double x, double y, double 
                         double laneWidth = 3.5; // Default lane width
                         
                         try {
-                            const auto& laneSection = road.get_lanesection_by_s(s);
+                            const auto& laneSection = road.get_lanesection(s);
                             
                             // Check right lanes (negative IDs)
                             double cumulativeWidth = 0.0;
                             for (int lid = -1; lid >= -10; lid--) { // Check up to 10 right lanes
                                 try {
                                     const auto& lane = laneSection.get_lane(lid);
-                                    double currentLaneWidth = lane.get_width(s - laneSection.get_s0());
+                                    double currentLaneWidth = lane.lane_width.get(s - laneSection.s0);
                                     
                                     if (t >= cumulativeWidth && t <= cumulativeWidth + currentLaneWidth) {
                                         laneId = lid;
@@ -127,7 +125,7 @@ VehicleState* WorldToRoadCoordinates(void* accessor, double x, double y, double 
                                 for (int lid = 1; lid <= 10; lid++) { // Check up to 10 left lanes
                                     try {
                                         const auto& lane = laneSection.get_lane(lid);
-                                        double currentLaneWidth = lane.get_width(s - laneSection.get_s0());
+                                        double currentLaneWidth = lane.lane_width.get(s - laneSection.s0);
                                         
                                         if (t <= -cumulativeWidth && t >= -(cumulativeWidth + currentLaneWidth)) {
                                             laneId = lid;
@@ -185,15 +183,15 @@ WorldPosition* RoadToWorldCoordinates(void* accessor, double s, double t, int ro
     WorldPosition* position = new WorldPosition();
     
     try {
-        const auto& roads = mapAccessor->map->get_roads();
-        auto roadIter = roads.find(roadId);
+        const auto& id_to_road = mapAccessor->map->id_to_road;
+        auto roadIter = id_to_road.find(std::to_string(roadId));
         
-        if (roadIter != roads.end()) {
+        if (roadIter != id_to_road.end()) {
             const auto& road = roadIter->second;
             
             // Get world position at road coordinates
-            odr::Vec3D worldPos = road.get_position(s, t);
-            odr::Vec3D headingVec = road.get_heading_vector(s);
+            odr::Vec3D headingVec;
+            odr::Vec3D worldPos = road.get_xyz(s, t, 0.0, &headingVec);
             
             position->x = worldPos[0];
             position->y = worldPos[1];
@@ -224,8 +222,12 @@ int* GetRoadIds(void* accessor, int* roadCount) {
         int* roadIds = new int[*roadCount];
         int index = 0;
         
-        for (const auto& roadPair : roads) {
-            roadIds[index++] = roadPair.first;
+        for (const auto& road : roads) {
+            try {
+                roadIds[index++] = std::stoi(road.id);
+            } catch (...) {
+                roadIds[index-1] = -1;
+            }
         }
         
         return roadIds;
@@ -243,16 +245,16 @@ LaneInfo* GetLanesAtPosition(void* accessor, int roadId, double s, int* laneCoun
     if (!mapAccessor->isValid()) return nullptr;
     
     try {
-        const auto& roads = mapAccessor->map->get_roads();
-        auto roadIter = roads.find(roadId);
+        const auto& id_to_road = mapAccessor->map->id_to_road;
+        auto roadIter = id_to_road.find(std::to_string(roadId));
         
-        if (roadIter == roads.end()) {
+        if (roadIter == id_to_road.end()) {
             *laneCount = 0;
             return nullptr;
         }
         
         const auto& road = roadIter->second;
-        const auto& laneSection = road.get_lanesection_by_s(s);
+        const auto& laneSection = road.get_lanesection(s);
         
         // Count available lanes (both left and right)
         std::vector<LaneInfo> lanes;
@@ -263,14 +265,14 @@ LaneInfo* GetLanesAtPosition(void* accessor, int roadId, double s, int* laneCoun
                 const auto& lane = laneSection.get_lane(lid);
                 LaneInfo info;
                 info.laneId = lid;
-                info.width = lane.get_width(s - laneSection.get_s0());
+                info.width = lane.lane_width.get(s - laneSection.s0);
                 
                 // Calculate center offset
                 double cumulativeWidth = 0.0;
                 for (int i = -1; i > lid; i--) {
                     try {
                         const auto& prevLane = laneSection.get_lane(i);
-                        cumulativeWidth += prevLane.get_width(s - laneSection.get_s0());
+                        cumulativeWidth += prevLane.lane_width.get(s - laneSection.s0);
                     } catch (...) {
                         break;
                     }
@@ -288,14 +290,14 @@ LaneInfo* GetLanesAtPosition(void* accessor, int roadId, double s, int* laneCoun
                 const auto& lane = laneSection.get_lane(lid);
                 LaneInfo info;
                 info.laneId = lid;
-                info.width = lane.get_width(s - laneSection.get_s0());
+                info.width = lane.lane_width.get(s - laneSection.s0);
                 
                 // Calculate center offset
                 double cumulativeWidth = 0.0;
                 for (int i = 1; i < lid; i++) {
                     try {
                         const auto& prevLane = laneSection.get_lane(i);
-                        cumulativeWidth += prevLane.get_width(s - laneSection.get_s0());
+                        cumulativeWidth += prevLane.lane_width.get(s - laneSection.s0);
                     } catch (...) {
                         break;
                     }
@@ -330,12 +332,12 @@ double GetRoadLength(void* accessor, int roadId) {
     if (!mapAccessor->isValid()) return 0.0;
     
     try {
-        const auto& roads = mapAccessor->map->get_roads();
-        auto roadIter = roads.find(roadId);
+        const auto& id_to_road = mapAccessor->map->id_to_road;
+        auto roadIter = id_to_road.find(std::to_string(roadId));
         
-        if (roadIter != roads.end()) {
+        if (roadIter != id_to_road.end()) {
             const auto& road = roadIter->second;
-            return road.get_lanesection(0).get_length(); // Get length of first lane section
+            return road.length;
         }
     } catch (const std::exception& e) {
         std::cerr << "GetRoadLength failed: " << e.what() << std::endl;
@@ -374,57 +376,6 @@ double GetClosestRoadDistance(void* accessor, double x, double y, double z) {
     return distance;
 }
 
-// Mesh rendering functions (adapted from existing OpenDriveWrapper)
-float* GetRoadVertices(void* accessor, int* vertexCount) {
-    if (!accessor) return nullptr;
-    
-    MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
-    if (!mapAccessor->isValid()) return nullptr;
-    
-    try {
-        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1);
-        auto vertices = mesh.get_mesh().vertices;
-        
-        *vertexCount = vertices.size() * 3;
-        float* result = new float[*vertexCount];
-        
-        for (size_t i = 0; i < vertices.size(); ++i) {
-            result[i * 3 + 0] = static_cast<float>(vertices[i][0]); // x
-            result[i * 3 + 1] = static_cast<float>(vertices[i][1]); // y
-            result[i * 3 + 2] = static_cast<float>(vertices[i][2]); // z
-        }
-        
-        return result;
-    } catch (const std::exception& e) {
-        std::cerr << "GetRoadVertices failed: " << e.what() << std::endl;
-        return nullptr;
-    }
-}
-
-int* GetRoadIndices(void* accessor, int* indexCount) {
-    if (!accessor) return nullptr;
-    
-    MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
-    if (!mapAccessor->isValid()) return nullptr;
-    
-    try {
-        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1);
-        auto indices = mesh.get_mesh().indices;
-        
-        *indexCount = indices.size();
-        int* result = new int[*indexCount];
-        
-        for (size_t i = 0; i < indices.size(); ++i) {
-            result[i] = static_cast<int>(indices[i]);
-        }
-        
-        return result;
-    } catch (const std::exception& e) {
-        std::cerr << "GetRoadIndices failed: " << e.what() << std::endl;
-        return nullptr;
-    }
-}
-
 // Memory cleanup functions
 void FreeVehicleState(VehicleState* state) {
     delete state;
@@ -440,12 +391,4 @@ void FreeLaneInfo(LaneInfo* laneInfo) {
 
 void FreeRoadIds(int* roadIds) {
     delete[] roadIds;
-}
-
-void FreeVertices(float* vertices) {
-    delete[] vertices;
-}
-
-void FreeIndices(int* indices) {
-    delete[] indices;
 }
