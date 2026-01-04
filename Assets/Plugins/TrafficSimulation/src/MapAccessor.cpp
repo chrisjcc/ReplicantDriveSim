@@ -392,3 +392,68 @@ void FreeLaneInfo(LaneInfo* laneInfo) {
 void FreeRoadIds(int* roadIds) {
     delete[] roadIds;
 }
+
+// Mesh rendering functions for Unity integration
+float* GetRoadVertices(void* accessor, int* vertexCount) {
+    if (!accessor) return nullptr;
+    
+    MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
+    if (!mapAccessor->isValid()) return nullptr;
+    
+    try {
+        // Get road network mesh with fine resolution for detailed rendering
+        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1 /* epsilon */);
+        auto vertices = mesh.get_mesh().vertices; // Vec3D vertices (x, y, z)
+
+        *vertexCount = vertices.size() * 3; // Each vertex has x, y, z components
+        float* result = new float[*vertexCount];
+        
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            result[i * 3 + 0] = static_cast<float>(vertices[i][0]); // x
+            result[i * 3 + 1] = static_cast<float>(vertices[i][1]); // y  
+            result[i * 3 + 2] = static_cast<float>(vertices[i][2]); // z
+        }
+        
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "GetRoadVertices failed: " << e.what() << std::endl;
+        *vertexCount = 0;
+        return nullptr;
+    }
+}
+
+int* GetRoadIndices(void* accessor, int* indexCount) {
+    if (!accessor) return nullptr;
+    
+    MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
+    if (!mapAccessor->isValid()) return nullptr;
+    
+    try {
+        // Get road network mesh with fine resolution
+        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1 /* epsilon */);
+        auto indices = mesh.get_mesh().triangles; // Triangle indices
+        
+        *indexCount = indices.size() * 3; // Each triangle has 3 indices
+        int* result = new int[*indexCount];
+        
+        for (size_t i = 0; i < indices.size(); ++i) {
+            result[i * 3 + 0] = static_cast<int>(indices[i][0]);
+            result[i * 3 + 1] = static_cast<int>(indices[i][1]);
+            result[i * 3 + 2] = static_cast<int>(indices[i][2]);
+        }
+        
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "GetRoadIndices failed: " << e.what() << std::endl;
+        *indexCount = 0;
+        return nullptr;
+    }
+}
+
+void FreeVertices(float* vertices) {
+    delete[] vertices;
+}
+
+void FreeIndices(int* indices) {
+    delete[] indices;
+}
