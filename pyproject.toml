@@ -1,3 +1,218 @@
+# Modern Python package configuration following PEP 517/518/621/660
+# https://peps.python.org/pep-0621/
+
 [build-system]
-requires = ["setuptools>=75.1.0", "pybind11"]
+# Note: setuptools<70 required for compatibility with gym==0.21.0 (dependency of mlagents)
+requires = ["setuptools>=69.5.1,<70.0.0", "wheel", "pybind11>=2.12.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "replicantdrivesim"
+version = "0.8.1"
+description = "A Unity-based traffic simulation environment for multi-agent reinforcement learning"
+readme = "README.md"
+requires-python = ">=3.10.1,<=3.10.12"
+license = {text = "MIT"}
+authors = [
+    {name = "Christian Contreras Campana", email = "chrisjcc.physics@gmail.com"}
+]
+maintainers = [
+    {name = "Christian Contreras Campana", email = "chrisjcc.physics@gmail.com"}
+]
+keywords = [
+    "traffic",
+    "simulation",
+    "autonomous driving",
+    "reinforcement learning",
+    "multi-agent reinforcement learning",
+    "rl",
+    "marl",
+    "unity",
+    "ml-agents",
+    "gymnasium"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Games/Entertainment :: Simulation",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: C++",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+]
+
+# Core dependencies
+dependencies = [
+    "mlagents-envs==1.1.0 ; sys_platform != 'darwin' or platform_machine != 'arm64'",
+    "gymnasium==0.28.1",  # Required by ray[rllib] 2.31.0
+    "gym==0.21.0 ; sys_platform != 'darwin' or platform_machine != 'arm64'",  # Required by ML-Agents
+    "ray[rllib]==2.31.0",
+    "protobuf==3.20.3",
+    "wandb",
+    "hydra-core",
+    "omegaconf",
+    "grpcio>=1.48.1",  # Satisfies mlagents and has modern Apple Silicon wheels
+    "numpy>=1.23.5,<1.24.0",
+    "torch>=2.1.1",
+    "pybind11>=2.12.0",
+    # ML-Agents Transitive Dependencies (required due to --no-deps workaround)
+    "attrs>=19.3.0",
+    "cattrs>=1.1.0,<1.7",
+    "h5py>=2.9.0",
+    "huggingface-hub>=0.14",
+    "onnx==1.15.0",
+    "Pillow>=4.2.1",
+    "pyyaml>=3.1.0",
+    "tensorboard>=2.14",
+    "pettingzoo==1.15.0 ; sys_platform != 'darwin' or platform_machine != 'arm64'",
+    "mlflow<3.0.0",
+    "yamale>=6.1.0",
+]
+
+[project.optional-dependencies]
+# RL-specific dependencies (problematic on Apple Silicon)
+rl = [
+    "mlagents-envs==1.1.0",
+    "gym==0.21.0",
+    "pettingzoo==1.15.0",
+]
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+# Documentation dependencies
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "myst-parser>=2.0.0",
+]
+
+# MLflow experiment tracking
+mlflow = [
+    "mlflow>=1.27.0",
+    "tensorboardx>=2.6.0",
+]
+
+# Complete development environment
+all = [
+    "replicantdrivesim[dev,docs,mlflow]",
+]
+
+[project.urls]
+Homepage = "https://chrisjcc.github.io/ReplicantDriveSim"
+Documentation = "https://readthedocs.org/projects/replicantdrivesim"
+Repository = "https://github.com/chrisjcc/ReplicantDriveSim"
+"Bug Tracker" = "https://github.com/chrisjcc/ReplicantDriveSim/issues"
+Changelog = "https://github.com/chrisjcc/ReplicantDriveSim/blob/main/CHANGELOG.md"
+
+[project.scripts]
+replicantdrivesim = "replicantdrivesim.cli:main"
+
+# Setuptools-specific configuration
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["replicantdrivesim*"]
+exclude = ["tests*", "docs*", "*.tests", "*.tests.*"]
+
+[tool.setuptools.package-data]
+replicantdrivesim = [
+    "*.so",
+    "*.dll",
+    "*.dylib",
+    "configs/*.yaml",
+    "configs/*.yml",
+    "Builds/StandaloneOSX/**/*",
+    "Builds/StandaloneLinux64/**/*",
+    "Builds/StandaloneWindows64/**/*",
+]
+
+# Black code formatter configuration
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | Library
+  | Builds
+)/
+'''
+
+# isort import sorter configuration
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+known_first_party = ["replicantdrivesim"]
+
+# pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--cov=replicantdrivesim",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+# mypy type checker configuration
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = [
+    "build",
+    "dist",
+    "Library",
+    "Builds",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["replicantdrivesim"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

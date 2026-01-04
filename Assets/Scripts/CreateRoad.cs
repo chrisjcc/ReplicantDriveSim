@@ -13,7 +13,7 @@ using UnityEngine;
 ///
 /// Public Properties:
 /// - roadTexture: Texture2D for the road surfaces.
-/// - roadPhysicsMaterial: PhysicMaterial for the roads' friction properties.
+/// - roadPhysicsMaterial: PhysicsMaterial for the roads' friction properties.
 /// - singleRoadWidth: Width of each road (default 15 units, accommodating two lanes).
 /// - roadLength: Length of the roads (default 3250 units).
 /// - boundaryHeight: Height of the boundary walls (default 5 units).
@@ -27,10 +27,10 @@ using UnityEngine;
 /// - Ensure required layers ("Road", "TrafficAgent", "RoadBoundary") are created in Unity's Tags and Layers settings.
 /// - Adjust public properties in the inspector to customize road dimensions and appearance.
 /// </summary>
-public class CreateDualRoad : MonoBehaviour
+public class CreateRoad : MonoBehaviour
 {
     public Texture2D roadTexture;
-    public PhysicMaterial roadPhysicsMaterial;
+    public PhysicsMaterial roadPhysicsMaterial;
 
     public float singleRoadWidth = 15f; // Width for a single road (2 lanes)
     public float roadLength = 100f;
@@ -42,18 +42,24 @@ public class CreateDualRoad : MonoBehaviour
 
     void Start()
     {
-        // Ensure layers are set correctly
+        InitializeLayers();
+        CreateRoadSurfaces();
+        CreateRoadBoundaries();
+    }
+
+    /// <summary>
+    /// Initializes and caches layer indices for better performance.
+    /// </summary>
+    private void InitializeLayers()
+    {
         roadLayer = LayerMask.NameToLayer("Road");
         roadBoundaryLayer = LayerMask.NameToLayer("RoadBoundary");
 
         if (roadLayer == -1 || roadBoundaryLayer == -1)
         {
             Debug.LogError("Required layers 'Road' or 'RoadBoundary' are missing. Please add them in Project Settings.");
-            return;
+            enabled = false;
         }
-
-        CreateRoadSurfaces();
-        CreateRoadBoundaries();
     }
 
     void CreateRoadSurfaces()
@@ -61,7 +67,7 @@ public class CreateDualRoad : MonoBehaviour
         // Ensure roadPhysicsMaterial is not null and initialize if needed
         if (roadPhysicsMaterial == null)
         {
-            roadPhysicsMaterial = new PhysicMaterial("RoadMaterial");
+            roadPhysicsMaterial = new PhysicsMaterial("RoadMaterial");
             roadPhysicsMaterial.dynamicFriction = 1f;
             roadPhysicsMaterial.staticFriction = 0f;
         }

@@ -47,15 +47,16 @@ Vehicle BicycleModel::updateKinematicState(
     next_state.setYawRate((velocity * cos(beta) * tan(steering_angle_rad)) / wheelbase);
 
     // Update heading (psi) and position (x, z)
+    // Unity coordinate system: X=lateral, Y=vertical, Z=longitudinal
     next_state.setYaw(normalizeAngle(current_state.getYaw() + next_state.getYawRate() * dt));
     const double cos_psi_beta = cos(next_state.getYaw() + beta);
     const double sin_psi_beta = sin(next_state.getYaw() + beta);
-    next_state.setZ(next_state.getZ() + velocity * cos_psi_beta * dt);
-    next_state.setX(next_state.getX() + velocity * sin_psi_beta * dt);
+    next_state.setX(next_state.getX() + velocity * sin_psi_beta * dt);  // X = lateral (side)
+    next_state.setZ(next_state.getZ() + velocity * cos_psi_beta * dt);  // Z = longitudinal (forward)
 
-    // Update velocity components
-    next_state.setVz(velocity * cos_psi_beta);
-    next_state.setVx(velocity * sin_psi_beta);
+    // Update velocity components  
+    next_state.setVx(velocity * sin_psi_beta);  // Vx = lateral velocity
+    next_state.setVz(velocity * cos_psi_beta);  // Vz = longitudinal velocity
 
     return next_state;
 }
@@ -129,8 +130,9 @@ Vehicle BicycleModel::updateDynamicState(
             0.0  // Prevent backwards motion from rolling resistance
         );
 
-        next_state.setVz(next_state.getVz() + applied_accel * std::cos(current_state.getYaw()) * dt);
-        next_state.setVx(next_state.getVx() + applied_accel * std::sin(current_state.getYaw()) * dt);
+        // Unity coordinate system: X=lateral, Z=longitudinal
+        next_state.setVx(next_state.getVx() + applied_accel * std::sin(current_state.getYaw()) * dt);  // X = lateral velocity
+        next_state.setVz(next_state.getVz() + applied_accel * std::cos(current_state.getYaw()) * dt);  // Z = longitudinal velocity
 
         // At very low speeds, steering creates an immediate yaw rate
         // Use a simplified kinematic relationship
@@ -162,13 +164,15 @@ Vehicle BicycleModel::updateDynamicState(
         const double resistance_z = -F_rolling * current_state.getVz() / v_total;
 
         // Compute accelerations including all forces
-        const double a_x = (Fyf * std::sin(steering_angle_rad) + resistance_x) / mass;
-        const double a_z = (Fyf * std::cos(steering_angle_rad) + Fyr + resistance_z) / mass + acceleration;
+        // IMPORTANT: Fyf and Fyr are LATERAL forces - they only contribute to lateral (X) acceleration
+        // The steering angle rotates the front lateral force into the body frame
+        const double a_x = (Fyf * std::cos(steering_angle_rad) + Fyr + resistance_x) / mass;  // Lateral acceleration
+        const double a_z = acceleration + resistance_z / mass;  // Longitudinal acceleration from input only
         const double yaw_acc = (Fyf * lf * std::cos(steering_angle_rad) - Fyr * lr) / Iz;
 
-        // Update velocities
-        next_state.setVx(next_state.getVx() + a_x * dt);
-        next_state.setVz(next_state.getVz() + a_z * dt);
+        // Update velocities (Unity coordinate system)
+        next_state.setVx(next_state.getVx() + a_x * dt);  // X = lateral velocity
+        next_state.setVz(next_state.getVz() + a_z * dt);  // Z = longitudinal velocity
         next_state.setYawRate(next_state.getYawRate() + yaw_acc * dt);
     }
 
@@ -177,9 +181,12 @@ Vehicle BicycleModel::updateDynamicState(
     const double cos_psi = std::cos(next_state.getYaw());
     const double sin_psi = std::sin(next_state.getYaw());
 
-    // Update position
-    next_state.setZ(next_state.getZ() + (next_state.getVz() * cos_psi - next_state.getVx() * sin_psi) * dt);
-    next_state.setX(next_state.getX() + (next_state.getVz() * sin_psi + next_state.getVx() * cos_psi) * dt);
+    // Update position (Unity coordinate system: X=lateral, Z=longitudinal)
+    // Correct body-to-world transformation:
+    // X_world = X_prev + (Vx_body * cos(ψ) - Vz_body * sin(ψ)) * dt
+    // Z_world = Z_prev + (Vx_body * sin(ψ) + Vz_body * cos(ψ)) * dt
+    next_state.setX(next_state.getX() + (next_state.getVx() * cos_psi - next_state.getVz() * sin_psi) * dt);  // X = lateral position
+    next_state.setZ(next_state.getZ() + (next_state.getVx() * sin_psi + next_state.getVz() * cos_psi) * dt);  // Z = longitudinal position
 
     // Update slip angle
     if (v_total > MIN_VELOCITY) {
@@ -225,17 +232,19 @@ Vehicle BicycleModel::updateCoupledState(
 
     // Update velocities with proper centrifugal force coupling
     // For body-fixed coordinates: v_dot = a + ω × v
+    // Unity coordinate system: X=lateral, Z=longitudinal
     const double omega_z = current_state.getYawRate();
-    next_state.setVx(current_state.getVx() + (ax + omega_z * current_state.getVz()) * dt);
-    next_state.setVz(current_state.getVz() + (ay - omega_z * current_state.getVx()) * dt);
+    next_state.setVx(current_state.getVx() + (ay + omega_z * current_state.getVz()) * dt);  // X = lateral velocity (ay = lateral accel)
+    next_state.setVz(current_state.getVz() + (ax - omega_z * current_state.getVx()) * dt);  // Z = longitudinal velocity (ax = longitudinal accel)
     next_state.setYawRate(next_state.getYawRate() +  (F_yf * lf - F_yr * lr) / Iz * dt);
 
-    // Update position and heading
+    // Update position and heading (Unity coordinate system: X=lateral, Z=longitudinal)
     next_state.setYaw(normalizeAngle(current_state.getYaw() + next_state.getYawRate() * dt));
     const double cos_psi = cos(next_state.getYaw());
     const double sin_psi = sin(next_state.getYaw());
-    next_state.setZ(next_state.getZ() + (next_state.getVz() * cos_psi - next_state.getVx() * sin_psi) * dt);
-    next_state.setX(next_state.getX() + (next_state.getVz() * sin_psi + next_state.getVx() * cos_psi) * dt);
+    // Correct body-to-world transformation
+    next_state.setX(next_state.getX() + (next_state.getVx() * cos_psi - next_state.getVz() * sin_psi) * dt);  // X = lateral position
+    next_state.setZ(next_state.getZ() + (next_state.getVx() * sin_psi + next_state.getVz() * cos_psi) * dt);  // Z = longitudinal position
 
     return next_state;
 }

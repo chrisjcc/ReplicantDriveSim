@@ -39,7 +39,9 @@ jobs:
           else
             VERSION=$(git describe --tags --always)
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          # Strip 'v' prefix if present
+          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
+          echo "VERSION=$VERSION_CLEAN" >> $GITHUB_OUTPUT
 
       - name: Print version
         run: echo "Building PyPI package for version ${{ steps.get_version.outputs.VERSION }}"
@@ -50,30 +52,32 @@ jobs:
 
       - name: Create metadata file
         run: |
-          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}" > metadata.txt
           echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
           echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.10'
+          auto-update-conda: true
+          python-version: '3.10.12'
+          activate-environment: drive
+          channels: conda-forge,defaults
 
-      - name: Install pybind11
+      - name: Install Native Dependencies via Conda
+        shell: bash -l {0}
         run: |
-          python -m pip install --upgrade pip
-          pip install pybind11
+          conda install -y "grpcio=1.48.2" "protobuf=3.20.3" pybind11
 
-      - name: Compile C++ code
-        working-directory: Assets/Plugins/TrafficSimulation
+      - name: Compile Native C++ Library
+        shell: bash -l {0}
         run: |
-          mkdir build && cd build
-          cmake .. -DPython3_EXECUTABLE=$(which python)
-          make
+          chmod +x ./build_native_library.sh
+          ./build_native_library.sh $(which python)
 
       - name: Archive Plugin Files
         run: |
-          zip -r macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip ./Assets/Plugins/TrafficSimulation/build metadata.txt
+          zip -r macos-unity-plugin-build-${{ steps.get_version.outputs.VERSION }}.zip Assets/Plugins/TrafficSimulation/libReplicantDriveSim.dylib replicantdrivesim/replicantdrivesim.so metadata.txt
 
       - name: Upload Unity Plugin Artifact
         uses: actions/upload-artifact@v4
@@ -102,7 +106,7 @@ jobs:
 
       - name: Create metadata file
         run: |
-          echo "Version: ${{ env.VERSION }}" > metadata.txt
+          echo "Version: ${{ needs.build-unity-plugin.outputs.VERSION }}" > metadata.txt
           echo "Commit SHA: ${{ github.sha}}" >> metadata.txt
           echo "Short SHA: ${{ steps.slug.outputs.sha8 }}" >> metadata.txt
 
@@ -116,16 +120,16 @@ jobs:
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-unity-plugin-build-${{ env.VERSION }}
+          name: macos-unity-plugin-build-${{ needs.build-unity-plugin.outputs.VERSION }}
           path: ./
 
       - name: Extract Unity Plugin Build Artifacts
         run: |
           # Extract the file and overwrite existing files without prompting
-          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          unzip -o ./macos-unity-plugin-build-${{ needs.build-unity-plugin.outputs.VERSION }}.zip
 
           # Remove the ZIP file
-          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip metadata.txt
+          rm -rf ./macos-unity-plugin-build-${{ needs.build-unity-plugin.outputs.VERSION }}.zip metadata.txt
 
       - name: Build Unity Project for macOS
         uses: game-ci/unity-builder@v4
@@ -135,7 +139,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: StandaloneOSX # Build a macOS standalone. Or StandaloneLinux64 for Linux
-          unityVersion: auto # Use "auto" to get from your ProjectSettings/ProjectVersion.txt'
+          unityVersion: 6000.0.30f1 # Unity 6 - explicit version required for better compatibility
           versioning: Semantic
           # Enables caching the Unity Hub and Editor installation for MacOS runners (default: false).
           # This can significantly reduce project build times if you have enough available cache on Github Actions.
@@ -148,39 +152,40 @@ jobs:
           customParameters:  '-logFile "/github/workspace/Logs/unity_build.log" -development'
           androidExportType: "none"
           androidSymbolType: "none"
-          allowDirtyBuild: False
+          allowDirtyBuild: True
 
       - name: Package Builds with metadata
         run: |
-          zip -r macOS-unity-Build-project-${{ env.VERSION }}.zip ./Builds ./Logs metadata.txt
+          zip -r macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip ./Builds ./Logs metadata.txt
 
       - name: Upload Unity Build Artifact
         uses: actions/upload-artifact@v4
-        with:	
-          name: macOS-unity-Build-project-${{ env.VERSION }}
-          # Upload the entire Builds and Logs directories
-          path: macOS-unity-Build-project-${{ env.VERSION }}.zip
+        with:
+          name: macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}
+          path: macOS-unity-Build-project-${{ needs.build-unity-plugin.outputs.VERSION }}.zip
 
       - name: Update Release Asset
         uses: actions/github-script@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build-unity-plugin.outputs.VERSION }}
         with:
           script: |
             const fs = require('fs');
+            const { VERSION } = process.env;
             const { owner, repo } = context.repo;
             const release = await github.rest.repos.getReleaseByTag({
               owner,
               repo,
-               tag: process.env.VERSION
+              tag: `v${VERSION}`
             });
 
             await github.rest.repos.uploadReleaseAsset({
               owner,
               repo,
               release_id: release.data.id,
-              name: `macOS-unity-Build-project-${process.env.VERSION}.zip`,
-              data: fs.readFileSync(`./macOS-unity-Build-project-${process.env.VERSION}.zip`)
+              name: `macOS-unity-Build-project-${VERSION}.zip`,
+              data: fs.readFileSync(`./macOS-unity-Build-project-${VERSION}.zip`)
             });
 
 
@@ -205,7 +210,7 @@ jobs:
       - name: Download Unity Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macOS-unity-Build-project-${{ env.VERSION }}
+          name: macOS-unity-Build-project-${{ needs.build-unity-project.outputs.VERSION }}
           path: ./replicantdrivesim
 
       - name: Extract Unity Build Artifact
@@ -214,44 +219,53 @@ jobs:
           cd replicantdrivesim
 
           # Extract the file and overwrite existing files without prompting
-          unzip -o macOS-unity-Build-project-${{ env.VERSION }}.zip
+          unzip -o macOS-unity-Build-project-${{ needs.build-unity-project.outputs.VERSION }}.zip
 
           # Remove the ZIP file
-          rm macOS-unity-Build-project-${{ env.VERSION }}.zip
+          rm macOS-unity-Build-project-${{ needs.build-unity-project.outputs.VERSION }}.zip
 
       - name: Download Unity Plugin Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-unity-plugin-build-${{ env.VERSION }}
+          name: macos-unity-plugin-build-${{ needs.build-unity-project.outputs.VERSION }}
           path: ./
 
       - name: Extract Unity Plugin Artifact
         run: |
           # Extract the file and overwrite existing files without prompting
-          unzip -o ./macos-unity-plugin-build-${{ env.VERSION }}.zip
-
-          # Copy the compiled C extension Python module to the 'replicantdrivesim' directory
-          cp ./Assets/Plugins/TrafficSimulation/build/replicantdrivesim.so replicantdrivesim/
+          unzip -o ./macos-unity-plugin-build-${{ needs.build-unity-project.outputs.VERSION }}.zip
+          # No need to cp replicantdrivesim.so, it's already in the right place because of the zip structure
 
           # Remove the ZIP file
-          rm -rf ./macos-unity-plugin-build-${{ env.VERSION }}.zip
+          rm -rf ./macos-unity-plugin-build-${{ needs.build-unity-project.outputs.VERSION }}.zip
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.10'
+          auto-update-conda: true
+          python-version: '3.10.12'
+          activate-environment: drive
+          channels: conda-forge,defaults
 
-      - name: Install dependencies
+      - name: Install Native Dependencies via Conda
+        shell: bash -l {0}
+        run: |
+          conda install -y "grpcio=1.48.2" "protobuf=3.20.3"
+
+      - name: Install Python Build Tools
+        shell: bash -l {0}
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel twine pybind11
 
       - name: Build Python package
+        shell: bash -l {0}
         run: |
           # Build the Python wheel and source distribution
           python setup.py sdist bdist_wheel
 
       - name: Upload to PyPI to publish Python package
+        shell: bash -l {0}
         env:
           TWINE_USERNAME: "__token__"
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
@@ -261,10 +275,17 @@ jobs:
           twine upload dist/*
 
       - name: Verify PyPi package installation
+        shell: bash -l {0}
         run: |
-          pip install ReplicantDriveSim
-          pip show ReplicantDriveSim
-
+          # legacy gym 0.21.0 requires older setuptools
+          python -m pip install "pip<24.1" "setuptools<66" "wheel<0.38"
+          # Wait for PyPI indexing (new versions can take a minute to show up)
+          echo "Waiting 60 seconds for PyPI indexing..."
+          sleep 60
+          # Test installation of the full RL stack (including conditional dependencies)
+          # We pin grpcio to the already installed conda version to prevent pip from trying to build a 'newer' patch from source
+          pip install --no-cache-dir "replicantdrivesim[rl]==${{ env.VERSION }}" "grpcio==1.48.2"
+          pip show replicantdrivesim
       # In the PyPI workflow
       - name: Notify Release Completion
         if: success()
@@ -277,7 +298,7 @@ jobs:
               repo: context.repo.repo,
               event_type: 'trigger_docker_publish',
               client_payload: {
-                ref: process.env.VERSION,
+                ref: "v${{ env.VERSION }}",
                 version: process.env.VERSION,
                 run_id: '${{ github.run_id }}',
                 status: 'success'

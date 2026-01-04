@@ -64,6 +64,7 @@ public class TrafficManager : MonoBehaviour
     private List<float[]> lowLevelActions;
     private FloatPropertiesChannel floatPropertiesChannel;
     private FieldValueChannel sideChannel;
+    private AgentStateCache agentStateCache;
     private bool isDisposed = false;
     private bool hasCleanedUp = false;
 
@@ -248,6 +249,7 @@ public class TrafficManager : MonoBehaviour
     {
         highLevelActions = new List<int>();
         lowLevelActions = new List<float[]>();
+        agentStateCache = new AgentStateCache();
     }
 
     /// <summary>
@@ -364,6 +366,7 @@ public class TrafficManager : MonoBehaviour
         }
         agentInstances.Clear();
         agentColliders.Clear();
+        agentStateCache?.InvalidateAll();
     }
 
     /// <summary>
@@ -430,6 +433,15 @@ public class TrafficManager : MonoBehaviour
     /// <exception cref="InvalidOperationException">Thrown if the position retrieval fails</exception>
     private Vector3 GetAgentPosition(string agentId)
     {
+        return agentStateCache.GetAgentPosition(agentId, GetAgentPositionFromNative);
+    }
+
+    /// <summary>
+    /// Retrieves agent position directly from native simulation (uncached).
+    /// Used by the cache when fresh data is needed.
+    /// </summary>
+    private Vector3 GetAgentPositionFromNative(string agentId)
+    {
         IntPtr agentIdPtr = Marshal.StringToHGlobalAnsi(agentId);
         try
         {
@@ -445,7 +457,6 @@ public class TrafficManager : MonoBehaviour
         {
             Marshal.FreeHGlobal(agentIdPtr);
         }
-
     }
 
     /// <summary>
@@ -466,6 +477,15 @@ public class TrafficManager : MonoBehaviour
     /// <returns>A Quaternion representing the agent's current rotation</returns>
     /// <exception cref="InvalidOperationException">Thrown if the orientation retrieval fails</exception>
     private Quaternion GetAgentRotation(string agentId)
+    {
+        return agentStateCache.GetAgentRotation(agentId, GetAgentRotationFromNative);
+    }
+
+    /// <summary>
+    /// Retrieves agent rotation directly from native simulation (uncached).
+    /// Used by the cache when fresh data is needed.
+    /// </summary>
+    private Quaternion GetAgentRotationFromNative(string agentId)
     {
         IntPtr agentIdPtr = Marshal.StringToHGlobalAnsi(agentId);
         try
@@ -1374,24 +1394,6 @@ public class TrafficManager : MonoBehaviour
     /// </summary>
     private void StepSimulation()
     {
-        Debug.Log("TrafficManger::StepSimulation started.");
-
-        for (int i = 0; i < highLevelActions.Count; i++)
-        {
-            int highLevelAction = highLevelActions[i];
-            Debug.Log($"High-Level Action - Decision: {highLevelAction}");
-
-            float[] lowLevelAction = lowLevelActions[i];
-            if (lowLevelAction.Length == 3) // Ensure there are exactly 3 values per action
-            {
-                float steering = lowLevelAction[0];
-                float throttle = lowLevelAction[1];
-                float braking = lowLevelAction[2];
-
-                Debug.Log($"Low-Level Action - Steering: {steering}, Throttle: {throttle}, Braking: {braking}");
-            }
-        }
-
         // Step the simulation once for all agents with the gathered actions
         float[] flattenedLowLevelActions = lowLevelActions.SelectMany(a => a).ToArray();
 

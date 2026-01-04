@@ -7,12 +7,20 @@ import mlflow
 import numpy as np
 
 # Suppress DeprecationWarnings from output
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message="`AlgorithmConfig.num_.*` has been deprecated")
+
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
 os.environ["RAY_DEDUP_LOGS"] = "0"
 # Set it for the current notebook environment
 version = "0" # "2"  # Default "1"
 os.environ["RAY_AIR_NEW_OUTPUT"] = version
 os.environ["RAY_AIR_RICH_LAYOUT"] = version
+
+# Silence specific Ray loggers that emit deprecation noise
+logging.getLogger("ray.rllib.algorithms.algorithm_config").setLevel(logging.ERROR)
+logging.getLogger("ray.tune.tune").setLevel(logging.ERROR)
 
 
 import ray
@@ -23,8 +31,11 @@ from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.exception import UnityCommunicatorStoppedException
 from mlflow.models.signature import ModelSignature
 from mlflow.types.schema import Schema, TensorSpec
+import hydra
+from omegaconf import DictConfig, OmegaConf
 from ray import train, tune
 from ray.air.integrations.mlflow import MLflowLoggerCallback
+from ray.air.integrations.wandb import WandbLoggerCallback
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
@@ -85,26 +96,14 @@ def register_model(
         print(f"Model {model_name} registered with run ID: {run.info.run_id}")
 
 
-def main():
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def main(cfg: DictConfig):
     """
     Main function to initialize the Unity environment and start the training process.
-
-    Returns:
-        None
     """
     try:
-        # Set YAML files paths
-        config_path = os.path.join("examples", "configs", "config.yaml")
-        config_schema_path = os.path.join(
-            "replicantdrivesim", "configs", "config_schema.yaml"
-        )
-
-        # Validate YAML file
-        validate_yaml_schema(config_path, config_schema_path)
-
-        # Load configuration from YAML file
-        with open(config_path, "r") as config_file:
-            config_data = yaml.safe_load(config_file)
+        # Convert OmegaConf to standard dict for RLlib compatibility
+        config_data = OmegaConf.to_container(cfg, resolve=True)
 
         # Set up MLflow logging
         mlflow.set_experiment(config_data["mlflow"]["experiment_name"])
@@ -138,21 +137,15 @@ def main():
         # Get the default PPO configuration
         config = PPO.get_default_config()
 
-        # Update the configuration
-        # This configuration modifies the global settings for the entire training process
-        config["num_workers"] = 2  # Number of worker processes for training
-        config["num_gpus"] = 0     # No GPU
+        # Update the configuration using modern method-style API
 
         config = config.environment(
             env=env_name,
             env_config=config_data,
-            disable_env_checking=config_data["environment"][
-                "disable_env_checking"
-            ],  # Source: https://discuss.ray.io/t/agent-ids-that-are-not-the-names-of-the-agents-in-the-env/6964/3
         )
         config = config.framework(config_data["ppo_config"]["framework"])
         config = config.resources(
-            num_gpus=config_data["ppo_config"]["num_gpus"]  # No GPU
+            num_gpus=0
         )
 
         # Multi-agent configuration
@@ -185,7 +178,7 @@ def main():
         # Training configuration
         config = config.training(
             train_batch_size=config_data["training"]["train_batch_size"],
-            num_epochs=config_data["training"]["num_epochs"],
+            num_sgd_iter=config_data["training"]["num_epochs"],
             lr=config_data["training"]["lr"],
             gamma=config_data["training"]["gamma"],
             lambda_=config_data["training"]["lambda"],
@@ -225,13 +218,21 @@ def main():
                     checkpoint_at_end=config_data["training"]["checkpoint_at_end"],
                 ),
                 callbacks=[
-                    MLflowLoggerCallback(
-                        experiment_name=config_data["mlflow"]["experiment_name"],
-                        tracking_uri=mlflow.get_tracking_uri(),
-                        registry_uri=None,
-                        save_artifact=True,
-                        tags=tags,
-                    )
+                    callback for callback in [
+                        MLflowLoggerCallback(
+                            experiment_name=config_data["mlflow"]["experiment_name"],
+                            tracking_uri=mlflow.get_tracking_uri(),
+                            registry_uri=None,
+                            save_artifact=True,
+                            tags=tags,
+                        ) if config_data.get("mlflow", {}).get("enabled", True) else None,
+                        WandbLoggerCallback(
+                            project=config_data["wandb"]["project"],
+                            entity=config_data["wandb"]["entity"],
+                            log_config=True,
+                            upload_checkpoints=config_data["wandb"].get("upload_checkpoints", False),
+                        ) if config_data.get("wandb", {}).get("enabled", False) else None,
+                    ] if callback is not None
                 ],
                 stop={
                     "training_iteration": config_data["stop"]["training_iteration"]
@@ -261,6 +262,13 @@ def main():
             runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
             run_id = runs.iloc[0].run_id
 
+            # Use env.agents which contains the list of active agent IDs
+            # Add fallback to env.possible_agents if agents list is empty
+            agent_ids = env.agents if env.agents else env.possible_agents
+            
+            if not agent_ids:
+                raise ValueError("No agents found in environment - cannot create model signature")
+            
             input_schema = Schema(
                 [
                     TensorSpec(
@@ -268,7 +276,7 @@ def main():
                         (-1, env.size_of_single_agent_obs),
                         agent_id,
                     )
-                    for agent_id in env._agent_ids
+                    for agent_id in agent_ids
                 ]
             )
             model_signature = ModelSignature(inputs=input_schema)

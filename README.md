@@ -52,6 +52,10 @@ The project is equipped with a robust continuous integration and deployment (CI/
 - The library supports **Ray's RLlib**, enabling multi-agent training for autonomous driving scenarios.
 - With a simple import, you can hand over the environment to Ray for scalable and efficient agent training.
 - This feature is designed for large-scale experiments, leveraging Ray's distributed architecture.
+- **Hydra Configuration**: Managed via Hydra, supporting powerful command-line overrides and multi-run experiments (e.g., seeding sweeps):
+  ```bash
+  python examples/trainer.py --multirun seed=42,43
+  ```
 
 ### 4. Comprehensive Documentation
 Doxygen-generated documentation is available for the C++ code, and additional project documentation is published on Read the Docs and GitHub Pages, ensuring developers have clear and detailed guidance for integration and usage.
@@ -89,6 +93,25 @@ For a pre-configured environment with all dependencies, use our Docker image:
 docker pull chrisjcc/replicantdrivesim:latest
 docker run -it chrisjcc/replicantdrivesim:latest
 ```
+
+### System Requirements
+
+#### Unity Version
+- **Unity 6** (6000.0.30f1 or later)
+- ML-Agents Package: 4.0.0
+- Unity AI Inference Engine: 2.2.1
+
+#### Python Requirements
+- **Python**: 3.10.1 - 3.10.12
+- **Ray RLlib**: 2.31.0
+- **ML-Agents**: 1.1.0
+- **Gymnasium**: 0.26.3
+- **NumPy**: 1.23.5
+- **PyTorch**: 2.1.1 or later
+- **Protocol Buffers**: 3.20.3
+- **gRPC**: 1.53.2
+
+For a complete list of dependencies, see `environment.yml` or `setup.cfg`.
 
 ### License
 ReplicantDriveSim is licensed under the MIT License. See the [LICENSE](https://github.com/chrisjcc/ReplicantDriveSim/blob/main/LICENSE) file for more details.

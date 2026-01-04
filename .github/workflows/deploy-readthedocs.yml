@@ -36,11 +36,8 @@ jobs:
         id: version
         run: |
           VERSION="${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}"
-          # Remove 'v' prefix if present for Read the Docs
-          RTD_VERSION=$(echo "$VERSION" | sed 's/^v//')
           echo "Using version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "rtd_version=$RTD_VERSION" >> $GITHUB_OUTPUT
 
       - name: Lowercase the repo name
         run: |
@@ -53,62 +50,116 @@ jobs:
         id: rtd_build
         env:
           READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Create JSON payload
-          PAYLOAD=$(jq -n \
-            --arg ref "${{ steps.version.outputs.version }}" \
-            '{
-              "ref": $ref,
-              "build_config": true,
-              "build_environment": true
-            }')
+          # First, sync versions so RTD knows about new tags
+          echo "Syncing versions..."
+          sync_response=$(curl -s -X POST \
+            -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
+            "https://app.readthedocs.org/api/v3/projects/${REPO_LOWER}/sync-versions/")
+          echo "Sync response: $sync_response"
 
-          echo "Using payload: $PAYLOAD"
+          # Give RTD more time to process the sync
+          echo "Waiting for RTD to process sync..."
+          sleep 10
 
           function trigger_build() {
-            local url=$1
+            local version=$1
+            local url="https://app.readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${version}/builds/"
+            echo "Attempting to trigger build for version: $version" >&2
+            echo "URL: $url" >&2
+
             local response=$(curl -s -w "\n%{http_code}" -X POST \
               -H "Authorization: Token ${READTHEDOCS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$PAYLOAD" \
               "$url")
 
             echo "$response"
           }
 
-          # Try version-specific build first
-          response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/${{ steps.version.outputs.rtd_version }}/builds/")
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | head -n-1)
+          # Determine versions to try based on input
+          # RTD uses the tag name as-is (with 'v' prefix for tags like vX.Y.Z)
+          VERSIONS_TO_TRY=()
 
-          # If version-specific build fails, try latest
-          if [ "$http_code" -eq 404 ]; then
-            echo "Version-specific build failed, trying 'latest' version..."
-            response=$(trigger_build "https://readthedocs.org/api/v3/projects/${REPO_LOWER}/versions/latest/builds/")
-            http_code=$(echo "$response" | tail -n1)
-            body=$(echo "$response" | head -n-1)
-          fi
-
-          echo "Response body: $body"
-          echo "HTTP code: $http_code"
-
-          # Parse the response
-          if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
-            if echo "$body" | jq empty 2>/dev/null; then
-              build_url=$(echo "$body" | jq -r '.build.urls.build // empty')
-              if [ ! -z "$build_url" ]; then
-                echo "status=success" >> $GITHUB_OUTPUT
-                echo "build_url=$build_url" >> $GITHUB_OUTPUT
-                echo "Build triggered successfully at: $build_url"
-                exit 0
-              fi
+          if [ "$VERSION" != "latest" ] && [ "$VERSION" != "main" ]; then
+            # For version tags, try with 'v' prefix first (vX.Y.Z), then without
+            if [[ "$VERSION" =~ ^v ]]; then
+              VERSIONS_TO_TRY+=("$VERSION")
+              VERSIONS_TO_TRY+=("${VERSION#v}")
+            else
+              VERSIONS_TO_TRY+=("v$VERSION")
+              VERSIONS_TO_TRY+=("$VERSION")
             fi
           fi
+          # Always add 'latest' as final fallback
+          VERSIONS_TO_TRY+=("latest")
 
-          echo "status=failure" >> $GITHUB_OUTPUT
-          echo "Error triggering Read the Docs build. HTTP code: $http_code"
-          echo "Response body: $body"
-          exit 1
+          echo "Will try versions in order: ${VERSIONS_TO_TRY[*]}"
+
+          BUILD_TRIGGERED=false
+          for try_version in "${VERSIONS_TO_TRY[@]}"; do
+            echo ""
+            echo "=== Trying version: $try_version ==="
+
+            response=$(trigger_build "$try_version")
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | head -n-1)
+
+            echo "HTTP code: $http_code"
+
+            # Check for success
+            if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 201 ]; then
+              # Check if build was actually triggered
+              triggered=$(echo "$body" | jq -r '.triggered // true')
+              if [ "$triggered" = "true" ]; then
+                build_url=$(echo "$body" | jq -r '.build.urls.build // empty')
+                echo "status=success" >> $GITHUB_OUTPUT
+                echo "build_url=$build_url" >> $GITHUB_OUTPUT
+                echo "Build triggered successfully for version: $try_version"
+                if [ -n "$build_url" ]; then
+                  echo "Build URL: $build_url"
+                fi
+                BUILD_TRIGGERED=true
+                break
+              else
+                echo "API returned 2xx but triggered=false (build may already be running)"
+              fi
+            elif [ "$http_code" -eq 200 ]; then
+              # 200 OK - Check if triggered
+              triggered=$(echo "$body" | jq -r '.triggered // false')
+              if [ "$triggered" = "true" ]; then
+                build_url=$(echo "$body" | jq -r '.build.urls.build // empty')
+                echo "status=success" >> $GITHUB_OUTPUT
+                echo "build_url=$build_url" >> $GITHUB_OUTPUT
+                echo "Build triggered successfully for version: $try_version"
+                BUILD_TRIGGERED=true
+                break
+              else
+                echo "Build not triggered for $try_version (triggered=false), trying next..."
+              fi
+            elif [ "$http_code" -eq 400 ]; then
+              # 400 Bad Request - often means build already running or recently completed
+              triggered=$(echo "$body" | jq -r '.triggered // false')
+              if [ "$triggered" = "false" ]; then
+                echo "Build not triggered (may already be running or recently completed)"
+                echo "status=skipped" >> $GITHUB_OUTPUT
+                echo "Build already running or recently completed for version: $try_version"
+                BUILD_TRIGGERED=true
+                break
+              fi
+            elif [ "$http_code" -eq 404 ]; then
+              echo "Version '$try_version' not found on RTD, trying next..."
+            else
+              echo "Unexpected HTTP code: $http_code"
+              echo "Response body: $body"
+            fi
+          done
+
+          if [ "$BUILD_TRIGGERED" = "false" ]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "Error: Could not trigger Read the Docs build for any version"
+            echo "Tried versions: ${VERSIONS_TO_TRY[*]}"
+            exit 1
+          fi
 
 
   notify:
@@ -118,12 +169,16 @@ jobs:
     steps:
       - name: Report Build Status
         run: |
-          if [ "${{ needs.build.outputs.build_status }}" == "success" ]; then
+          STATUS="${{ needs.build.outputs.build_status }}"
+          if [ "$STATUS" == "success" ]; then
             echo "✅ Read the Docs build triggered successfully"
             echo "Version: ${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}"
             if [ ! -z "${{ needs.build.outputs.build_url }}" ]; then
               echo "Build URL: ${{ needs.build.outputs.build_url }}"
             fi
+          elif [ "$STATUS" == "skipped" ]; then
+            echo "⏭️ Read the Docs build skipped (already running or recently completed)"
+            echo "Version: ${{ github.event.client_payload.ref || github.event.inputs.ref || 'latest' }}"
           else
             echo "❌ Read the Docs build failed to trigger"
             exit 1
@@ -134,7 +189,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          STATUS="${{ needs.build.outputs.build_status == 'success' && 'success' || 'failure' }}"
+          BUILD_STATUS="${{ needs.build.outputs.build_status }}"
+          # Map our status to GitHub status (skipped counts as success)
+          if [ "$BUILD_STATUS" == "success" ] || [ "$BUILD_STATUS" == "skipped" ]; then
+            STATUS="success"
+          else
+            STATUS="failure"
+          fi
+
           curl -X POST \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
@@ -142,6 +204,6 @@ jobs:
             -d "{
               \"state\": \"$STATUS\",
               \"target_url\": \"${{ needs.build.outputs.build_url }}\",
-              \"description\": \"Read the Docs build $STATUS\",
+              \"description\": \"Read the Docs build $BUILD_STATUS\",
               \"context\": \"readthedocs/build\"
             }"

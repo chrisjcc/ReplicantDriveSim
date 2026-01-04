@@ -14,7 +14,7 @@ try:
     from importlib.metadata import PackageNotFoundError, version
 
     try:
-        __version__ = version("ReplicantDriveSim")
+        __version__ = version("replicantdrivesim")
     except PackageNotFoundError:
         # package is not installed
         __version__ = "unknown"
@@ -24,7 +24,7 @@ except ImportError:
         from importlib_metadata import PackageNotFoundError, version
 
         try:
-            __version__ = version("ReplicantDriveSim")
+            __version__ = version("replicantdrivesim")
         except PackageNotFoundError:
             __version__ = "unknown"
     except ImportError:
@@ -38,8 +38,15 @@ except ImportError as e:
     print(f"Current working directory: {os.getcwd()}")
     raise
 
-from .envs.environment import CustomUnityMultiAgentEnv
-from .envs.unity_env_resource import create_unity_env
+# Optional RL dependencies
+try:
+    from .envs.environment import CustomUnityMultiAgentEnv
+    from .envs.unity_env_resource import create_unity_env
+    HAS_RL = True
+except ImportError:
+    CustomUnityMultiAgentEnv = None
+    create_unity_env = None
+    HAS_RL = False
 
 
 def get_unity_executable_path():
@@ -76,6 +83,14 @@ def get_unity_executable_path():
 def make(env_name, config: dict):
     """Create a Unity environment using the given configuration."""
     if env_name == "replicantdrivesim-v0":
+        if not HAS_RL:
+            raise ImportError(
+                "Reinforcement Learning dependencies (mlagents-envs, etc.) are not installed. "
+                "This is expected on Apple Silicon by default. To enable RL, please follow the "
+                "installation guide in the README or run 'pip install -e .[rl]' after "
+                "manual dependency setup via Conda."
+            )
+
         # Automatically get the Unity executable path
         unity_executable_path = get_unity_executable_path()
 
