@@ -245,6 +245,31 @@ build_unity_project() {
             echo "✓ Build results moved to $BUILD_OUTPUT"
         fi
 
+        # Post-build: Copy Maps folder to build output
+        echo ""
+        echo "Post-build: Copying Maps folder..."
+        MAPS_SRC="$PROJECT_PATH/Assets/Maps"
+        
+        if [ -d "$MAPS_SRC" ]; then
+            # macOS .app bundles
+            find "$BUILD_OUTPUT" -name "*.app" -type d | while read app; do
+                if [ -d "$app/Contents" ]; then
+                    echo "Copying Maps to $app/Contents/"
+                    cp -R "$MAPS_SRC" "$app/Contents/"
+                fi
+            done
+            
+            # Windows/Linux Data folders (usually named <AppName>_Data)
+            find "$BUILD_OUTPUT" -name "*_Data" -type d | while read data_dir; do
+                echo "Copying Maps to $data_dir/"
+                cp -R "$MAPS_SRC" "$data_dir/"
+            done
+            
+            echo "✓ Maps folder copied"
+        else
+            echo "WARNING: Assets/Maps folder not found at $MAPS_SRC"
+        fi
+
         return 0
     else
         echo "=================================================="

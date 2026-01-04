@@ -4,6 +4,7 @@
 #include <algorithm> // for std::max and std::min
 #include <cmath>
 #include <random>
+#include <OpenDriveMap.h>
 
 
 // Custom clamp function for C++11
@@ -42,32 +43,113 @@ Traffic::~Traffic() {
 }
 
 /**
+ * @brief Sets the OpenDRIVE map for the simulation.
+ * @param map Pointer to the OpenDriveMap object.
+ */
+void Traffic::setMap(odr::OpenDriveMap* map) {
+    this->map_ = map;
+    if (this->map_) {
+        // Re-initialize agents with map data
+        sampleAndInitializeAgents();
+    }
+}
+
+/**
  * @brief Samples and initializes agents with random positions and attributes.
  */
+/**
+ * @brief Samples and initializes agents with positions on the road if map is available.
+ */
 void Traffic::sampleAndInitializeAgents() {
-    for (int i = 0; i < num_agents; ++i) {
+    // Shared initialization lambda
+    auto initAgentBasic = [&](int i) {
         agents[i].setId(i);
         agents[i].setName("agent_" + std::to_string(i));
         agents[i].setWidth(2.0f);
         agents[i].setLength(5.0f);
         agents[i].setSensorRange(200.0f);
+    };
 
-        float delta = agents[i].getWidth();
+    if (!map_) {
+        std::cout << "No map available. Spawning agents randomly off-road." << std::endl;
+        for (int i = 0; i < num_agents; ++i) {
+            initAgentBasic(i);
+            float delta = agents[i].getWidth();
+            agents[i].setX(randFloat(-5.0f * delta, 5.0f * delta));
+            agents[i].setY(0.4f);
+            agents[i].setZ(randFloat(500.0f, 100.0f * agents[i].getLength()));
+            agents[i].setVx(0.0f); agents[i].setVy(0.0f); agents[i].setVz(randNormal(25.0f, 2.0f));
+            agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -static_cast<float>(M_PI)/4.0f, static_cast<float>(M_PI)/4.0f));
+            previous_positions[i] = agents[i];
+        }
+        return;
+    }
 
-        agents[i].setX(randFloat(-5.0f * delta, 5.0f * delta));
-        agents[i].setY(0.4f);
-        agents[i].setZ(randFloat(500.0f, 100.0f * agents[i].getLength()));
+    std::cout << "Map available. Spawning agents on valid roads..." << std::endl;
 
-        agents[i].setVx(0.0f);  // Initial lateral speed
-        agents[i].setVy(0.0f);  // Initial vertical speed
-        agents[i].setVz(randNormal(25.0f, 2.0f)); // Initial longitudinal speed
+    std::vector<const odr::Road*> roads;
+    for (const auto& road : map_->get_roads()) {
+        roads.push_back(&road);
+    }
 
-        agents[i].setSteering(clamp(randNormal(0.0f, 1.0f),
-            -static_cast<float>(M_PI) / 4.0f,
-             static_cast<float>(M_PI) / 4.0f)); // +/- 35 degrees (in rad)
+    if (roads.empty()) {
+        std::cerr << "Map has no roads! Fallback to random." << std::endl;
+        return;
+    }
 
-        // Initialize previous positions with current positions
-        previous_positions[i] = agents[i];
+    std::uniform_int_distribution<> road_dist(0, roads.size() - 1);
+    
+    for (int i = 0; i < num_agents; ++i) {
+        initAgentBasic(i);
+
+        bool placed = false;
+        int attempts = 0;
+        const int MAX_ATTEMPTS = 100;
+
+        while (attempts++ < MAX_ATTEMPTS && !placed) {
+            const odr::Road* road = roads[road_dist(generator)];
+            double s = randFloat(0.0f, road->length);
+            
+            odr::LaneSection lanesection = road->get_lanesection(s);
+            
+            std::vector<int> driving_lane_ids;
+            for (const auto& lane : lanesection.get_lanes()) {
+                if (lane.type == "driving") {
+                    driving_lane_ids.push_back(lane.id);
+                }
+            }
+
+            if (driving_lane_ids.empty()) continue;
+
+            std::uniform_int_distribution<> lane_idx_dist(0, driving_lane_ids.size() - 1);
+            int lane_id = driving_lane_ids[lane_idx_dist(generator)];
+
+            double lane_width = 3.5; 
+            double t = (std::abs(lane_id) - 0.5) * lane_width * (lane_id > 0 ? 1 : -1);
+
+            odr::Vec3D heading_vec;
+            odr::Vec3D pos = road->get_xyz(s, t, 0.0, &heading_vec);
+
+            agents[i].setX(pos[0]);
+            agents[i].setY(pos[1] + 0.5f);
+            agents[i].setZ(pos[2]);
+
+            double heading = std::atan2(heading_vec[1], heading_vec[0]);
+            if (lane_id > 0) heading += M_PI;
+
+            agents[i].setYaw(heading);
+            agents[i].setSteering(0.0f);
+            agents[i].setVz(10.0f);
+            agents[i].setVx(0.0f); agents[i].setVy(0.0f);
+
+            previous_positions[i] = agents[i];
+            placed = true;
+        }
+
+        if (!placed) {
+             std::cerr << "Failed to place agent " << i << ". Fallback." << std::endl;
+             agents[i].setX(0); agents[i].setY(5); agents[i].setZ(0); 
+        }
     }
 }
 

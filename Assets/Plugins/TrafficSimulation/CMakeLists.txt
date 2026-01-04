@@ -120,10 +120,13 @@ if(APPLE)
     )
 endif()
 
+# Resolve absolute path for libOpenDRIVE to ensure headers are found
+get_filename_component(LIBOPENDRIVE_ABS_PATH "${CMAKE_SOURCE_DIR}/../libOpenDRIVE" ABSOLUTE)
+
 # Add include directories for Unity, including libOpenDRIVE and pugixml
 target_include_directories(${UNITY_TARGET} PUBLIC
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/../libOpenDRIVE/include
+    ${LIBOPENDRIVE_ABS_PATH}/include
     ${PUGIXML_INCLUDE_DIR}
 )
 
@@ -189,6 +192,7 @@ endif()
 target_include_directories(${PYPI_TARGET}
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${LIBOPENDRIVE_ABS_PATH}/include
         ${pybind11_INCLUDE_DIRS}
 )
 

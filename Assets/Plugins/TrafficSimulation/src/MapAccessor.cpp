@@ -44,6 +44,13 @@ void DestroyMapAccessor(void* accessor) {
     }
 }
 
+extern "C" odr::OpenDriveMap* Map_GetInternalMapPtr(void* accessor) {
+    if (!accessor) return nullptr;
+    MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
+    if (!mapAccessor->isValid()) return nullptr;
+    return mapAccessor->map;
+}
+
 VehicleState* WorldToRoadCoordinates(void* accessor, double x, double y, double z) {
     if (!accessor) return nullptr;
     
@@ -389,40 +396,15 @@ void FreeLaneInfo(LaneInfo* laneInfo) {
     delete[] laneInfo;
 }
 
+extern "C" {
+
 void FreeRoadIds(int* roadIds) {
     delete[] roadIds;
 }
 
-// Mesh rendering functions for Unity integration
-float* GetRoadVertices(void* accessor, int* vertexCount) {
-    if (!accessor) return nullptr;
-    
-    MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
-    if (!mapAccessor->isValid()) return nullptr;
-    
-    try {
-        // Get road network mesh with fine resolution for detailed rendering
-        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1 /* epsilon */);
-        auto vertices = mesh.get_mesh().vertices; // Vec3D vertices (x, y, z)
-
-        *vertexCount = vertices.size() * 3; // Each vertex has x, y, z components
-        float* result = new float[*vertexCount];
-        
-        for (size_t i = 0; i < vertices.size(); ++i) {
-            result[i * 3 + 0] = static_cast<float>(vertices[i][0]); // x
-            result[i * 3 + 1] = static_cast<float>(vertices[i][1]); // y  
-            result[i * 3 + 2] = static_cast<float>(vertices[i][2]); // z
-        }
-        
-        return result;
-    } catch (const std::exception& e) {
-        std::cerr << "GetRoadVertices failed: " << e.what() << std::endl;
-        *vertexCount = 0;
-        return nullptr;
-    }
-}
-
-int* GetRoadIndices(void* accessor, int* indexCount) {
+// Mesh rendering functions for Unity integration (Prefixed to avoid conflicts)
+__attribute__((visibility("default")))
+float* Map_GetRoadVertices(void* accessor, int* vertexCount) {
     if (!accessor) return nullptr;
     
     MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
@@ -430,30 +412,61 @@ int* GetRoadIndices(void* accessor, int* indexCount) {
     
     try {
         // Get road network mesh with fine resolution
-        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1 /* epsilon */);
-        auto indices = mesh.get_mesh().triangles; // Triangle indices
+        // Note: Using 0.1 epsilon for high quality
+        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1);
+        auto vertices = mesh.get_mesh().vertices;
         
-        *indexCount = indices.size() * 3; // Each triangle has 3 indices
-        int* result = new int[*indexCount];
+        *vertexCount = vertices.size() * 3;
+        float* result = new float[*vertexCount];
         
-        for (size_t i = 0; i < indices.size(); ++i) {
-            result[i * 3 + 0] = static_cast<int>(indices[i][0]);
-            result[i * 3 + 1] = static_cast<int>(indices[i][1]);
-            result[i * 3 + 2] = static_cast<int>(indices[i][2]);
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            result[i * 3 + 0] = static_cast<float>(vertices[i][0]); // x
+            result[i * 3 + 1] = static_cast<float>(vertices[i][1]); // y
+            result[i * 3 + 2] = static_cast<float>(vertices[i][2]); // z
         }
         
         return result;
     } catch (const std::exception& e) {
-        std::cerr << "GetRoadIndices failed: " << e.what() << std::endl;
+        std::cerr << "Map_GetRoadVertices failed: " << e.what() << std::endl;
+        *vertexCount = 0;
+        return nullptr;
+    }
+}
+
+__attribute__((visibility("default")))
+int* Map_GetRoadIndices(void* accessor, int* indexCount) {
+    if (!accessor) return nullptr;
+    
+    MapAccessorInternal* mapAccessor = static_cast<MapAccessorInternal*>(accessor);
+    if (!mapAccessor->isValid()) return nullptr;
+    
+    try {
+        odr::RoadNetworkMesh mesh = mapAccessor->map->get_road_network_mesh(0.1);
+        auto indices = mesh.get_mesh().indices; // Using indices, not triangles
+        
+        *indexCount = indices.size();
+        int* result = new int[*indexCount];
+        
+        for (size_t i = 0; i < indices.size(); ++i) {
+            result[i] = static_cast<int>(indices[i]);
+        }
+        
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "Map_GetRoadIndices failed: " << e.what() << std::endl;
         *indexCount = 0;
         return nullptr;
     }
 }
 
-void FreeVertices(float* vertices) {
+__attribute__((visibility("default")))
+void Map_FreeVertices(float* vertices) {
     delete[] vertices;
 }
 
-void FreeIndices(int* indices) {
+__attribute__((visibility("default")))
+void Map_FreeIndices(int* indices) {
     delete[] indices;
 }
+
+} // extern "C"

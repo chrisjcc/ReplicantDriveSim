@@ -77,6 +77,7 @@ EXPORT Traffic* Traffic_create(int num_agents, unsigned seed);
 EXPORT void Traffic_destroy(Traffic* traffic);
 
 EXPORT void Traffic_sampleAndInitializeAgents(Traffic* traffic);
+EXPORT void Traffic_assign_map(Traffic* traffic, void* mapAccessor);
 
 EXPORT const char* Traffic_step(Traffic* traffic,
     int* high_level_actions,

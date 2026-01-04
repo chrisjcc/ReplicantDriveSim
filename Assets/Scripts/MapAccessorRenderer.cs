@@ -37,6 +37,7 @@ public class MapAccessorRenderer : MonoBehaviour
 {
     [Header("OpenDRIVE Configuration")]
     [SerializeField] private string openDriveFilePath = "data.xodr";
+    [SerializeField] public string terrainGameObjectName = "Terrain"; // Added public field for Inspector
     [SerializeField] private bool debugVehicleState = true;
     [SerializeField] private Transform vehicleTransform;
     
@@ -92,25 +93,88 @@ public class MapAccessorRenderer : MonoBehaviour
     private static extern double GetClosestRoadDistance(IntPtr accessor, double x, double y, double z);
 
     // Mesh rendering functions
-    [DllImport(DllName)]
+    [DllImport(DllName, EntryPoint = "Map_GetRoadVertices")]
     private static extern IntPtr GetRoadVertices(IntPtr accessor, out int vertexCount);
 
-    [DllImport(DllName)]
+    [DllImport(DllName, EntryPoint = "Map_GetRoadIndices")]
     private static extern IntPtr GetRoadIndices(IntPtr accessor, out int indexCount);
 
-    [DllImport(DllName)]
+    [DllImport(DllName, EntryPoint = "Map_FreeVertices")]
     private static extern void FreeVertices(IntPtr vertices);
 
-    [DllImport(DllName)]
+    [DllImport(DllName, EntryPoint = "Map_FreeIndices")]
     private static extern void FreeIndices(IntPtr indices);
+
+    void Awake()
+    {
+        InitializeMapAccessor();
+    }
 
     void Start()
     {
-        InitializeMapAccessor();
+        Debug.Log($"[MapAccessorRenderer] State check: renderRoadMesh={renderRoadMesh}, mapAccessor={(long)mapAccessor}");
         
         if (renderRoadMesh && mapAccessor != IntPtr.Zero)
         {
             RenderRoadMesh();
+        }
+        else
+        {
+            Debug.LogWarning("[MapAccessorRenderer] Skipping RenderRoadMesh because renderRoadMesh is false or mapAccessor is null.");
+        }
+
+        CenterTerrain();
+    }
+
+    private void CenterTerrain()
+    {
+        Terrain activeTerrain = Terrain.activeTerrain;
+        if (activeTerrain != null)
+        {
+            Vector3 size = activeTerrain.terrainData.size;
+            activeTerrain.transform.position = new Vector3(-size.x / 2, 0, -size.z / 2);
+            Debug.Log($"Terrain centered at {activeTerrain.transform.position} with size {size}");
+        }
+        else
+        {
+            // Fallback: Try finding GameObject named by the user or common defaults
+            GameObject terrainObj = GameObject.Find(terrainGameObjectName);
+            if (terrainObj == null) terrainObj = GameObject.Find("Terrain");
+            if (terrainObj == null) terrainObj = GameObject.Find("Ground");
+            if (terrainObj == null) {
+                 Terrain t = FindFirstObjectByType<Terrain>();
+                 if (t != null) terrainObj = t.gameObject;
+            }
+            
+            if (terrainObj != null)
+            {
+                Renderer r = terrainObj.GetComponent<Renderer>();
+                if (r != null)
+                {
+                     Vector3 size = r.bounds.size;
+                     // Assume pivot is center or try to center bounds? 
+                     // Usually we want bounds center to be 0,0.
+                     // If pivot is center, setting position to 0,0 centers it.
+                     // If pivot is corner, we need offset.
+                     // Let's assume we want to center the BOUNDS at 0,0,0 (on XZ)
+                     
+                     // Move object so that bounds.center.x = 0, bounds.center.z = 0
+                     Vector3 currentCenter = r.bounds.center;
+                     Vector3 offset = Vector3.zero - new Vector3(currentCenter.x, 0, currentCenter.z);
+                     
+                     terrainObj.transform.position += offset;
+                     
+                     Debug.Log($"Centered Terrain GameObject '{terrainObj.name}' (using Bounds) at {terrainObj.transform.position}");
+                }
+                else
+                {
+                     Debug.LogWarning($"Found GameObject '{terrainObj.name}' but it has no Renderer to calculate bounds.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("No active terrain found (`Terrain.activeTerrain` is null) AND no GameObject named 'Terrain' or 'Ground' found.");
+            }
         }
     }
 
@@ -217,12 +281,14 @@ public class MapAccessorRenderer : MonoBehaviour
             // Transform from OpenDRIVE coordinates to Unity coordinates
             // OpenDRIVE: X=east, Y=north, Z=up
             // Unity: X=right, Y=up, Z=forward
+            float yOffset = 0.2f; // Lift road slightly above terrain to avoid z-fighting
+
             for (int i = 0; i < unityVertices.Length; i++)
             {
                 unityVertices[i] = new Vector3(
-                    vertices[i * 3 + 0],   // X (east) -> X (right)
-                    vertices[i * 3 + 2],   // Z (up) -> Y (up)
-                    -vertices[i * 3 + 1]   // -Y (north) -> -Z (back, then forward)
+                    vertices[i * 3 + 0],               // X (east) -> X (right)
+                    vertices[i * 3 + 2] + yOffset,     // Z (up) -> Y (up) + Offset
+                    -vertices[i * 3 + 1]               // -Y (north) -> -Z (back to align)
                 );
             }
 
@@ -239,7 +305,11 @@ public class MapAccessorRenderer : MonoBehaviour
             meshFilter.mesh = mesh;
             meshRenderer.material = roadMaterial != null ? roadMaterial : CreateDefaultRoadMaterial();
 
-            Debug.Log($"Road mesh created - Vertices: {unityVertices.Length}, Triangles: {triangles.Length / 3}");
+            Debug.Log($"Road mesh created Successfully!\n" +
+                     $" - Vertices: {unityVertices.Length}\n" +
+                     $" - Triangles: {triangles.Length / 3}\n" +
+                     $" - Bounds: {mesh.bounds}\n" +
+                     $" - Material: {meshRenderer.material.name}");
 
             // Cleanup native memory
             FreeVertices(verticesPtr);
@@ -463,5 +533,10 @@ public class MapAccessorRenderer : MonoBehaviour
             Debug.LogError($"Error checking if position is on road: {e.Message}");
             return false;
         }
+    }
+
+    public IntPtr GetMapAccessor()
+    {
+        return mapAccessor;
     }
 }

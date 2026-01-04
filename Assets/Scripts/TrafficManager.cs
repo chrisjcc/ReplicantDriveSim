@@ -170,6 +170,9 @@ public class TrafficManager : MonoBehaviour
     public static extern void FreeString(IntPtr str);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void Traffic_assign_map(IntPtr traffic, IntPtr mapAccessor);
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
     private static extern float Traffic_getTimeStep(IntPtr traffic);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -329,6 +332,18 @@ public class TrafficManager : MonoBehaviour
 
         // Assuming you have a reference to the Traffic_create and Traffic_destroy functions from the C API
         trafficSimulationPtr = CreateSimulation();
+
+        // Assign map if available
+        MapAccessorRenderer mapRenderer = FindFirstObjectByType<MapAccessorRenderer>();
+        if (mapRenderer != null && mapRenderer.GetMapAccessor() != IntPtr.Zero)
+        {
+             Debug.Log("Assigning map to traffic simulation...");
+             Traffic_assign_map(trafficSimulationPtr, mapRenderer.GetMapAccessor());
+        }
+        else
+        {
+             Debug.LogWarning("MapAccessorRenderer not found or map not initialized. Traffic will use random spawning.");
+        }
 
         // Set initial values from Unity Editor to the C++ simulation
         Traffic_setTimeStep(trafficSimulationPtr, simTimeStep);

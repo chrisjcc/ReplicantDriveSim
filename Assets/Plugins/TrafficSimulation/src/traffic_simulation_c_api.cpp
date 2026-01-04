@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <thread>
 
@@ -158,6 +159,20 @@ EXPORT void Traffic_destroy(Traffic* traffic) {
 
 EXPORT void Traffic_sampleAndInitializeAgents(Traffic* traffic) {
     traffic->sampleAndInitializeAgents();
+}
+
+// Helper to access internal map accessor
+extern "C" odr::OpenDriveMap* Map_GetInternalMapPtr(void* accessor);
+
+EXPORT void Traffic_assign_map(Traffic* traffic, void* mapAccessor) {
+     if (traffic && mapAccessor) {
+         odr::OpenDriveMap* map = Map_GetInternalMapPtr(mapAccessor);
+         if (map) {
+             traffic->setMap(map);
+         } else {
+             std::cerr << "Failed to get internal map pointer from accessor." << std::endl;
+         }
+     }
 }
 
 EXPORT const char* Traffic_step(Traffic* traffic,
