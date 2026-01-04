@@ -53,6 +53,7 @@ set(UNITY_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bicycle_model.cpp
     ${CMAKE_SOURCE_DIR}/src/traffic_simulation_c_api.cpp
     ${CMAKE_SOURCE_DIR}/src/OpenDriveWrapper.cpp
+    ${CMAKE_SOURCE_DIR}/src/MapAccessor.cpp
 )
 
 set(UNITY_HEADERS
@@ -62,6 +63,7 @@ set(UNITY_HEADERS
     ${CMAKE_SOURCE_DIR}/include/bicycle_model.h
     ${CMAKE_SOURCE_DIR}/include/traffic_simulation_c_api.h
     ${CMAKE_SOURCE_DIR}/include/OpenDriveWrapper.h
+    ${CMAKE_SOURCE_DIR}/include/MapAccessor.h
 )
 
 # Create build directory for Unity target

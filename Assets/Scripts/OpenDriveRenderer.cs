@@ -6,12 +6,7 @@ public class OpenDriveRenderer : MonoBehaviour
 {
     private const string DllName = "libReplicantDriveSim";
 
-    // Import native functions
-    [DllImport("libdl", EntryPoint = "dlopen")]
-    private static extern IntPtr dlopen(string filename, int flags);
-
-    [DllImport("libdl", EntryPoint = "dlerror")]
-    private static extern IntPtr dlerror();
+    // Platform-specific DLL imports removed - Unity handles loading automatically
 
     [DllImport(DllName)]
     private static extern IntPtr LoadOpenDriveMap(string filePath);
@@ -33,24 +28,12 @@ public class OpenDriveRenderer : MonoBehaviour
 
     void Start()
     {
-        // Check the DLL path
-        string dllPath = System.IO.Path.Combine(Application.dataPath, "Plugins", "TrafficSimulation", "build", "libReplicantDriveSim.dylib");
-        Debug.Log("DLL Path: " + dllPath + ", Exists: " + System.IO.File.Exists(dllPath));
-
-        IntPtr handle = dlopen(dllPath, 2); // RTLD_NOW = 2
-        if (handle == IntPtr.Zero)
-        {
-            IntPtr errorPtr = dlerror();
-            string error = Marshal.PtrToStringAnsi(errorPtr);
-            Debug.LogError("Failed to load libReplicantDriveSim.dylib: " + error);
-        }
-        else
-        {
-            Debug.Log("Successfully loaded libReplicantDriveSim.dylib");
-        }
+        // Note: DLL loading is handled automatically by Unity's P/Invoke system
+        // The following manual loading code has been removed in favor of automatic loading
+        Debug.Log("Using automatic DLL loading via Unity P/Invoke");
 
         // Path to data.xodr file
-        string filePath = System.IO.Path.Combine(Application.dataPath, "Maps", "A10-IN-17-31KM_HW_AC_DE_BER_RELEASE_20210510.xodr");
+        string filePath = System.IO.Path.Combine(Application.dataPath, "Maps", "data.xodr");
         Debug.Log("Map file: " + filePath);
         Debug.Log("File Exists: " + System.IO.File.Exists(filePath));
 
