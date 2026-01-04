@@ -207,7 +207,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 102826273}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f3fe7e814b8184579959d5a8a7467ad8, type: 3}
   m_Name: 
@@ -429,7 +429,7 @@ GameObject:
   - component: {fileID: 911177775}
   - component: {fileID: 911177774}
   m_Layer: 0
-  m_Name: OpenDriveRenderer
+  m_Name: MapAccessorRenderer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -444,9 +444,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 911177773}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e954fd48381a4a29a5c0f8fdb1af2ff, type: 3}
+  m_Script: {fileID: 11500000, guid: b1e3a51bfa24943a6b4cbd1a2782d2c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  openDriveFilePath: data.xodr
+  vehicleTransform: {fileID: 0}
+  roadMaterial: {fileID: 0}
+  debugMode: 1 
 --- !u!4 &911177775
 Transform:
   m_ObjectHideFlags: 0
