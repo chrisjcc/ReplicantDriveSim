@@ -9,6 +9,8 @@
 #include <memory>
 #include <thread>
 
+extern "C" {
+
 // Global variables moved from header to avoid ODR violations
 static std::ostringstream oss;
 static std::random_device rd;
@@ -340,3 +342,5 @@ EXPORT float Traffic_getMaxVehicleSpeed(Traffic* traffic) {
 EXPORT void Traffic_setMaxVehicleSpeed(Traffic* traffic, float max_speed) {
     traffic->setMaxVehicleSpeed(max_speed);
 }
+
+} // extern "C"

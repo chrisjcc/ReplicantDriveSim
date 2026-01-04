@@ -173,7 +173,7 @@ public class MapAccessorRenderer : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("No active terrain found (`Terrain.activeTerrain` is null) AND no GameObject named 'Terrain' or 'Ground' found.");
+                Debug.LogInfo("No terrain found - this is expected if your scene uses OpenDRIVE road geometry instead of Unity terrain.");
             }
         }
     }
