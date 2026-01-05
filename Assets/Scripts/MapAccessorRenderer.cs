@@ -173,7 +173,7 @@ public class MapAccessorRenderer : MonoBehaviour
             }
             else
             {
-                Debug.LogInfo("No terrain found - this is expected if your scene uses OpenDRIVE road geometry instead of Unity terrain.");
+                Debug.Log("No terrain found - this is expected if your scene uses OpenDRIVE road geometry instead of Unity terrain.");
             }
         }
     }

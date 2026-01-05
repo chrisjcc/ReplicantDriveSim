@@ -49,8 +49,7 @@ Traffic::~Traffic() {
 void Traffic::setMap(odr::OpenDriveMap* map) {
     this->map_ = map;
     if (this->map_) {
-        // Re-initialize agents with map data
-        sampleAndInitializeAgents();
+        std::cout << "Map assigned to Traffic simulation. Call sampleAndInitializeAgents() to spawn agents on roads." << std::endl;
     }
 }
 
