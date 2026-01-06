@@ -31,6 +31,9 @@ public:
 
     // Pointer to OpenDriveMap for valid spawning
     odr::OpenDriveMap* map_ = nullptr;
+ 
+    // Map center offset (libOpenDRIVE centers meshes, but get_xyz returns absolute coords)
+    std::array<double, 3> map_center_offset_ = {0.0, 0.0, 0.0};
 
     /**
      * @brief Constructs a Traffic object with the specified number of agents.
