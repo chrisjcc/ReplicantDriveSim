@@ -227,10 +227,7 @@ public class TrafficAgent : Agent
 
         if (trafficManager != null)
         {
-            // Sample and initialize agents state, e.g. position, speed, orientation
-            TrafficManager.Traffic_sampleAndInitializeAgents(trafficManager.trafficSimulationPtr);
-
-            // Obtain pointer to traffic vehicle state
+            // Obtain pointer to traffic vehicle state (agents are already initialized)
             IntPtr vehiclePtr = TrafficManager.Traffic_get_agent_by_name(trafficManager.trafficSimulationPtr, gameObject.name);
 
             // Update the vehicle's position in the C++ simulation

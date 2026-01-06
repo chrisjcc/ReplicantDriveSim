@@ -100,6 +100,10 @@ build-unity: ## Build Unity application (standalone builds)
 build-all: build-native build-unity ## Build both native library and Unity application
 	@echo "$(GREEN)All builds completed successfully!$(RESET)"
 
+submodule: ## Initialize and update git submodules
+	@echo "$(GREEN)Initializing and updating submodules...$(RESET)"
+	git submodule update --init --recursive
+
 rebuild-native: clean-native build-native ## Clean and rebuild native library
 
 rebuild-unity: clean-unity build-unity ## Clean and rebuild Unity application

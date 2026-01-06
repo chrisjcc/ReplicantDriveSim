@@ -10,6 +10,9 @@
 #include <memory> // for std::shared_ptr
 #include <random>
 
+namespace odr {
+    class OpenDriveMap;
+}
 
 /**
  * @brief The Traffic class manages a simulation of multiple vehicles with
@@ -25,6 +28,12 @@ public:
 
     // Bicycle model to handle more realistic vehicle motion
     std::vector<BicycleModel> vehicle_models;
+
+    // Pointer to OpenDriveMap for valid spawning
+    odr::OpenDriveMap* map_ = nullptr;
+ 
+    // Map center offset (libOpenDRIVE centers meshes, but get_xyz returns absolute coords)
+    std::array<double, 3> map_center_offset_ = {0.0, 0.0, 0.0};
 
     /**
      * @brief Constructs a Traffic object with the specified number of agents.
@@ -42,6 +51,12 @@ public:
      * @brief Samples and initializes agents with random positions and attributes.
      */
     void sampleAndInitializeAgents();
+
+    /**
+     * @brief Sets the OpenDRIVE map for the simulation.
+     * @param map Pointer to the OpenDriveMap object.
+     */
+    void setMap(odr::OpenDriveMap* map);
 
     /**
      * @brief Advances the simulation by one time step, updating agent positions and handling actions.

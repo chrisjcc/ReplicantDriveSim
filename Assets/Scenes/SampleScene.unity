@@ -204,7 +204,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 102826273}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f3fe7e814b8184579959d5a8a7467ad8, type: 3}
   m_Name: 
@@ -282,6 +282,7 @@ MonoBehaviour:
   debugVisualization: 0
   MaxSteps: 2000
   rayPerceptionSensor: {fileID: 0}
+  includeRayCastObservation: 1
   offRoadPenalty: -0.5
   onRoadReward: 0.01
   collisionWithOtherAgentPenalty: -1
@@ -313,7 +314,7 @@ Transform:
   m_GameObject: {fileID: 613325772}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 25, y: -40, z: 500}
+  m_LocalPosition: {x: 0, y: -30, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -417,6 +418,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &911177773
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 911177775}
+  - component: {fileID: 911177774}
+  m_Layer: 0
+  m_Name: MapAccessorRenderer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &911177774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 911177773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1e3a51bfa24943a6b4cbd1a2782d2c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  openDriveFilePath: data.xodr
+  terrainGameObjectName: Terrain
+  debugVehicleState: 1
+  vehicleTransform: {fileID: 0}
+  roadMaterial: {fileID: 0}
+  renderRoadMesh: 1
+--- !u!4 &911177775
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 911177773}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -523,10 +574,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetObject: {fileID: 0}
+  targetManagerName: TrafficSimulationManager
+  defaultTargetName: agent_0
+  targetCamera: {fileID: 0}
   cameraHeight: 300
   cameraDistance: 5
   smoothSpeed: 5
   cameraXPosition: 0
+  searchInterval: 1
+  maxSearchAttempts: 10
 --- !u!4 &1621826644 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f2426a4d043694f2ba8f9ffbf8e0244b, type: 3}
@@ -541,3 +597,4 @@ SceneRoots:
   - {fileID: 257869386}
   - {fileID: 102826275}
   - {fileID: 613325773}
+  - {fileID: 911177775}

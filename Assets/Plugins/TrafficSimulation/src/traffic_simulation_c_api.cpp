@@ -1,11 +1,15 @@
 #include "traffic_simulation_c_api.h"
 #include "traffic.h"
+#include <OpenDriveMap.h>
 #include <array>
 #include <vector>
 #include <unordered_map>
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <thread>
+
+extern "C" {
 
 // Global variables moved from header to avoid ODR violations
 static std::ostringstream oss;
@@ -157,6 +161,20 @@ EXPORT void Traffic_destroy(Traffic* traffic) {
 
 EXPORT void Traffic_sampleAndInitializeAgents(Traffic* traffic) {
     traffic->sampleAndInitializeAgents();
+}
+
+// Helper to access internal map accessor
+extern "C" odr::OpenDriveMap* Map_GetInternalMapPtr(void* accessor);
+
+EXPORT void Traffic_assign_map(Traffic* traffic, void* mapAccessor) {
+     if (traffic && mapAccessor) {
+         odr::OpenDriveMap* map = Map_GetInternalMapPtr(mapAccessor);
+         if (map) {
+             traffic->setMap(map);
+         } else {
+             std::cerr << "Failed to get internal map pointer from accessor." << std::endl;
+         }
+     }
 }
 
 EXPORT const char* Traffic_step(Traffic* traffic,
@@ -324,3 +342,5 @@ EXPORT float Traffic_getMaxVehicleSpeed(Traffic* traffic) {
 EXPORT void Traffic_setMaxVehicleSpeed(Traffic* traffic, float max_speed) {
     traffic->setMaxVehicleSpeed(max_speed);
 }
+
+} // extern "C"

@@ -59,6 +59,12 @@ rm -f libReplicantDriveSim.dylib libReplicantDriveSim.so ReplicantDriveSim.dll
 echo ""
 echo "Creating build directory..."
 mkdir -p build
+
+# Ensure submodules are initialized (e.g., libOpenDRIVE)
+# We do this from the root directory
+echo "Syncing submodules..."
+(cd ../../.. && git submodule update --init --recursive)
+
 cd build
 
 # Platform-specific configuration
@@ -218,6 +224,18 @@ if [ $? -eq 0 ]; then
                 echo "✓ Python module successfully moved"
             else
                 echo "WARNING: replicantdrivesim.so not found in build directory"
+            fi
+
+            # Copy libOpenDrive.dylib dependency to Unity Plugins folder
+            echo "Copying libOpenDrive.dylib dependency..."
+            if [ -f "libOpenDrive/libOpenDrive.dylib" ]; then
+                cp -f "libOpenDrive/libOpenDrive.dylib" "$DEST_DIR/"
+                echo "✓ libOpenDrive.dylib successfully copied"
+            elif [ -f "libOpenDrive.dylib" ]; then
+                cp -f "libOpenDrive.dylib" "$DEST_DIR/"
+                echo "✓ libOpenDrive.dylib successfully copied"
+            else
+                echo "WARNING: libOpenDrive.dylib not found in build directory"
             fi
 
             # Clean up build directory to prevent Unity from seeing duplicates
