@@ -180,56 +180,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f2426a4d043694f2ba8f9ffbf8e0244b, type: 3}
---- !u!1 &102826273
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 102826275}
-  - component: {fileID: 102826274}
-  m_Layer: 0
-  m_Name: RoadManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &102826274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102826273}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f3fe7e814b8184579959d5a8a7467ad8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
-  roadPhysicsMaterial: {fileID: 0}
-  singleRoadWidth: 15
-  roadLength: 100
-  boundaryHeight: 5
-  medianWidth: 5
---- !u!4 &102826275
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102826273}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 10}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &257869384
 GameObject:
   m_ObjectHideFlags: 0
@@ -239,7 +189,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 257869386}
-  - component: {fileID: 257869387}
   m_Layer: 0
   m_Name: TrafficSimulationManager
   m_TagString: Untagged
@@ -262,33 +211,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &257869387
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 257869384}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1bd63a84cb8ab439ba5a902a73f51f97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentPrefab: {fileID: 4109849008543767089, guid: d82982a893aaf4a29b195b5d5b95b7fb, type: 3}
-  simTimeStep: 0.02
-  initialAgentCount: 1
-  maxSpeed: 5
-  seed: 42
-  debugVisualization: 0
-  MaxSteps: 2000
-  rayPerceptionSensor: {fileID: 0}
-  includeRayCastObservation: 1
-  offRoadPenalty: -0.5
-  onRoadReward: 0.01
-  collisionWithOtherAgentPenalty: -1
-  medianCrossingPenalty: -1
-  penaltyInterval: 0.5
-  lastPenaltyTime: 0
 --- !u!1 &613325772
 GameObject:
   m_ObjectHideFlags: 0
@@ -427,7 +349,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 911177775}
-  - component: {fileID: 911177774}
   m_Layer: 0
   m_Name: MapAccessorRenderer
   m_TagString: Untagged
@@ -435,24 +356,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &911177774
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 911177773}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b1e3a51bfa24943a6b4cbd1a2782d2c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  openDriveFilePath: data.xodr
-  terrainGameObjectName: Terrain
-  debugVehicleState: 1
-  vehicleTransform: {fileID: 0}
-  roadMaterial: {fileID: 0}
-  renderRoadMesh: 1
 --- !u!4 &911177775
 Transform:
   m_ObjectHideFlags: 0
@@ -576,8 +479,8 @@ MonoBehaviour:
   targetObject: {fileID: 0}
   targetManagerName: TrafficSimulationManager
   defaultTargetName: agent_0
-  targetCamera: {fileID: 0}
-  cameraHeight: 300
+  targetCamera: {fileID: 963194227}
+  cameraHeight: 150
   cameraDistance: 5
   smoothSpeed: 5
   cameraXPosition: 0
@@ -595,6 +498,5 @@ SceneRoots:
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 257869386}
-  - {fileID: 102826275}
   - {fileID: 613325773}
   - {fileID: 911177775}

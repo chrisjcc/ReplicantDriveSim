@@ -73,7 +73,7 @@ EXPORT void Vehicle_setAcceleration(Vehicle* vehicle, float acceleration);
 EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance);
 
 // Traffic functions
-EXPORT Traffic* Traffic_create(int num_agents, unsigned seed);
+EXPORT void* Traffic_create(int num_agents, unsigned int seed);
 EXPORT void Traffic_destroy(Traffic* traffic);
 
 EXPORT void Traffic_sampleAndInitializeAgents(Traffic* traffic);

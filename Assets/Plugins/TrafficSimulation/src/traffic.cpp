@@ -28,10 +28,10 @@ Traffic::Traffic(const int& num_agents, const unsigned& seed) : max_speed_(60.0f
     previous_positions.resize(num_agents);
     vehicle_models.resize(num_agents);
 
-    // Initialize agents with random positions and attributes
-    sampleAndInitializeAgents();
+    // DON'T initialize agents here - wait for map assignment
+    // sampleAndInitializeAgents() will be called from Unity after map is set
 
-    max_speed_ = agents[0].getVehicleMaxSpeed();
+    max_speed_ = 60.0f; // Use default max speed instead of agents[0]
 }
 
 /**
@@ -49,38 +49,11 @@ Traffic::~Traffic() {
 void Traffic::setMap(odr::OpenDriveMap* map) {
     this->map_ = map;
     if (this->map_) {
-        // Calculate map center offset to match Unity's coordinate system
-        // This ensures vehicles spawn near the center of the rendered map
-        double min_x = std::numeric_limits<double>::max();
-        double max_x = std::numeric_limits<double>::lowest();
-        double min_y = std::numeric_limits<double>::max();
-        double max_y = std::numeric_limits<double>::lowest();
-
-        for (const auto& road : map_->get_roads()) {
-            // Sample points along each road to find bounds
-            if (road.length <= 0) continue; // Skip invalid roads
-            double step = std::max(1.0, road.length / 10.0); // Ensure reasonable step size
-            for (double s = 0; s <= road.length; s += step) {
-                try {
-                    odr::Vec3D pos = road.get_xyz(s, 0.0, 0.0);
-                    min_x = std::min(min_x, pos[0]);
-                    max_x = std::max(max_x, pos[0]);
-                    min_y = std::min(min_y, pos[1]);
-                    max_y = std::max(max_y, pos[1]);
-                } catch (...) {
-                    std::cerr << "Error getting position for road at s=" << s << std::endl;
-                    continue;
-                }
-            }
-        }
-
-        map_center_offset_[0] = (min_x + max_x) / 2.0;
-        map_center_offset_[1] = (min_y + max_y) / 2.0;
-        map_center_offset_[2] = 0.0; // Z offset is typically 0 for flat maps
-
-        std::cout << "Map center offset calculated: X=" << map_center_offset_[0]
-                  << " Y=" << map_center_offset_[1] << " Z=" << map_center_offset_[2] << std::endl;
-        std::cout << "Map bounds: X[" << min_x << ", " << max_x << "] Y[" << min_y << ", " << max_y << "]" << std::endl;
+        // Count roads for debug info
+        int roadCount = this->map_->get_roads().size();
+        std::cout << "SUCCESS: Map assigned to Traffic simulation! Found " << roadCount << " roads. Vehicles will spawn on road geometry." << std::endl;
+    } else {
+        std::cout << "WARNING: Null map assigned to Traffic simulation." << std::endl;
     }
 }
 
@@ -101,13 +74,13 @@ void Traffic::sampleAndInitializeAgents() {
     };
 
     if (!map_) {
-        std::cout << "No map available. Spawning agents randomly off-road." << std::endl;
+        std::cout << "ERROR: No map available! Map was not assigned to Traffic simulation. Spawning agents randomly off-road." << std::endl;
         for (int i = 0; i < num_agents; ++i) {
             initAgentBasic(i);
             float delta = agents[i].getWidth();
             agents[i].setX(randFloat(-5.0f * delta, 5.0f * delta));
             agents[i].setY(0.4f);
-            agents[i].setZ(randFloat(500.0f, 100.0f * agents[i].getLength()));
+            agents[i].setZ(0.0f);  // Place at road level instead of 500+ units away
             agents[i].setVx(0.0f); agents[i].setVy(0.0f); agents[i].setVz(randNormal(25.0f, 2.0f));
             agents[i].setSteering(clamp(randNormal(0.0f, 1.0f), -static_cast<float>(M_PI)/4.0f, static_cast<float>(M_PI)/4.0f));
             previous_positions[i] = agents[i];
@@ -154,8 +127,33 @@ void Traffic::sampleAndInitializeAgents() {
             std::uniform_int_distribution<> lane_idx_dist(0, driving_lane_ids.size() - 1);
             int lane_id = driving_lane_ids[lane_idx_dist(generator)];
 
-            double lane_width = 3.5; 
-            double t = (std::abs(lane_id) - 0.5) * lane_width * (lane_id > 0 ? 1 : -1);
+            // Get actual lane width from OpenDRIVE data
+            const odr::Lane* selected_lane = nullptr;
+            for (const auto& lane : lanesection.get_lanes()) {
+                if (lane.id == lane_id) {
+                    selected_lane = &lane;
+                    break;
+                }
+            }
+
+            double lane_width = 3.5; // Default fallback width
+            if (selected_lane && !selected_lane->lane_width.empty()) {
+                // Get lane width at position s (evaluate at the current s position)
+                lane_width = selected_lane->lane_width.get(s, 3.5);
+                if (lane_width <= 0) lane_width = 3.5;
+            }
+
+            // Calculate lateral position t to center vehicle in the lane
+            // In OpenDRIVE, lanes are numbered: ...-3, -2, -1, 0, +1, +2, +3...
+            // Lane 0 is the reference line, positive lanes are to the left, negative to the right
+            double t = 0.0;
+            if (lane_id > 0) {
+                // Left lanes: lane center is at (lane_id - 0.5) * lane_width
+                t = (lane_id - 0.5) * lane_width;
+            } else if (lane_id < 0) {
+                // Right lanes: lane center is at -(abs(lane_id) - 0.5) * lane_width
+                t = -(std::abs(lane_id) - 0.5) * lane_width;
+            }
 
             odr::Vec3D heading_vec;
             odr::Vec3D pos;
@@ -166,24 +164,18 @@ void Traffic::sampleAndInitializeAgents() {
                 continue; // Try next attempt
             }
 
-            // Apply map center offset to center the vehicles on the rendered map
-            double centered_x = pos[0] - map_center_offset_[0];
-            double centered_y = pos[1] - map_center_offset_[1];
-            double centered_z = pos[2] - map_center_offset_[2];
-
             // Debug logging
             std::cout << "Agent " << i << " OpenDRIVE coords: X=" << pos[0]
                       << " Y=" << pos[1] << " Z=" << pos[2] << std::endl;
-            std::cout << "Agent " << i << " Centered coords: X=" << centered_x
-                      << " Y=" << centered_y << " Z=" << centered_z << std::endl;
 
             // Transform from OpenDRIVE coordinates to Unity coordinates
+            // This transformation MUST match MapAccessorRenderer.cs exactly
             // OpenDRIVE: X=east, Y=north, Z=up
             // Unity: X=right, Y=up, Z=forward
-            // Transformation: X->X, Y->-Z, Z->Y (matches MapAccessorRenderer)
-            float unity_x = centered_x;           // X (east) -> X (right)
-            float unity_y = centered_z + 0.5f;   // Z (up) -> Y (up) + offset
-            float unity_z = -centered_y;         // Y (north) -> -Z (forward)
+            // MapAccessorRenderer: X->X, Z->Y+offset, -Y->Z
+            float unity_x = pos[0];              // X (east) -> X (right)
+            float unity_y = pos[2] + 0.5f;       // Z (up) -> Y (up) + offset
+            float unity_z = -pos[1];             // -Y (north) -> Z (forward)
 
             std::cout << "Agent " << i << " Unity coords: X=" << unity_x
                       << " Y=" << unity_y << " Z=" << unity_z << std::endl;
@@ -192,9 +184,22 @@ void Traffic::sampleAndInitializeAgents() {
             agents[i].setY(unity_y);
             agents[i].setZ(unity_z);
 
-            // Transform heading from OpenDRIVE to Unity
-            double heading = std::atan2(-heading_vec[1], heading_vec[0]); // Y component becomes -Z
-            if (lane_id < 0) heading += M_PI; // Right lanes (negative IDs) face opposite direction
+            // Transform heading from OpenDRIVE to Unity coordinate system
+            // OpenDRIVE: X=east, Y=north, Z=up
+            // Unity: X=right, Y=up, Z=forward
+            // Transformation: OpenDRIVE X->Unity X, OpenDRIVE Y->Unity -Z
+            double heading = std::atan2(-heading_vec[1], heading_vec[0]);
+
+            // In OpenDRIVE, lane direction is determined by lane properties, not just sign
+            // For proper lane direction, we should check the lane's travel direction
+            // For now, apply the standard convention: negative lane IDs go opposite to reference line
+            if (lane_id < 0) {
+                heading += M_PI;
+            }
+
+            // Normalize heading to [-π, π] range
+            while (heading > M_PI) heading -= 2.0 * M_PI;
+            while (heading < -M_PI) heading += 2.0 * M_PI;
 
             agents[i].setYaw(heading);
             agents[i].setSteering(0.0f);
@@ -343,7 +348,7 @@ void Traffic::applyActions(Vehicle& vehicle, int high_level_action, const std::v
     // 1. Clamp desired steering to realistic physical limits
     // Typical passenger car: ±35-45 degrees (±0.61-0.79 radians)
     constexpr float MAX_STEERING_ANGLE = 0.698f;  // 40 degrees in radians
-    desired_steering = std::clamp(desired_steering, -MAX_STEERING_ANGLE, MAX_STEERING_ANGLE);
+    desired_steering = clamp(desired_steering, -MAX_STEERING_ANGLE, MAX_STEERING_ANGLE);
 
     // 2. Apply steering rate limiting for realistic responsiveness
     // Reduced from 60 deg/s to 30 deg/s for more realistic response

@@ -13,9 +13,18 @@ extern "C" {
 
 // Global variables moved from header to avoid ODR violations
 static std::ostringstream oss;
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_real_distribution<float> dis(-35.0f * M_PI / 180.0f, 35.0f * M_PI / 180.0f);
+
+// Use lazy initialization to avoid crashes during library loading
+static std::mt19937& getGenerator() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    return gen;
+}
+
+static std::uniform_real_distribution<float>& getDistribution() {
+    static std::uniform_real_distribution<float> dis(-35.0f * M_PI / 180.0f, 35.0f * M_PI / 180.0f);
+    return dis;
+}
 
 // Thread-local storage for C strings to avoid memory leaks
 static thread_local std::vector<std::unique_ptr<char[]>> string_storage;
@@ -151,8 +160,8 @@ EXPORT void Vehicle_setSensorRange(Vehicle* vehicle, float distance) {
 }
 
 // Traffic functions
-EXPORT Traffic* Traffic_create(int num_agents, unsigned seed) {
-    return new Traffic(num_agents, seed);
+EXPORT void* Traffic_create(int num_agents, unsigned int seed) {
+    return static_cast<void*>(new Traffic(num_agents, seed));
 }
 
 EXPORT void Traffic_destroy(Traffic* traffic) {
