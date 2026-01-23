@@ -15,6 +15,8 @@ public class TrafficManagerSafe : MonoBehaviour
     [Header("Agent Settings")]
     public GameObject agentPrefab;
     public Transform agentParent;
+    [Range(0.1f, 2.0f)]
+    public float vehicleScale = 0.25f; // Scale factor for vehicle size (0.25 = 25% of original)
 
     private IntPtr trafficSimulation = IntPtr.Zero;
     private UnityPluginBridge pluginBridge;
@@ -191,6 +193,9 @@ public class TrafficManagerSafe : MonoBehaviour
             if (agentPrefab != null)
             {
                 agentObj = Instantiate(agentPrefab, agentParent);
+
+                // Scale down the vehicle to match road proportions (observed vehicles are ~3-4x too large)
+                agentObj.transform.localScale = Vector3.one * vehicleScale;
 
                 // Apply a unique color tint to differentiate vehicles
                 Renderer[] renderers = agentObj.GetComponentsInChildren<Renderer>();
