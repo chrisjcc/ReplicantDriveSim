@@ -488,37 +488,121 @@ public class UnityPluginBridge : MonoBehaviour
 
     private Vector3 GetPointAtS(OpenDriveRoad road, float s)
     {
+        // Use the same coordinate transformation as OpenDriveGeometryGenerator
+        // to ensure spawn points match the actual road mesh
+
         // Find the geometry segment that contains this s value
-        float currentS = 0f;
+        OpenDriveGeometry currentGeom = null;
         foreach (var geom in road.geometries)
         {
-            if (currentS + geom.length >= s)
+            if (s >= geom.s && s <= geom.s + geom.length)
             {
-                // This geometry contains our target s value
-                float localS = s - currentS;
-                float t = localS / geom.length;
-
-                // Use proper OpenDRIVE coordinate transformation
-                Vector3 start = new Vector3(geom.x, 0.1f, geom.y);
-                Vector3 end = start + new Vector3(
-                    Mathf.Cos(geom.hdg) * geom.length,
-                    0f,
-                    Mathf.Sin(geom.hdg) * geom.length
-                );
-
-                return Vector3.Lerp(start, end, t);
+                currentGeom = geom;
+                break;
             }
-            currentS += geom.length;
         }
 
-        // Fallback: use the first geometry
-        if (road.geometries.Count > 0)
+        if (currentGeom == null)
         {
-            var geom = road.geometries[0];
-            return new Vector3(geom.x, 0.1f, geom.y);
+            // Use the last geometry if s is beyond the road
+            if (road.geometries.Count > 0)
+            {
+                currentGeom = road.geometries[road.geometries.Count - 1];
+                s = currentGeom.s + currentGeom.length;
+            }
+            else
+            {
+                return Vector3.zero;
+            }
         }
 
-        return Vector3.zero;
+        // Calculate local s within this geometry
+        float localS = s - currentGeom.s;
+
+        // Get point using proper OpenDRIVE coordinate transformation (same as mesh generation)
+        Vector2 localPoint = GetLocalPointInGeometry(currentGeom, localS);
+        Vector2 worldPoint = TransformToWorldCoordinates(localPoint, currentGeom);
+
+        // Convert OpenDRIVE coordinates to Unity coordinates (same as mesh)
+        // OpenDRIVE: X=east, Y=north, Z=up
+        // Unity: X=right, Y=up, Z=forward
+        return new Vector3(worldPoint.x, 0.1f, worldPoint.y);
+    }
+
+    private Vector2 GetLocalPointInGeometry(OpenDriveGeometry geom, float s)
+    {
+        switch (geom.type)
+        {
+            case GeometryType.Line:
+                return new Vector2(s, 0f);
+
+            case GeometryType.Arc:
+                return GetArcPoint(s, geom.curvature);
+
+            case GeometryType.Spiral:
+                return GetSpiralPoint(s, geom.curvStart, geom.curvEnd, geom.length);
+
+            default:
+                return new Vector2(s, 0f);
+        }
+    }
+
+    private Vector2 GetArcPoint(float s, float curvature)
+    {
+        if (Mathf.Abs(curvature) < 1e-10f)
+        {
+            // Straight line case
+            return new Vector2(s, 0f);
+        }
+
+        float radius = 1f / curvature;
+        float theta = s * curvature;
+
+        return new Vector2(
+            radius * Mathf.Sin(theta),
+            radius * (1f - Mathf.Cos(theta))
+        );
+    }
+
+    private Vector2 GetSpiralPoint(float s, float curvStart, float curvEnd, float length)
+    {
+        // Simplified spiral calculation using Fresnel integrals approximation
+        float curvRate = (curvEnd - curvStart) / length;
+
+        Vector2 position = Vector2.zero;
+        float heading = curvStart * s;
+
+        // Use small steps for integration
+        int steps = Mathf.Max(1, (int)(s / 0.1f));
+        float stepSize = s / steps;
+
+        for (int i = 0; i < steps; i++)
+        {
+            float stepS = i * stepSize;
+            float stepCurvature = curvStart + curvRate * stepS;
+
+            position.x += stepSize * Mathf.Cos(heading);
+            position.y += stepSize * Mathf.Sin(heading);
+
+            heading += stepCurvature * stepSize;
+        }
+
+        return position;
+    }
+
+    private Vector2 TransformToWorldCoordinates(Vector2 localPoint, OpenDriveGeometry geom)
+    {
+        // Rotate by heading
+        float cos_hdg = Mathf.Cos(geom.hdg);
+        float sin_hdg = Mathf.Sin(geom.hdg);
+
+        Vector2 rotated = new Vector2(
+            localPoint.x * cos_hdg - localPoint.y * sin_hdg,
+            localPoint.x * sin_hdg + localPoint.y * cos_hdg
+        );
+
+        // Translate to world position
+        return new Vector2(geom.x + rotated.x, geom.y + rotated.y);
     }
 
     private Vector3 GetHeadingAtS(OpenDriveRoad road, float s)
