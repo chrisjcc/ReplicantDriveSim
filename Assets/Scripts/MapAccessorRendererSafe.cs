@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -32,17 +33,38 @@ public class MapAccessorRendererSafe : MonoBehaviour
     {
         Debug.Log("MapAccessorRendererSafe: Starting P/Invoke-free OpenDRIVE rendering");
 
-        // Find or create the plugin bridge
-        pluginBridge = FindFirstObjectByType<UnityPluginBridge>();
+        // Start coroutine to wait for UnityPluginBridge to be available
+        StartCoroutine(WaitForPluginBridge());
+    }
+
+    private IEnumerator WaitForPluginBridge()
+    {
+        // Wait for SceneBootstrapper to create the UnityPluginBridge
+        float timeout = 10f; // 10 second timeout
+        float elapsed = 0f;
+
+        while (pluginBridge == null && elapsed < timeout)
+        {
+            pluginBridge = FindFirstObjectByType<UnityPluginBridge>();
+            if (pluginBridge != null)
+            {
+                Debug.Log("MapAccessorRendererSafe: Found UnityPluginBridge, proceeding with map loading");
+                break;
+            }
+
+            yield return new WaitForSeconds(0.1f);
+            elapsed += 0.1f;
+        }
+
         if (pluginBridge == null)
         {
-            Debug.LogError("MapAccessorRendererSafe: UnityPluginBridge not found! Creating one.");
+            Debug.LogError("MapAccessorRendererSafe: UnityPluginBridge not found after timeout! Creating fallback bridge.");
             GameObject bridgeObj = new GameObject("UnityPluginBridge");
             pluginBridge = bridgeObj.AddComponent<UnityPluginBridge>();
         }
 
-        // Wait a frame then try to load the map
-        Invoke(nameof(LoadOpenDriveMap), 0.1f);
+        // Now try to load the map
+        LoadOpenDriveMap();
     }
 
     public void LoadOpenDriveMap()
