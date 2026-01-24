@@ -106,7 +106,7 @@ public class SceneBootstrapper : MonoBehaviour
                 trafficManager.randomSeed = 12345;
 
                 // Set agents to be direct children of TrafficSimulationManager
-                // This allows the camera to find agent_0
+                // This allows the camera to find Agent_0
                 trafficManager.agentParent = trafficObj.transform;
 
                 Debug.Log("SceneBootstrapper: Added TrafficManagerSafe to existing TrafficSimulationManager GameObject");
@@ -144,14 +144,24 @@ public class SceneBootstrapper : MonoBehaviour
             }
         }
 
-        // Rename first agent to match camera expectations
+        // Check if Agent_0 already exists before renaming
         if (agents.Length > 0)
         {
-            GameObject firstAgent = agents[0].gameObject;
-            if (firstAgent.name != "agent_0")
+            // First check if there's already an Agent_0
+            GameObject existingAgent0 = GameObject.Find("Agent_0");
+            if (existingAgent0 == null)
             {
-                firstAgent.name = "agent_0";
-                Debug.Log("SceneBootstrapper: Renamed first agent to 'agent_0' for camera compatibility");
+                // No Agent_0 exists, so rename the first agent
+                GameObject firstAgent = agents[0].gameObject;
+                if (firstAgent.name != "Agent_0")
+                {
+                    firstAgent.name = "Agent_0";
+                    Debug.Log($"SceneBootstrapper: Renamed {firstAgent.name} to 'Agent_0' for camera compatibility");
+                }
+            }
+            else
+            {
+                Debug.Log("SceneBootstrapper: Agent_0 already exists, no renaming needed");
             }
         }
     }
@@ -173,13 +183,13 @@ public class SceneBootstrapper : MonoBehaviour
         Debug.Log($"TrafficAgentSafe count: {agents.Length}");
 
         // Check if camera target exists now
-        GameObject agent0 = GameObject.Find("agent_0");
-        Debug.Log($"agent_0 GameObject: {(agent0 != null ? "✓" : "✗")}");
+        GameObject agent0 = GameObject.Find("Agent_0");
+        Debug.Log($"Agent_0 GameObject: {(agent0 != null ? "✓" : "✗")}");
 
         GameObject trafficSimManager = GameObject.Find("TrafficSimulationManager");
         if (trafficSimManager != null && agent0 != null)
         {
-            Debug.Log("Camera should now be able to find 'agent_0' in 'TrafficSimulationManager'");
+            Debug.Log("Camera should now be able to find 'Agent_0' in 'TrafficSimulationManager'");
         }
 
         Debug.Log("=== END STATUS ===");

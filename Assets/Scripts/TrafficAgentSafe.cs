@@ -1,5 +1,8 @@
 using System;
 using UnityEngine;
+using Unity.MLAgents;
+using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Actuators;
 
 // P/Invoke-free TrafficAgent that works with TrafficManagerSafe
 public class TrafficAgentSafe : MonoBehaviour
@@ -287,4 +290,21 @@ public class TrafficAgentSafe : MonoBehaviour
     {
         Debug.Log($"TrafficAgentSafe {agentId}: Pos={transform.position}, Vel={velocity}, Yaw={yawAngle:F1}°, Target={targetPosition}");
     }
+
+    // ML-Agents Integration Methods
+    public void InitializeMLAgents()
+    {
+        var mlAgent = GetComponent<Agent>();
+        if (mlAgent != null)
+        {
+            // ML-Agent will handle its own initialization
+            Debug.Log($"TrafficAgentSafe {agentId}: ML-Agents component found and will be used for observations/actions");
+        }
+    }
+
+    // Provide current traffic simulation state to ML-Agents if needed
+    public Vector3 GetCurrentVelocity() { return velocity; }
+    public float GetCurrentYaw() { return yawAngle; }
+    public Vector3 GetTargetPosition() { return targetPosition; }
+    public bool IsUsingSimulationState() { return useSimulationState; }
 }

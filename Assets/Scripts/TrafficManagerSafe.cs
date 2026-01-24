@@ -254,13 +254,46 @@ public class TrafficManagerSafe : MonoBehaviour
             }
             agentObj.transform.position = initialPos;
 
-            // Add TrafficAgentSafe component for behavior
+            // IMPORTANT: Add TrafficAgentSafe FIRST before ML-Agents components
+            // This ensures VehicleMLAgent can find TrafficAgentSafe during Initialize()
             TrafficAgentSafe agentComponent = agentObj.GetComponent<TrafficAgentSafe>();
             if (agentComponent == null)
             {
                 agentComponent = agentObj.AddComponent<TrafficAgentSafe>();
             }
             agentComponent.Initialize(agentId, this);
+
+            // NOW configure ML-Agents components after TrafficAgentSafe is added
+            var mlAgent = agentObj.GetComponent<Unity.MLAgents.Agent>();
+            if (mlAgent != null)
+            {
+                // Keep ML-Agent enabled but ensure it works with our traffic system
+                mlAgent.enabled = true;
+                Debug.Log($"TrafficManagerSafe: Found existing ML-Agent component on agent {agentId}: {mlAgent.GetType().Name}");
+
+                // Ensure VehicleMLAgent is present if this is a VehicleMLAgent
+                var vehicleMLAgent = agentObj.GetComponent<VehicleMLAgent>();
+                if (vehicleMLAgent != null)
+                {
+                    // Set the TrafficAgentSafe reference on VehicleMLAgent
+                    vehicleMLAgent.SetTrafficAgent(agentComponent);
+                    Debug.Log($"TrafficManagerSafe: Set TrafficAgentSafe on VehicleMLAgent for agent {agentId}");
+                }
+                else
+                {
+                    Debug.LogWarning($"TrafficManagerSafe: ML-Agent found but it's not VehicleMLAgent type on agent {agentId}");
+                }
+            }
+            else
+            {
+                // Add our VehicleMLAgent component if no ML-Agent exists
+                var vehicleMLAgent = agentObj.AddComponent<VehicleMLAgent>();
+                vehicleMLAgent.SetTrafficAgent(agentComponent);
+                Debug.Log($"TrafficManagerSafe: Added VehicleMLAgent component to agent {agentId}");
+            }
+
+            // Initialize ML-Agents after all components are in place
+            agentComponent.InitializeMLAgents();
 
             Debug.Log($"TrafficManagerSafe: Created agent {agentId} at position {initialPos}");
             return agentObj;

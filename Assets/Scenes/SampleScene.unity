@@ -221,7 +221,7 @@ GameObject:
   m_Component:
   - component: {fileID: 613325773}
   m_Layer: 0
-  m_Name: DesertTarrain
+  m_Name: Tarrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -268,14 +268,14 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 705507993}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.802082
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
     m_Type: 2
     m_Resolution: -1
@@ -478,7 +478,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetObject: {fileID: 0}
   targetManagerName: TrafficSimulationManager
-  defaultTargetName: agent_0
+  defaultTargetName: Agent_0
   targetCamera: {fileID: 963194227}
   cameraHeight: 150
   cameraDistance: 5

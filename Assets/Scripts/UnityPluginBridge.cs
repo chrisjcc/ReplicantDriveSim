@@ -332,39 +332,94 @@ public class UnityPluginBridge : MonoBehaviour
             // Parse road data for agent spawning
             roads = OpenDriveParser.ParseOpenDriveFile(mapData.filePath);
             Debug.Log($"UnityPluginBridge: Found {roads?.Count ?? 0} roads for agent spawning");
+
+            // Debug road information
+            if (roads != null && roads.Count > 0)
+            {
+                for (int r = 0; r < Mathf.Min(roads.Count, 3); r++)
+                {
+                    var road = roads[r];
+                    Debug.Log($"UnityPluginBridge: Road {r} - ID: {road.id}, Length: {road.length:F2}m, Geometries: {road.geometries?.Count ?? 0}");
+                }
+            }
         }
 
         // Initialize each agent at road positions (similar to C++ simulation logic)
         System.Random random = new System.Random((int)trafficData.seed);
 
+        // Get valid road spawn points first
+        List<Vector3> validSpawnPoints = new List<Vector3>();
+        List<float> validSpawnYaws = new List<float>();
+
+        if (roads != null && roads.Count > 0)
+        {
+            // Generate multiple spawn candidates and pick the best ones
+            for (int attempt = 0; attempt < numAgents * 10; attempt++) // Generate 10x more candidates
+            {
+                Vector3 position = GetRandomRoadPosition(roads, random);
+                float yaw = GetRoadHeadingAtPosition(roads, position, random);
+
+                // Validate spawn point is actually on road surface
+                bool isValidSpawn = IsPositionOnRoad(position, roads);
+
+                if (position != Vector3.zero && isValidSpawn) // Valid road position found
+                {
+                    validSpawnPoints.Add(position);
+                    validSpawnYaws.Add(yaw);
+
+                    if (validSpawnPoints.Count >= numAgents) break; // Got enough spawn points
+                }
+                else if (position != Vector3.zero)
+                {
+                    Debug.LogWarning($"UnityPluginBridge: Generated position {position} failed road validation");
+                }
+            }
+            Debug.Log($"UnityPluginBridge: Generated {validSpawnPoints.Count} valid road spawn points for {numAgents} agents");
+        }
+
         for (int i = 0; i < numAgents; i++)
         {
-            Vector3 position = Vector3.zero;
-            float yaw = 0f;
+            Vector3 position;
+            float yaw;
 
-            if (roads != null && roads.Count > 0)
+            if (i < validSpawnPoints.Count)
             {
-                // Spawn agents on actual road network
-                position = GetRandomRoadPosition(roads, random);
-                yaw = GetRoadHeadingAtPosition(roads, position, random);
+                // Use valid road spawn point
+                position = validSpawnPoints[i];
+                yaw = validSpawnYaws[i];
+                // Double-check validation for final confirmation
+                bool isOnRoad = IsPositionOnRoad(position, roads);
+                string status = isOnRoad ? "ON ROAD" : "OFF ROAD";
+                Debug.Log($"UnityPluginBridge: Agent {i} spawned {status} at {position} with yaw {yaw:F1}°");
             }
             else
             {
-                // Fallback: spawn around origin
-                float angle = (float)i / numAgents * 2f * Mathf.PI;
-                position = new Vector3(
-                    Mathf.Cos(angle) * 10f,
-                    0.5f,
-                    Mathf.Sin(angle) * 10f
-                );
-                yaw = angle * Mathf.Rad2Deg;
+                // Fallback: spawn on first road if available, otherwise use safe fallback
+                if (roads != null && roads.Count > 0 && roads[0].geometries.Count > 0)
+                {
+                    var geom = roads[0].geometries[0];
+                    float spacing = i * 5f; // Space agents along first road
+                    position = new Vector3(geom.x + spacing, 0f, geom.y);
+                    yaw = geom.hdg * Mathf.Rad2Deg;
+                    Debug.LogWarning($"UnityPluginBridge: Agent {i} spawned on FALLBACK road position at {position}");
+                }
+                else
+                {
+                    // Final fallback: spawn around origin (off-road)
+                    float angle = (float)i / numAgents * 2f * Mathf.PI;
+                    position = new Vector3(
+                        Mathf.Cos(angle) * 5f, // Smaller radius
+                        0f,
+                        Mathf.Sin(angle) * 5f
+                    );
+                    yaw = angle * Mathf.Rad2Deg;
+                    Debug.LogError($"UnityPluginBridge: Agent {i} spawned OFF-ROAD (no road data) at {position}");
+                }
             }
 
             trafficData.agentPositions[i] = position;
-            trafficData.agentVelocities[i] = Vector3.forward * 5f; // Initial forward velocity
+            trafficData.agentVelocities[i] = new Vector3(Mathf.Sin(yaw * Mathf.Deg2Rad), 0f, Mathf.Cos(yaw * Mathf.Deg2Rad)) * 5f;
             trafficData.agentYaws[i] = yaw;
-
-            Debug.Log($"UnityPluginBridge: Initialized agent {i} at {position} with yaw {yaw}°");
         }
     }
 
@@ -372,34 +427,168 @@ public class UnityPluginBridge : MonoBehaviour
     {
         if (roads.Count == 0) return Vector3.zero;
 
-        // Pick a random road
-        OpenDriveRoad road = roads[random.Next(roads.Count)];
-
-        // Pick a random position along the road
-        float s = (float)random.NextDouble() * road.length;
-
-        // Get the first geometry segment (simplified)
-        if (road.geometries.Count > 0)
+        // Try multiple roads to find a valid spawn point
+        for (int roadAttempt = 0; roadAttempt < 10; roadAttempt++)
         {
-            var geom = road.geometries[0];
-            // Simple line approximation for now
-            float t = s / road.length;
-            Vector3 start = new Vector3(geom.x, 0.5f, geom.y);
-            Vector3 end = start + new Vector3(
-                Mathf.Cos(geom.hdg) * road.length,
-                0f,
-                Mathf.Sin(geom.hdg) * road.length
-            );
-            return Vector3.Lerp(start, end, t);
+            // Pick a random road
+            OpenDriveRoad road = roads[random.Next(roads.Count)];
+
+            // Skip very short roads (less than 5 meters)
+            if (road.length < 5.0f) continue;
+
+            // Pick a random position along the road (avoid very start/end)
+            float minS = road.length * 0.1f; // Start 10% along the road
+            float maxS = road.length * 0.9f; // End 90% along the road
+            float s = minS + (float)random.NextDouble() * (maxS - minS);
+
+            // Get position using proper OpenDRIVE coordinate transformation
+            Vector3 centerlinePoint = GetPointAtS(road, s);
+            if (centerlinePoint == Vector3.zero) continue;
+
+            // Add random lateral offset within road width (stay within road boundaries)
+            float roadWidth = GetRoadWidthAtS(road, s);
+            float lateralOffset = ((float)random.NextDouble() - 0.5f) * roadWidth * 0.6f; // Use 60% of road width for safety
+
+            Vector3 heading = GetHeadingAtS(road, s);
+            Vector3 lateral = new Vector3(-heading.z, 0f, heading.x); // Perpendicular to heading
+
+            Vector3 finalPosition = centerlinePoint + lateral * lateralOffset;
+            finalPosition.y = 0.5f; // Vehicle height above road surface
+
+            Debug.Log($"UnityPluginBridge: Generated spawn point at road {road.id}, s={s:F2}, lateral={lateralOffset:F2}, pos={finalPosition}");
+            return finalPosition;
         }
 
+        Debug.LogWarning("UnityPluginBridge: Failed to find valid road spawn point after 10 attempts");
         return Vector3.zero;
     }
 
     private float GetRoadHeadingAtPosition(List<OpenDriveRoad> roads, Vector3 position, System.Random random)
     {
-        // Simplified: return a reasonable heading
-        return (float)random.NextDouble() * 360f;
+        // Find the closest road and return its heading
+        float closestDistance = float.MaxValue;
+        float bestHeading = 0f;
+
+        foreach (var road in roads)
+        {
+            foreach (var geom in road.geometries)
+            {
+                Vector3 roadPoint = new Vector3(geom.x, 0.5f, geom.y);
+                float distance = Vector3.Distance(position, roadPoint);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    bestHeading = geom.hdg * Mathf.Rad2Deg; // Convert to degrees
+                }
+            }
+        }
+
+        return bestHeading;
+    }
+
+    private Vector3 GetPointAtS(OpenDriveRoad road, float s)
+    {
+        // Find the geometry segment that contains this s value
+        float currentS = 0f;
+        foreach (var geom in road.geometries)
+        {
+            if (currentS + geom.length >= s)
+            {
+                // This geometry contains our target s value
+                float localS = s - currentS;
+                float t = localS / geom.length;
+
+                // Use proper OpenDRIVE coordinate transformation
+                Vector3 start = new Vector3(geom.x, 0.1f, geom.y);
+                Vector3 end = start + new Vector3(
+                    Mathf.Cos(geom.hdg) * geom.length,
+                    0f,
+                    Mathf.Sin(geom.hdg) * geom.length
+                );
+
+                return Vector3.Lerp(start, end, t);
+            }
+            currentS += geom.length;
+        }
+
+        // Fallback: use the first geometry
+        if (road.geometries.Count > 0)
+        {
+            var geom = road.geometries[0];
+            return new Vector3(geom.x, 0.1f, geom.y);
+        }
+
+        return Vector3.zero;
+    }
+
+    private Vector3 GetHeadingAtS(OpenDriveRoad road, float s)
+    {
+        // Find the geometry segment for heading calculation
+        float currentS = 0f;
+        foreach (var geom in road.geometries)
+        {
+            if (currentS + geom.length >= s)
+            {
+                return new Vector3(Mathf.Cos(geom.hdg), 0f, Mathf.Sin(geom.hdg));
+            }
+            currentS += geom.length;
+        }
+
+        // Fallback: use first geometry heading
+        if (road.geometries.Count > 0)
+        {
+            var geom = road.geometries[0];
+            return new Vector3(Mathf.Cos(geom.hdg), 0f, Mathf.Sin(geom.hdg));
+        }
+
+        return Vector3.forward;
+    }
+
+    private float GetRoadWidthAtS(OpenDriveRoad road, float s)
+    {
+        // Simplified: assume standard road width
+        // In a full implementation, this would parse the road's lane sections
+        return 7.0f; // Standard 2-lane road width in meters
+    }
+
+    private bool IsPositionOnRoad(Vector3 position, List<OpenDriveRoad> roads)
+    {
+        if (position == Vector3.zero) return false;
+
+        // Check if position is within reasonable distance of any road centerline
+        float minDistanceToRoad = float.MaxValue;
+        bool foundNearbyRoad = false;
+
+        foreach (var road in roads)
+        {
+            // Sample points along the road centerline
+            for (float s = 0; s <= road.length; s += 2.0f) // Check every 2 meters
+            {
+                Vector3 roadPoint = GetPointAtS(road, s);
+                if (roadPoint != Vector3.zero)
+                {
+                    float distance = Vector3.Distance(position, roadPoint);
+                    minDistanceToRoad = Mathf.Min(minDistanceToRoad, distance);
+
+                    // Check if position is within road width
+                    float roadWidth = GetRoadWidthAtS(road, s);
+                    if (distance <= roadWidth * 0.5f) // Within road width
+                    {
+                        foundNearbyRoad = true;
+                        Debug.Log($"UnityPluginBridge: Position {position} validated ON ROAD (distance: {distance:F2}m from centerline)");
+                        break;
+                    }
+                }
+            }
+            if (foundNearbyRoad) break;
+        }
+
+        if (!foundNearbyRoad)
+        {
+            Debug.LogWarning($"UnityPluginBridge: Position {position} is OFF ROAD (min distance: {minDistanceToRoad:F2}m from centerline)");
+        }
+
+        return foundNearbyRoad;
     }
 
     // Simulate traffic simulation step (replaces C++ Traffic::step)
