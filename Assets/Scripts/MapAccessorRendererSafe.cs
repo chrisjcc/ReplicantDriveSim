@@ -1,11 +1,22 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+using System.IO;
+using System.Linq;
+#endif
 
 // P/Invoke-free MapAccessorRenderer that uses UnityPluginBridge
 public class MapAccessorRendererSafe : MonoBehaviour
 {
     [Header("OpenDRIVE Map Settings")]
+    [SerializeField]
+    public int selectedMapIndex = 0;
+
+    [SerializeField]
+    public string[] availableMaps;
+
     public string mapFilePath = "Assets/Maps/data.xodr";
 
     [Header("Rendering Settings")]
@@ -34,7 +45,7 @@ public class MapAccessorRendererSafe : MonoBehaviour
         Invoke(nameof(LoadOpenDriveMap), 0.1f);
     }
 
-    private void LoadOpenDriveMap()
+    public void LoadOpenDriveMap()
     {
         if (isMapLoaded)
         {
@@ -342,4 +353,112 @@ public class MapAccessorRendererSafe : MonoBehaviour
             LoadOpenDriveMap();
         }
     }
+
+    #if UNITY_EDITOR
+    // Initialize available maps when the script is first loaded
+    public void RefreshAvailableMaps()
+    {
+        if (!Directory.Exists("Assets/Maps/"))
+        {
+            availableMaps = new string[0];
+            return;
+        }
+
+        string[] mapFiles = Directory.GetFiles("Assets/Maps/", "*.xodr", SearchOption.TopDirectoryOnly);
+        availableMaps = mapFiles.Select(path => Path.GetFileName(path)).ToArray();
+
+        // Try to maintain current selection if the map still exists
+        string currentMapName = Path.GetFileName(mapFilePath);
+        selectedMapIndex = System.Array.IndexOf(availableMaps, currentMapName);
+        if (selectedMapIndex < 0) selectedMapIndex = 0;
+
+        // Update the map file path
+        if (availableMaps.Length > 0)
+        {
+            mapFilePath = "Assets/Maps/" + availableMaps[selectedMapIndex];
+        }
+    }
+
+    public void SetSelectedMap(int index)
+    {
+        if (availableMaps != null && index >= 0 && index < availableMaps.Length)
+        {
+            selectedMapIndex = index;
+            mapFilePath = "Assets/Maps/" + availableMaps[selectedMapIndex];
+        }
+    }
+
+    private void OnValidate()
+    {
+        // Refresh maps whenever the component is loaded/changed in editor
+        if (availableMaps == null || availableMaps.Length == 0)
+        {
+            RefreshAvailableMaps();
+        }
+    }
+    #endif
 }
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(MapAccessorRendererSafe))]
+public class MapAccessorRendererSafeEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        MapAccessorRendererSafe mapRenderer = (MapAccessorRendererSafe)target;
+
+        // Refresh button
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("OpenDRIVE Map Settings", EditorStyles.boldLabel);
+        if (GUILayout.Button("Refresh Maps", GUILayout.Width(100)))
+        {
+            mapRenderer.RefreshAvailableMaps();
+        }
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space();
+
+        // Map selection dropdown
+        if (mapRenderer.availableMaps != null && mapRenderer.availableMaps.Length > 0)
+        {
+            EditorGUI.BeginChangeCheck();
+            int newIndex = EditorGUILayout.Popup("Select Map", mapRenderer.selectedMapIndex, mapRenderer.availableMaps);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(mapRenderer, "Change Map Selection");
+                mapRenderer.SetSelectedMap(newIndex);
+                EditorUtility.SetDirty(mapRenderer);
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Selected Map Path:", mapRenderer.mapFilePath, EditorStyles.helpBox);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("No .xodr files found in Assets/Maps/\nClick 'Refresh Maps' to scan for available maps.", MessageType.Warning);
+        }
+
+        EditorGUILayout.Space();
+
+        // Load map button
+        if (GUILayout.Button("Load Selected Map", GUILayout.Height(30)))
+        {
+            if (Application.isPlaying)
+            {
+                mapRenderer.LoadOpenDriveMap();
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Load Map",
+                    "Maps can only be loaded during play mode.\nEnter play mode first, then click this button.",
+                    "OK");
+            }
+        }
+
+        EditorGUILayout.Space();
+
+        // Draw default inspector for other fields
+        DrawDefaultInspector();
+    }
+}
+#endif

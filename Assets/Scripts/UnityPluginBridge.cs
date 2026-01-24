@@ -463,6 +463,34 @@ public class UnityPluginBridge : MonoBehaviour
         return Vector3.zero;
     }
 
+    // Public method to get a random road position for dynamic target selection
+    public Vector3 GetRandomRoadPosition()
+    {
+        // Find roads from map data
+        List<OpenDriveRoad> roads = null;
+
+        // Try to get roads from current map data
+        foreach (var kvp in nativeResults)
+        {
+            if (kvp.Key.StartsWith("map_") && kvp.Value is MapData mapData)
+            {
+                // Parse road data from the map file
+                roads = OpenDriveParser.ParseOpenDriveFile(mapData.filePath);
+                break;
+            }
+        }
+
+        if (roads == null || roads.Count == 0)
+        {
+            Debug.LogWarning("UnityPluginBridge: No road data available for random position");
+            return Vector3.zero;
+        }
+
+        // Use the same logic as spawn point generation
+        System.Random random = new System.Random();
+        return GetRandomRoadPosition(roads, random);
+    }
+
     private float GetRoadHeadingAtPosition(List<OpenDriveRoad> roads, Vector3 position, System.Random random)
     {
         // Find the closest road and return its heading

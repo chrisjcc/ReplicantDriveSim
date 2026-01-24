@@ -71,13 +71,11 @@ public class TrafficAgentSafe : MonoBehaviour
 
     private void InitializeMovementPattern()
     {
-        // Create a circular movement pattern around the spawn point
+        // Get a random target position on the road network
         centerPoint = transform.position;
 
-        // Spread agents out in a circle initially
-        float angle = (float)agentId / (trafficManager != null ? trafficManager.numberOfAgents : 1f) * 2f * Mathf.PI;
-        Vector3 offset = new Vector3(Mathf.Cos(angle) * moveRadius, 0, Mathf.Sin(angle) * moveRadius);
-        targetPosition = centerPoint + offset;
+        // Get a random road position for the target
+        targetPosition = GetRandomRoadTarget();
 
         Debug.Log($"TrafficAgentSafe: Agent {agentId} movement initialized - center: {centerPoint}, target: {targetPosition}");
     }
@@ -100,17 +98,40 @@ public class TrafficAgentSafe : MonoBehaviour
 
     private void UpdateMovementPattern(float deltaTime)
     {
-        // Simple circular movement around center point
-        float time = Time.time + timeOffset;
-        float angle = time * 0.5f; // Speed of circular movement
+        // Check if close to current target, then pick a new road target
+        float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
+        if (distanceToTarget < 2.0f) // When within 2 meters of target
+        {
+            targetPosition = GetRandomRoadTarget();
+            Debug.Log($"TrafficAgentSafe {agentId}: New target selected at {targetPosition}");
+        }
+    }
 
-        Vector3 newTarget = centerPoint + new Vector3(
-            Mathf.Cos(angle) * moveRadius,
-            0,
-            Mathf.Sin(angle) * moveRadius
+    private Vector3 GetRandomRoadTarget()
+    {
+        // Try to get a random road position from the traffic manager's plugin bridge
+        if (trafficManager != null)
+        {
+            UnityPluginBridge pluginBridge = trafficManager.GetPluginBridge();
+            if (pluginBridge != null)
+            {
+                // Generate a new random road position using the spawn system
+                // This reuses the same logic that creates valid road spawn points
+                Vector3 newTarget = pluginBridge.GetRandomRoadPosition();
+                if (newTarget != Vector3.zero)
+                {
+                    return newTarget;
+                }
+            }
+        }
+
+        // Fallback: stay near current position if road system unavailable
+        Vector3 fallbackOffset = new Vector3(
+            UnityEngine.Random.Range(-10f, 10f),
+            0f,
+            UnityEngine.Random.Range(-10f, 10f)
         );
-
-        targetPosition = newTarget;
+        return transform.position + fallbackOffset;
     }
 
     private void MoveTowardsTarget(float deltaTime)

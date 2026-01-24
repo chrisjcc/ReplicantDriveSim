@@ -349,6 +349,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 911177775}
+  - component: {fileID: 911177776}
   m_Layer: 0
   m_Name: MapAccessorRenderer
   m_TagString: Untagged
@@ -371,6 +372,41 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &911177776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 911177773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc25a74f956a4b5192b98d831645078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapAccessorRendererSafe
+  selectedMapIndex: 2
+  availableMaps:
+  - A10-IN-1-19KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-17-31KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-2-18KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-3-33KM_HW_AC_DE_BER_RELEASE_20210402.xodr
+  - A10-IN-5-14KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-6-24KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-7-30KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - Am_Reisenfeld-RA+JT-11KM_UR_AC_DE_MUC_RELEASE_20210901.xodr
+  - Gaimersheim-RA+JT-City-65KM_UR_AC_DE_ING_RELEASE_20210831.xodr
+  - Town01.xodr
+  - Town02.xodr
+  - Town03.xodr
+  - Town04.xodr
+  - Town05.xodr
+  - Town06.xodr
+  - Town07.xodr
+  - data.xodr
+  mapFilePath: Assets/Maps/A10-IN-2-18KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  roadMaterial: {fileID: 0}
+  meshName: OpenDriveRoadMesh
+  meshResolution: 0.5
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
