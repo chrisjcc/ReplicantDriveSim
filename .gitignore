@@ -171,6 +171,7 @@ cython_debug/
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
+*.plist
 
 # Compiled Dynamic Library (but keep plugin libraries for Unity)
 *.dll

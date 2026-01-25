@@ -78,7 +78,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
       propertyPath: m_TagString
-      value: TrafficAgent
+      value: Vehicle
       objectReference: {fileID: 0}
     - target: {fileID: 5590324888869176691, guid: 026afbfe2da664d1b8c50dc4348b334e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -130,7 +130,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 68
+    VectorObservationSize: 8
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 3
@@ -157,23 +157,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 4109849008543767089}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5b50f41092d7c480d8276fdb497fce2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 2000
-  seed: 42
-  highLevelActions: 0
-  lowLevelActions: []
-  debugVisualization: 0
-  offRoadPenalty: -0.5
-  onRoadReward: 0
-  collisionWithOtherAgentPenalty: -1
-  medianCrossingPenalty: 0
-  penaltyInterval: 0.5
-  lastPenaltyTime: 0
+  m_Script: {fileID: 11500000, guid: 5ef4e8f99b5fc4d4ca2a8091e3ef8469, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  maxSpeed: 20
+  maxAngularVelocity: 180
+  rayDistance: 100
+  numRays: 12
+  rayAngleRange: 180
+  detectableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!114 &8364270819945524939
 MonoBehaviour:
   m_ObjectHideFlags: 0

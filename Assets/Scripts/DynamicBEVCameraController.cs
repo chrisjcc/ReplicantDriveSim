@@ -4,7 +4,7 @@ using UnityEngine;
 /// Controls a dynamic Bird's Eye View (BEV) camera that follows a target object in a Unity scene.
 ///
 /// This script is responsible for:
-/// 1. Automatically finding and following a default target ('agent_0') if not specified.
+/// 1. Automatically finding and following a default target ('Agent_0') if not specified.
 /// 2. Smoothly moving the camera to maintain a fixed height and distance from the target.
 /// 3. Keeping the camera at a fixed X position and rotation while following the target.
 ///
@@ -25,18 +25,18 @@ using UnityEngine;
 /// - Start(): Initializes camera transform and fixed rotation.
 /// - Update(): Continuously searches for target if not found.
 /// - LateUpdate(): Updates camera position and rotation based on target's movement.
-/// - FindTarget(): Attempts to find the default target 'agent_0'.
+/// - FindTarget(): Attempts to find the default target 'Agent_0'.
 /// - SetTargetObject(Transform): Allows external setting of the target object.
 ///
 /// Usage:
 /// Attach this script to a Camera GameObject in the Unity scene. Set the target object in the
-/// inspector or let the script find the default 'agent_0' target automatically.
+/// inspector or let the script find the default 'Agent_0' target automatically.
 ///
 /// Note:
 /// - The camera maintains a fixed X position and rotation, suitable for side-scrolling or
 ///   forward-moving scenes.
 /// - Adjust public properties in the Inspector to fine-tune camera behavior.
-/// - The script assumes a specific scene structure with a 'TrafficSimulationManager' containing 'agent_0'.
+/// - The script assumes a specific scene structure with a 'TrafficSimulationManager' containing 'Agent_0'.
 /// - Consider adding error handling for cases where the target object is not found or becomes null.
 /// - The fixed rotation (90f, 0f, 90f) orients the camera to look horizontally along the x-axis.
 ///
@@ -46,7 +46,7 @@ public class DynamicBEVCameraController : MonoBehaviour
     [Header("Target Settings")]
     public Transform targetObject; // The object the camera should follow
     public string targetManagerName = "TrafficSimulationManager"; // Name of the parent object containing targets
-    public string defaultTargetName = "agent_0"; // Default target name to search for
+    public string defaultTargetName = "Agent_0"; // Default target name to search for
     
     [Header("Camera Settings")]
     public Camera targetCamera; // The camera to control (if null, uses Camera.main)
@@ -174,18 +174,18 @@ public class DynamicBEVCameraController : MonoBehaviour
     ///
     /// This method performs the following steps:
     /// 1. Searches for a GameObject named "TrafficSimulationManager" in the scene.
-    /// 2. If found, it looks for a child object named "agent_0" within the TrafficSimulationManager.
-    /// 3. If "agent_0" is found, it sets it as the target for the camera to follow.
+    /// 2. If found, it looks for a child object named "Agent_0" within the TrafficSimulationManager.
+    /// 3. If "Agent_0" is found, it sets it as the target for the camera to follow.
     ///
     /// Functionality:
     /// - Uses GameObject.Find to locate the TrafficSimulationManager in the scene.
-    /// - Uses Transform.Find to locate "agent_0" as a child of TrafficSimulationManager.
+    /// - Uses Transform.Find to locate "Agent_0" as a child of TrafficSimulationManager.
     /// - Sets targetObject to the found agent's transform if successful.
     /// - Sets isSearching to false to stop further searching once a target is found.
     /// - Logs a success message when the default target is set.
     ///
     /// Key Aspects:
-    /// - Assumes a specific scene hierarchy with TrafficSimulationManager containing agent_0.
+    /// - Assumes a specific scene hierarchy with TrafficSimulationManager containing Agent_0.
     /// - Designed to work with a predefined naming convention for objects.
     ///
     /// Performance Considerations:
@@ -193,14 +193,14 @@ public class DynamicBEVCameraController : MonoBehaviour
     /// - Consider caching the TrafficSimulationManager reference if this method is called frequently.
     ///
     /// Error Handling:
-    /// - Silently fails if TrafficSimulationManager or agent_0 is not found.
+    /// - Silently fails if TrafficSimulationManager or Agent_0 is not found.
     /// - Does not reset isSearching to true if the target is not found, potentially stopping further searches.
     ///
     /// Usage:
     /// This method is typically called from the Update method when isSearching is true.
     ///
     /// Note:
-    /// - Add error logging for cases where TrafficSimulationManager or agent_0 is not found.
+    /// - Add error logging for cases where TrafficSimulationManager or Agent_0 is not found.
     /// - Consider implementing a more robust search mechanism or allowing custom target specification.
     /// - The current implementation only searches once successfully. Implement additional logic if
     ///   you need to handle cases where the target might become null after being initially set.
@@ -231,7 +231,9 @@ public class DynamicBEVCameraController : MonoBehaviour
         Transform agent = trafficManager.transform.Find(defaultTargetName);
         if (agent == null)
         {
+            // Log all children to help debug
             Debug.LogWarning($"DynamicBEVCameraController: Could not find '{defaultTargetName}' in '{targetManagerName}' (Attempt {searchAttempts}).");
+            Debug.Log($"DynamicBEVCameraController: Available children in {targetManagerName}: {string.Join(", ", System.Linq.Enumerable.Select(System.Linq.Enumerable.Cast<Transform>(trafficManager.transform), t => t.name))}");
             return;
         }
         

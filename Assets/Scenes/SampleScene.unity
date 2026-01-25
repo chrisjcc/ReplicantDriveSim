@@ -173,63 +173,13 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: ec961533d5d244a4c9a800d6a162764d, type: 2}
     - target: {fileID: 919132149155446097, guid: f2426a4d043694f2ba8f9ffbf8e0244b, type: 3}
       propertyPath: m_Name
-      value: desertTerrain
+      value: Valley
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f2426a4d043694f2ba8f9ffbf8e0244b, type: 3}
---- !u!1 &102826273
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 102826275}
-  - component: {fileID: 102826274}
-  m_Layer: 0
-  m_Name: RoadManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &102826274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102826273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f3fe7e814b8184579959d5a8a7467ad8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  roadTexture: {fileID: 2800000, guid: cca464cc3042c47d59d1b23be416afcd, type: 3}
-  roadPhysicsMaterial: {fileID: 0}
-  singleRoadWidth: 15
-  roadLength: 100
-  boundaryHeight: 5
-  medianWidth: 5
---- !u!4 &102826275
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102826273}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 10}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &257869384
 GameObject:
   m_ObjectHideFlags: 0
@@ -239,7 +189,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 257869386}
-  - component: {fileID: 257869387}
   m_Layer: 0
   m_Name: TrafficSimulationManager
   m_TagString: Untagged
@@ -262,32 +211,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &257869387
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 257869384}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1bd63a84cb8ab439ba5a902a73f51f97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentPrefab: {fileID: 4109849008543767089, guid: d82982a893aaf4a29b195b5d5b95b7fb, type: 3}
-  simTimeStep: 0.02
-  initialAgentCount: 1
-  maxSpeed: 5
-  seed: 42
-  debugVisualization: 0
-  MaxSteps: 2000
-  rayPerceptionSensor: {fileID: 0}
-  offRoadPenalty: -0.5
-  onRoadReward: 0.01
-  collisionWithOtherAgentPenalty: -1
-  medianCrossingPenalty: -1
-  penaltyInterval: 0.5
-  lastPenaltyTime: 0
 --- !u!1 &613325772
 GameObject:
   m_ObjectHideFlags: 0
@@ -298,7 +221,7 @@ GameObject:
   m_Component:
   - component: {fileID: 613325773}
   m_Layer: 0
-  m_Name: DesertTarrain
+  m_Name: Tarrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -313,7 +236,7 @@ Transform:
   m_GameObject: {fileID: 613325772}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 25, y: -40, z: 500}
+  m_LocalPosition: {x: 0, y: -30, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -345,14 +268,14 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 705507993}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.802082
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
     m_Type: 2
     m_Resolution: -1
@@ -417,6 +340,73 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &911177773
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 911177775}
+  - component: {fileID: 911177776}
+  m_Layer: 0
+  m_Name: MapAccessorRenderer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &911177775
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 911177773}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &911177776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 911177773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc25a74f956a4b5192b98d831645078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapAccessorRendererSafe
+  selectedMapIndex: 16
+  availableMaps:
+  - A10-IN-1-19KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-17-31KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-2-18KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-3-33KM_HW_AC_DE_BER_RELEASE_20210402.xodr
+  - A10-IN-5-14KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-6-24KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - A10-IN-7-30KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  - Am_Reisenfeld-RA+JT-11KM_UR_AC_DE_MUC_RELEASE_20210901.xodr
+  - Gaimersheim-RA+JT-City-65KM_UR_AC_DE_ING_RELEASE_20210831.xodr
+  - Town01.xodr
+  - Town02.xodr
+  - Town03.xodr
+  - Town04.xodr
+  - Town05.xodr
+  - Town06.xodr
+  - Town07.xodr
+  - data.xodr
+  mapFilePath: Assets/Maps/data.xodr
+  roadMaterial: {fileID: 0}
+  meshName: OpenDriveRoadMesh
+  meshResolution: 0.5
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -523,10 +513,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetObject: {fileID: 0}
+  targetManagerName: TrafficSimulationManager
+  defaultTargetName: Agent_0
+  targetCamera: {fileID: 963194227}
   cameraHeight: 300
   cameraDistance: 5
   smoothSpeed: 5
   cameraXPosition: 0
+  searchInterval: 1
+  maxSearchAttempts: 10
 --- !u!4 &1621826644 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f2426a4d043694f2ba8f9ffbf8e0244b, type: 3}
@@ -539,5 +534,5 @@ SceneRoots:
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 257869386}
-  - {fileID: 102826275}
+  - {fileID: 911177775}
   - {fileID: 613325773}

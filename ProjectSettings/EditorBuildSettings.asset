@@ -9,5 +9,6 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: bc11b2d9242ef48adb5f866366a9910e
   m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.ml-agents.settings: {fileID: 11400000, guid: d9309e26956034add883cebd2ffdceb8, type: 2}
   m_UseUCBPForAssetBundles: 0
