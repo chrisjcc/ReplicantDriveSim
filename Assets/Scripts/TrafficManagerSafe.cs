@@ -328,8 +328,42 @@ public class TrafficManagerSafe : MonoBehaviour
 
     private void UpdateTrafficSimulation()
     {
-        // Step the C++ traffic simulation logic
-        pluginBridge.StepTrafficSimulation(trafficSimulation, Time.deltaTime);
+        // Collect actions from ML-Agents
+        int[] highLevelActions = new int[numberOfAgents];
+        float[][] lowLevelActions = new float[numberOfAgents][];
+
+        bool hasMLActions = false;
+
+        for (int i = 0; i < agentObjects.Count; i++)
+        {
+            if (agentObjects[i] != null)
+            {
+                VehicleMLAgent mlAgent = agentObjects[i].GetComponent<VehicleMLAgent>();
+                if (mlAgent != null)
+                {
+                    highLevelActions[i] = mlAgent.GetHighLevelAction();
+                    lowLevelActions[i] = mlAgent.GetLowLevelActions();
+                    hasMLActions = true;
+                }
+                else
+                {
+                    // Default actions if no ML-Agent
+                    highLevelActions[i] = 0; // Maintain lane
+                    lowLevelActions[i] = new float[] { 0f, 0.5f, 0f }; // Straight, moderate speed, no braking
+                }
+            }
+        }
+
+        // Step the traffic simulation logic with ML-Agents actions
+        if (hasMLActions)
+        {
+            pluginBridge.StepTrafficSimulation(trafficSimulation, Time.deltaTime, highLevelActions, lowLevelActions);
+        }
+        else
+        {
+            // Fallback to original method if no ML actions
+            pluginBridge.StepTrafficSimulation(trafficSimulation, Time.deltaTime);
+        }
 
         // Get updated agent states from simulation
         Vector3[] agentPositions = pluginBridge.GetAgentPositions(trafficSimulation);

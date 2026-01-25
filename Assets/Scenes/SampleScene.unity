@@ -384,7 +384,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dc25a74f956a4b5192b98d831645078, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapAccessorRendererSafe
-  selectedMapIndex: 2
+  selectedMapIndex: 16
   availableMaps:
   - A10-IN-1-19KM_HW_AC_DE_BER_RELEASE_20210510.xodr
   - A10-IN-17-31KM_HW_AC_DE_BER_RELEASE_20210510.xodr
@@ -403,7 +403,7 @@ MonoBehaviour:
   - Town06.xodr
   - Town07.xodr
   - data.xodr
-  mapFilePath: Assets/Maps/A10-IN-2-18KM_HW_AC_DE_BER_RELEASE_20210510.xodr
+  mapFilePath: Assets/Maps/data.xodr
   roadMaterial: {fileID: 0}
   meshName: OpenDriveRoadMesh
   meshResolution: 0.5
@@ -516,7 +516,7 @@ MonoBehaviour:
   targetManagerName: TrafficSimulationManager
   defaultTargetName: Agent_0
   targetCamera: {fileID: 963194227}
-  cameraHeight: 150
+  cameraHeight: 300
   cameraDistance: 5
   smoothSpeed: 5
   cameraXPosition: 0
@@ -534,5 +534,5 @@ SceneRoots:
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 257869386}
-  - {fileID: 613325773}
   - {fileID: 911177775}
+  - {fileID: 613325773}

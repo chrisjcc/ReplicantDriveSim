@@ -6,6 +6,7 @@ using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 
 // ML-Agents bridge for NISSAN-GTR vehicles in traffic simulation
+[System.Serializable]
 public class VehicleMLAgent : Agent
 {
     private TrafficAgentSafe trafficAgent;
@@ -118,25 +119,52 @@ public class VehicleMLAgent : Agent
 
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-        // For now, let the traffic simulation handle movement
-        // ML-Agents actions could be used to modify traffic behavior in the future
+        if (trafficAgent == null) return;
 
-        // The traffic simulation will continue to update the vehicle position
-        // through TrafficAgentSafe.SetSimulationState()
+        // Extract actions from ML-Agents
+        // Discrete action: high-level action (0-4: maintain, left, right, speed up, slow down)
+        int highLevelAction = actionBuffers.DiscreteActions[0];
 
-        // Optional: Apply small modifications to the traffic simulation based on ML decisions
-        // float steerInput = Mathf.Clamp(actionBuffers.ContinuousActions[0], -1f, 1f);
-        // float speedInput = Mathf.Clamp(actionBuffers.ContinuousActions[1], -1f, 1f);
+        // Continuous actions: low-level control [steering, acceleration, braking]
+        float steering = Mathf.Clamp(actionBuffers.ContinuousActions[0], -1f, 1f);
+        float acceleration = Mathf.Clamp(actionBuffers.ContinuousActions[1], -1f, 1f);
+        float braking = Mathf.Clamp(actionBuffers.ContinuousActions[2], 0f, 1f);
+
+        // Store actions for use by traffic simulation
+        SetAgentActions(highLevelAction, steering, acceleration, braking);
     }
+
+    // Store actions to be used by traffic simulation
+    private int currentHighLevelAction = 0;
+    private float currentSteering = 0f;
+    private float currentAcceleration = 0f;
+    private float currentBraking = 0f;
+
+    private void SetAgentActions(int highLevel, float steering, float accel, float brake)
+    {
+        currentHighLevelAction = highLevel;
+        currentSteering = steering;
+        currentAcceleration = accel;
+        currentBraking = brake;
+    }
+
+    // Public methods for traffic system to access current actions
+    public int GetHighLevelAction() { return currentHighLevelAction; }
+    public float[] GetLowLevelActions() { return new float[] { currentSteering, currentAcceleration, currentBraking }; }
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         // Provide default/heuristic actions when no trainer is connected
         var continuousActionsOut = actionsOut.ContinuousActions;
+        var discreteActionsOut = actionsOut.DiscreteActions;
 
-        // Default behavior: go straight at moderate speed
-        continuousActionsOut[0] = 0f;  // No steering
-        continuousActionsOut[1] = 0.5f; // Half speed
+        // Default behavior: maintain lane (action 0) at moderate speed
+        discreteActionsOut[0] = 0; // High-level action: maintain lane
+
+        // Default low-level actions: go straight at moderate speed
+        continuousActionsOut[0] = 0f;   // No steering
+        continuousActionsOut[1] = 0.5f; // Moderate acceleration
+        continuousActionsOut[2] = 0f;   // No braking
     }
 
     // Helper methods for TrafficAgentSafe integration
